@@ -1,0 +1,20 @@
+Package: strainseekr
+Type: Package
+Title: Strain Level Microbiome Wide Association Studies
+Version: 0.1.0
+Author: Gerry Tonkin-Hill
+Maintainer: Gerry Tonkin-Hill <g.tonkinhill@gmail.com>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    ggplot2,
+    glmmTMB,
+    pbapply,
+    purrr,
+    readr,
+    S4Vectors,
+    SummarizedExperiment
+RoxygenNote: 7.3.2

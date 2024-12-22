@@ -20,6 +20,7 @@ remotes::install_github("gtonkinhill/strainseekr")
   - [ ] Sylph
   - [ ] Sourmash
   - [ ] Metaphlan ?
+  - [ ] Add file renaming function
 - [ ] Plots
   - [ ] Manhatten
   - [ ] Strain set enrichment (similar to gene set)
@@ -27,6 +28,7 @@ remotes::install_github("gtonkinhill/strainseekr")
   - [ ] Zero inflated Beta
   - [ ] Ordinal Beta
   - [ ] Account for species composition with covariance matrix (mixed-model)
+
 
 
 ## Example
