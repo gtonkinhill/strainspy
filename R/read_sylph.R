@@ -14,9 +14,12 @@
 #'   \item{rowData}{DataFrame containing metadata for each sequence, such as `Contig_name` and `Genome_file`.}
 #'   \item{colData}{DataFrame containing information for each sample (derived from the `Sample_file` field).}
 #'
-#' @importFrom readr read_tsv
+#' @importFrom data.table data.table
+#' @importFrom data.table :=
+#' @importFrom data.table .GRP
+#' @importFrom Matrix sparseMatrix
 #' @importFrom SummarizedExperiment SummarizedExperiment
-#' @importFrom methods is
+#' @importFrom S4Vectors DataFrame
 #'
 #' @export
 #'
@@ -41,7 +44,8 @@
 #'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainseekr")
 #'   se <- read_sylph(example_path, example_meta)
 #' }
-read_sylph <- function(file_path, meta_data=NULL, clean_names = TRUE) {
+read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI",
+                       clean_names = TRUE) {
 
   # Check input argument
   if (!is.character(file_path) || length(file_path) != 1) {
@@ -52,28 +56,11 @@ read_sylph <- function(file_path, meta_data=NULL, clean_names = TRUE) {
     stop(paste0("The file '", file_path, "' does not exist. Please provide a valid file path."))
   }
 
-  # Read the Sylph output file using readr::read_tsv
-  sylph_data <- readr::read_tsv(
+  # Load a small portion of the file to inspect column names
+  preview_col_names <- colnames(data.table::fread(
     file_path,
-    na = c("", "NA"),
-    col_types = readr::cols(
-      Sample_file = readr::col_character(),
-      Genome_file = readr::col_character(),
-      Taxonomic_abundance = readr::col_double(),
-      Sequence_abundance = readr::col_double(),
-      Adjusted_ANI = readr::col_double(),
-      True_cov = readr::col_double(),
-      `ANI_5-95_percentile` = readr::col_character(),
-      Eff_lambda = readr::col_character(),
-      `Lambda_5-95_percentile` = readr::col_character(),
-      Median_cov = readr::col_double(),
-      Mean_cov_geq1 = readr::col_double(),
-      Containment_ind = readr::col_character(),
-      Naive_ANI = readr::col_double(),
-      kmers_reassigned = readr::col_double(),
-      Contig_name = readr::col_character()
-    )
-  )
+    nrows = 0
+  ))
 
   # Identify if the file is a query or profile output based on the presence of specific columns
   is_profile_output <- all(c(
@@ -81,104 +68,109 @@ read_sylph <- function(file_path, meta_data=NULL, clean_names = TRUE) {
     "Sequence_abundance",
     "True_cov",
     "kmers_reassigned"
-  ) %in% colnames(sylph_data))
+  ) %in% preview_col_names)
 
   if (is_profile_output) {
     message("Detected Sylph profile output file.")
-    required_columns <- c(
-      "Sample_file", "Genome_file", "Taxonomic_abundance", "Sequence_abundance",
-      "Adjusted_ANI", "True_cov", "ANI_5-95_percentile",
-      "Eff_lambda", "Lambda_5-95_percentile", "Median_cov",
-      "Mean_cov_geq1", "Containment_ind", "Naive_ANI",
-      "kmers_reassigned", "Contig_name"
-    )
+    valid_var <- c('Taxonomic_abundance','Sequence_abundance','Adjusted_ANI',
+                   'True_cov','Median_cov','Mean_cov_geq1','Naive_ANI')
   } else {
     message("Detected Sylph query output file.")
-    required_columns <- c(
-      "Sample_file", "Genome_file", "Adjusted_ANI", "Eff_lambda",
-      "ANI_5-95_percentile", "Lambda_5-95_percentile", "Median_cov",
-      "Mean_cov_geq1", "Containment_ind", "Naive_ANI", "Contig_name"
-    )
+    valid_var <- c('Adjusted_ANI','Naive_ANI')
   }
 
+  if (!variable %in% valid_var) {
+    stop(paste0("The variable column '", variable, "' is not valid! Please choose from '",
+                paste(valid_var, collapse = "', '"), "'"))
+  }
+
+  required_columns <- c("Sample_file", "Genome_file", "Contig_name", variable)
+
   # Validate that the data contains the expected columns
-  missing_columns <- setdiff(required_columns, colnames(sylph_data))
+  missing_columns <- setdiff(required_columns, preview_col_names)
   if (length(missing_columns) > 0) {
     stop(paste0("The following required columns are missing from the Sylph file: ",
                 paste(missing_columns, collapse = ", ")))
   }
 
-  # Deal with file names and extensions
-  if (clean_names){
-    sylph_data$Sample_file <- tools::file_path_sans_ext(basename(sylph_data$Sample_file),
-                                                        compression = TRUE)
-    sylph_data$Genome_file <- tools::file_path_sans_ext(basename(sylph_data$Genome_file),
-                                                        compression = TRUE)
-  }
+  # Read the Sylph output file using readr::read_tsv
+  sylph_data <- data.table::fread(
+    file_path,
+    na.strings = c("", "NA"),
+    select = required_columns
+  )
+
+  # Calculate row indices using
+  sylph_data[, row_indices := .GRP, by = .(Contig_name, Genome_file)]
+
+  # Calculate column indices
+  sylph_data[, col_indices := .GRP, by = Sample_file]
+
+  # Determine dimensions for the sparse matrix
+  n_rows <- max(sylph_data$row_indices)
+  n_cols <- max(sylph_data$col_indices)
 
   # Merge metadata if provided
   if (is.null(meta_data)){
     # Generate colData
-    col_data <- as.matrix(unique(sylph_data$Sample_file))
+    col_data <- S4Vectors::DataFrame(unique(sylph_data[, .(Sample_file, col_indices)][order(col_indices)]))
     rownames(col_data) <- col_data[,1]
-
+    col_data[['col_indices']] <- NULL
   } else {
-    col_data <- data.frame(Sample_file = unique(sylph_data$Sample_file))
+    col_data <- unique(sylph_data[, .(Sample_file, col_indices)][order(col_indices)])
 
     # Extract unique sample names
-    sylph_samples <- unique(sylph_data$Sample_file)
     meta_samples <- unique(meta_data[[1]])
 
     # Warn about mismatched samples
-    if (length(missing_from_meta <- setdiff(sylph_samples, meta_samples)) > 0) {
+    if (length(missing_from_meta <- setdiff(col_data$Sample_file, meta_samples)) > 0) {
       stop("The following samples from 'sylph_data' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
     }
 
-    if (length(missing_from_sylph <- setdiff(meta_samples, sylph_samples)) > 0) {
+    if (length(missing_from_sylph <- setdiff(meta_samples, col_data$Sample_file)) > 0) {
       stop("The following samples from 'meta_data' are not in 'sylph_data': ", paste(missing_from_sylph, collapse = ", "))
     }
 
-    col_data <- base::merge(col_data, meta_data,
+    col_data <- S4Vectors::DataFrame(base::merge(col_data, meta_data,
                                by.x = "Sample_file",
                                by.y = names(meta_data)[1],
-                               all.x = TRUE) # Keeps all Sample_file entries from sylph_data
+                               all.x = TRUE)) # Keeps all Sample_file entries from sylph_data
 
-    # Generate colData
-    rnames <- col_data[,1]
-    rownames(col_data) <- rnames
 
+    rownames(col_data) <- col_data[["Sample_file"]]
+    col_data[['col_indices']] <- NULL
   }
 
   # Extract row metadata (rowData)
-  row_data <- as.matrix(unique(sylph_data[, c(
-    "Contig_name", "Genome_file"
-  )]))
-  rownames(row_data) <- row_data[,1]
+  # Generate row_data using unique combinations and indices
+  row_data <- sylph_data[!duplicated(row_indices),
+                         .(row_indices, Contig_name, Genome_file)][order(row_indices)]
+  row_data <- S4Vectors::DataFrame(row_data)
+  rownames(row_data) <- row_data$Contig_name
+  row_data$row_indices <- NULL
 
-  # Extract numeric data to create the "assay" matrix
-  if (is_profile_output) {
-    numeric_columns <- c(
-      "Taxonomic_abundance", "Sequence_abundance",
-      "Adjusted_ANI", "Eff_lambda", "Median_cov"
-    )
-  } else {
-    numeric_columns <- c("Adjusted_ANI", "Eff_lambda", "Median_cov")
+  # Deal with file names and extensions
+  if (clean_names){
+    row_data$Genome_file <- tools::file_path_sans_ext(basename(row_data$Genome_file),
+                                                        compression = TRUE)
+    col_data$Sample_file <- tools::file_path_sans_ext(basename(col_data$Sample_file),
+                                                        compression = TRUE)
+    rownames(col_data) <- tools::file_path_sans_ext(basename(rownames(col_data)),
+                                                    compression = TRUE)
   }
 
-  assay_data <- lapply(numeric_columns, function(var){
-    m <- matrix(0, nrow = nrow(row_data), ncol = nrow(col_data),
-           dimnames = list(rownames(row_data), rownames(col_data)))
-    m[cbind(sylph_data$Contig_name, sylph_data$Sample_file)] <- sylph_data[[var]]
-    return(m)
-  })
-
-  # Create the SummarizedExperiment object
-  se <- SummarizedExperiment::SummarizedExperiment(
-    assays = setNames(assay_data, numeric_columns),
-    rowData = row_data,
-    colData = col_data
-  )
-
   # Return the SummarizedExperiment object
-  return(se)
+  return(
+    SummarizedExperiment::SummarizedExperiment(
+      assays = list(Matrix::sparseMatrix(
+        i = sylph_data[['row_indices']],
+        j = sylph_data[['col_indices']],
+        x = sylph_data[[variable]],
+        dims = c(n_rows, n_cols),
+        repr = "R" # Specify row-compressed format
+      )),
+      rowData = row_data,
+      colData = col_data
+    )
+  )
 }

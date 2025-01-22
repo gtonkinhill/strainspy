@@ -6,9 +6,10 @@
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
-#' @param assay_name Character. The name of the assay to use from the SummarizedExperiment.
-#' Must be one of `"Adjusted_ANI"` or `"Taxonomic_abundance"`.
-#' Default is `"Adjusted_ANI"`.
+#' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
+#'        to one 1.
+#' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
+#'        will configure an appropriate backend automatically.
 #'
 #' @return A list with the following components:
 #' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
@@ -21,6 +22,7 @@
 #' @examples
 #' \dontrun{
 #' library(SummarizedExperiment)
+#' library(strainseekr)
 #' library(glmmTMB)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainseekr")
@@ -30,13 +32,14 @@
 #' se <- filter_by_presence(se)
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
-#' assay_name <- "Adjusted_ANI"
 #'
-#' results <- glmZiBFit(se,  design)
-#' results$coefficients
+#' results <- glmZiBFit(se,  design, nthreads=4)
 #' summary(results)
+#'
 #' }
-glmZiBFit <- function(se, design, assay_name = "Adjusted_ANI") {
+#'
+#' @export
+glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -47,13 +50,15 @@ glmZiBFit <- function(se, design, assay_name = "Adjusted_ANI") {
     stop("`se` must be a SummarizedExperiment object.")
   }
 
-  if (!assay_name %in% c("Adjusted_ANI", "Taxonomic_abundance")) {
-    stop(paste("The specified assay", assay_name, "is not one of 'Adjusted_ANI' or 'Taxonomic_abundance'."))
+  # colData (sample metadata)
+  col_data <- colData(se)
+  if (scale_continous==TRUE){
+    for (col in names(col_data)) {
+      if (is.numeric(col_data[[col]])) {
+        col_data[[col]] <- scale(col_data[[col]])  # Scale numeric columns
+      }
+    }
   }
-
-  # Extract the assay data (e.g., counts, measurements) and colData (sample metadata)
-  assay_data <- assays(se)[[assay_name]]
-  col_data <- as.data.frame(colData(se))
 
   # Ensure the design is a formula
   if (!inherits(design, "formula")) {
@@ -62,7 +67,7 @@ glmZiBFit <- function(se, design, assay_name = "Adjusted_ANI") {
   combined_formula <- as.formula(paste("Value", deparse(design), sep = " "))
 
   # Ensure that rownames of colData match colnames of the assay
-  if (!all(colnames(assay_data) %in% rownames(col_data))) {
+  if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
     stop("Column names of assay data do not match row names of colData.")
   }
 
@@ -73,104 +78,132 @@ glmZiBFit <- function(se, design, assay_name = "Adjusted_ANI") {
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
     coef  = rep(as.character(seq(1,nbeta)), 2))
 
-  static_fit <- NULL
-
-  results <- pbapply::pblapply(rownames(assay_data), function(feature) {
-    # Extract the values for the current feature (one row of the assay)
-    col_data$Value <- base::pmin(as.vector(assay_data[feature, ])/100,
-                                 0.99999)
-
-    # Run the zero-inflated beta regression for the current feature
-    fit <- tryCatch({
-      # Use static_fit for faster convergence, if available
-      if (!is.null(static_fit)) {
-        update(static_fit, data = col_data)
-      } else {
-        glmmTMB::glmmTMB(
-          formula = combined_formula,
-          ziformula = design,
-          data = col_data,
-          priors = fixed_priors,
-          family = glmmTMB::beta_family(link = "logit")
-        )
-      }
-    }, error = function(e) NULL)
-
-    # Retry without static_fit if the first attempt failed
-    if (is.null(fit)) {
-      print("Refitting without using previous fit!")
-      static_fit <<- NULL  # Reset static_fit
-
-      fit <- tryCatch({
-        glmmTMB::glmmTMB(
-          formula = combined_formula,
-          ziformula = design,
-          data = col_data,
-          priors = fixed_priors,
-          family = glmmTMB::beta_family(link = "logit")
-        )
-      }, error = function(e) NULL)
+  # Set up parallel infrastructure
+  if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
+    # Check the operating system and set the backend accordingly
+    if (is.null(BPPARAM)) {
+      # Use MulticoreParam for Unix-like systems
+      # BPPARAM <- BiocParallel::MulticoreParam(
+      #   workers = nthreads
+      # )
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
     }
+  } else {
+    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+  }
 
-    # Handle the case where the model could not be fitted at all
-    if (is.null(fit)) {
-      warning("Failed to fit the model for feature: ", feature)
-      return(NULL)
-    }
+  # Split rows into 50-row chunks
+  row_chunks <- split(
+    seq_len(nrow(se)),
+    ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
+  )
 
-    # Update static_fit with the successful fit for reuse
-    if (!is.null(fit)) {
-      static_fit <<- fit
-    }
+  results <- BiocParallel::bplapply(
+    row_chunks,
+    function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices,],
+                                                 col_data, combined_formula, design, fixed_priors),
+    BPPARAM = BPPARAM
+  )
 
+  # Flatten the results by removing the first layer of lists
+  results <- do.call(c, results)
 
-    smry <- summary(fit)
-
-    list(
-      coefficients <- smry$coefficients$cond,
-      coefficients_zi <- smry$coefficients$zi,
-      df.residual <- residuals(fit, type = "response"),
-      llk <- fit$fit$objective,
-      convergence <- fit$fit$convergence
-    )
-  })
+  # Clean up
+  BiocParallel::bpstop(BPPARAM)
 
   # Create the betaGLM object
   ZIBetaGLM <- new("betaGLM",
                    coefficients = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,1]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[1]][,1]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    std_errors = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,2]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[1]][,2]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    p_values = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,4]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[1]][,4]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    zi_coefficients = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,1]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[2]][,1]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    zi_std_errors = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,2]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[2]][,2]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    zi_p_values = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,4]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[2]][,4]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    # fdr = NULL,  # Placeholder for FDR values, update as needed
                    # zi_fdr = NULL,  # Placeholder for Zero-Inflated FDR values, update as needed
                    residuals = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[3]]) %>%
-                       tibble::add_column(.before = 1, strain = rownames(assay_data))
+                     purrr::map_dfr(results, ~ .x[[3]]) |>
+                       tibble::add_column(.before = 1, strain = rownames(se))
                    ),
                    design = model.matrix(design, data = as.data.frame(colData(se))),
-                   assay = assays(se)[[assay_name]],  # Retrieve assay data matrix from SummarizedExperiment
+                   # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
   )
 
   return(ZIBetaGLM)
 }
+
+
+#' Fit Zero-Inflated Beta Regression for a Single Feature
+#'
+#' Fits a zero-inflated beta regression for a single feature in an assay
+#' using `glmmTMB`.
+#'
+#' @param se A `SummarizedExperiment` object containing the assay data.
+#' @param row_index The index of the feature (row) to be processed.
+#' @param col_data A data frame containing the design matrix and additional covariates.
+#' @param combined_formula The formula for the conditional mean model.
+#' @param design The formula for the zero-inflation model.
+#' @param fixed_priors Optional priors for the model.
+#' @param nt Number of threads for parallel computation in model fitting.
+#' @param feature Optional name of the feature for debugging or error messages.
+#' @return A list with model coefficients, zero-inflation coefficients, residuals,
+#'         log-likelihood, and convergence status.
+fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
+
+  chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
+    # Extract the values for the current feature
+    col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+
+    # Run the zero-inflated beta regression
+    fit <- tryCatch({
+      glmmTMB::glmmTMB(
+        formula = combined_formula,
+        ziformula = design,
+        data = col_data,
+        priors = fixed_priors,
+        family = glmmTMB::beta_family(link = "logit")
+      )
+    }, error = function(e) NULL)
+
+    # Handle the case where the model could not be fitted
+    if (is.null(fit)) {
+      warning("Failed to fit the model for species index: ", row_index)
+      return(NULL)
+    }
+
+    # Extract summary statistics
+    smry <- summary(fit)
+
+    # Return results as a list
+    return(list(
+      coefficients = smry$coefficients$cond,
+      coefficients_zi = smry$coefficients$zi,
+      residuals = residuals(fit, type = "response"),
+      log_likelihood = fit$fit$objective,
+      convergence = fit$fit$convergence
+    ))
+  })
+
+  return(chunk_results)
+}
+
+
