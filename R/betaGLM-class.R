@@ -6,8 +6,9 @@
 
 #' betaGLM: A Class for Generalized Linear Models with Zero-Inflation
 #'
-#' The `betaGLM` class is designed to store the results of strainseekr
+#' The `betaGLM` class is designed to store the results of strainspy
 #'
+#' @slot row_data A `DataFrame` containing row data.
 #' @slot coefficients A `DataFrame` containing model coefficients.
 #' @slot std_errors A `DataFrame` containing standard errors of the coefficients.
 #' @slot p_values A `DataFrame` containing p-values for the coefficients.
@@ -24,15 +25,13 @@
 #' @export
 methods::setClass("betaGLM",
                   slots = list(
+                    row_data = "DataFrame",
                     coefficients = "DataFrame",
                     std_errors = "DataFrame",
                     p_values = "DataFrame",
                     zi_coefficients = "DataFrame",
                     zi_std_errors = "DataFrame",
                     zi_p_values = "DataFrame",
-                    fdr = "ANY",
-                    zi_fdr = "ANY",
-                    dispersion = "numeric",
                     residuals = "DataFrame",
                     design = "matrix",
                     assay = "matrix",
@@ -41,8 +40,7 @@ methods::setClass("betaGLM",
 
 #' Show Method for betaGLM
 #'
-#' Displays a summary of a `betaGLM` object, including the number of coefficients,
-#' availability of residuals, and FDR.
+#' Displays a summary of a `betaGLM` object, including the number of coefficients.
 #'
 #' @param object An object of class `betaGLM`.
 #' @export
@@ -51,12 +49,6 @@ methods::setMethod("show", "betaGLM", function(object) {
   cat("Number of coefficients:", nrow(object@coefficients), "\n")
   cat("Number of zero-inflation coefficients:", nrow(object@zi_coefficients), "\n")
   cat("Residuals available:", !is.null(object@residuals), "\n")
-  cat("Dispersion estimates:", length(object@dispersion), "values\n")
-  if (!is.null(object@fdr)) {
-    cat("False discovery rates available.\n")
-  } else {
-    cat("False discovery rates not computed.\n")
-  }
 })
 
 #' Access Zero-Inflation Coefficients

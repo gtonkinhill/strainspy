@@ -13,7 +13,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainseekr")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #' se <- read_sylph(example_path)
 #'
 #' # Filter to keep only rows with at least 10 non-zero entries in the Adjusted_ANI assay

@@ -26,7 +26,7 @@
 #' @examples
 #' \dontrun{
 #'   # Read a Sylph file (query or profile) into a SummarizedExperiment object
-#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainseekr")
+#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #'   se <- read_sylph(example_path)
 #'   # View the SummarizedExperiment
 #'   se
@@ -39,9 +39,9 @@
 #' }
 #' \dontrun{
 #'   # Read a Sylph file (query or profile) with associated metadata into a SummarizedExperiment object
-#'   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainseekr")
+#'   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #'   example_meta <- readr::read_csv(example_meta_path)
-#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainseekr")
+#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #'   se <- read_sylph(example_path, example_meta)
 #' }
 read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI",
@@ -93,7 +93,7 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI",
                 paste(missing_columns, collapse = ", ")))
   }
 
-  # Read the Sylph output file using readr::read_tsv
+  # Read the Sylph output file
   sylph_data <- data.table::fread(
     file_path,
     na.strings = c("", "NA"),
@@ -153,6 +153,8 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI",
   if (clean_names){
     row_data$Genome_file <- tools::file_path_sans_ext(basename(row_data$Genome_file),
                                                         compression = TRUE)
+    row_data$Genome_file <- gsub("^.*(GC[A-Z]_\\d+\\.\\d+).*", "\\1", row_data$Genome_file)
+
     col_data$Sample_file <- tools::file_path_sans_ext(basename(col_data$Sample_file),
                                                         compression = TRUE)
     rownames(col_data) <- tools::file_path_sans_ext(basename(rownames(col_data)),

@@ -1,0 +1,137 @@
+---
+output: 
+  github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "inst/vignette-supp/",
+  echo=TRUE, 
+  warning=FALSE, 
+  message=FALSE,
+  tidy=TRUE
+)
+```
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/gtonkinhill/strainspy/workflows/R-CMD-check/badge.svg)](https://github.com/gtonkinhill/strainspy/actions)
+[![DOI](https://zenodo.org/badge/XXXX.svg)](https://zenodo.org/badge/latestdoi/XXXX)
+<!-- badges: end -->
+
+
+# Strainspy
+
+## Installation
+
+`strainspy` is currently available on github. It can be installed with `remotes`
+
+```{r, eval = FALSE}
+install.packages("remotes")
+
+remotes::install_github("gtonkinhill/strainspy")
+```
+
+If you would like to also build the vignette with your installation run:
+
+```{r, eval=FALSE}
+remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
+```
+
+## Example
+
+Run strainspy
+
+**NOTE:** Be sure to replace the example paths with valid file paths on your system. The `system.file` function is used here only for demonstration purposes in this vignette and will not work outside the package environment.
+
+```{r, fig.width =8, fig.height=6, fig.align='center'}
+library(strainspy)
+
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+example_sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_taxonomy_path <- system.file("extdata", "example_taxonomy.tsv.gz", package = "strainspy")
+```
+
+### Load and filter data
+
+```{r}
+# Read in metadata
+meta_data <- readr::read_csv(example_meta_path)
+
+# Read in sylph profile
+se <- read_sylph(example_sylph_path, meta_data)
+
+# Filter by presence. This will remove any strains that are not present in at least 30 samples
+se <- filter_by_presence(se, min_nonzero = 30)
+```
+
+### Fit the model
+
+```{r}
+# Create design matrix
+design <- as.formula(" ~ Case_status + Age_at_collection")
+
+# Fit the model
+fit <- glmZiBFit(se,  design, nthreads=4)
+```
+
+### Summarise and plot the results
+
+```{r}
+# Get top hits
+top_hits(fit, alpha = 0.5)
+
+# Create Manhattan plot
+plot_manhattan(fit, method = 'holm')
+
+# Read in taxonomy
+taxonomy <- read_taxonomy(example_taxonomy_path)
+```
+
+### Incorporate taxonomy
+
+```{r}
+# Perform hierarchical multiple testing adjustment of p-values
+hier_p <- hadjust(fit, taxonomy=taxonomy)
+head(hier_p)
+
+# Create taxonomy informed Manhattan plot
+plot_manhattan(fit, taxonomy = taxonomy, method = 'HMP')
+```
+
+## Citation
+
+To cite strainspy please use
+
+
+<!-- ## Introduction -->
+
+<!-- ```{r, echo = FALSE} -->
+<!-- intro_rmd <- 'vignettes/introduction.Rmd' -->
+
+<!-- raw_rmd <- readLines(intro_rmd) -->
+
+<!-- # remove yaml  -->
+<!-- yaml_lines <- grep("---", raw_rmd) -->
+
+<!-- # remove appendix (session info) -->
+<!-- appendix <- grep("Appendix", raw_rmd) -->
+
+<!-- compressed_rmd <- raw_rmd[c(-seq(yaml_lines[1], yaml_lines[2], by = 1),  -->
+<!--                             -seq(appendix, length(raw_rmd)))] -->
+<!-- writeLines(compressed_rmd, "child.Rmd") -->
+<!-- ``` -->
+
+<!-- ```{r, child = 'child.Rmd'} -->
+<!-- ``` -->
+
+<!-- ```{r cleanup, echo=FALSE, include=FALSE} -->
+<!-- if (file.exists("child.Rmd")) { -->
+<!--   file.remove("child.Rmd") -->
+<!-- } -->
+<!-- ``` -->

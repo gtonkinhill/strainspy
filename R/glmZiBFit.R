@@ -22,19 +22,19 @@
 #' @examples
 #' \dontrun{
 #' library(SummarizedExperiment)
-#' library(strainseekr)
+#' library(strainspy)
 #' library(glmmTMB)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainseekr")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainseekr")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' results <- glmZiBFit(se,  design, nthreads=4)
-#' summary(results)
+#' fit <- glmZiBFit(se,  design, nthreads=4)
+#' summary(fit)
 #'
 #' }
 #'
@@ -113,36 +113,14 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
   # Create the betaGLM object
   ZIBetaGLM <- new("betaGLM",
-                   coefficients = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,1]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   std_errors = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,2]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   p_values = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[1]][,4]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   zi_coefficients = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,1]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   zi_std_errors = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,2]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   zi_p_values = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[2]][,4]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
-                   # fdr = NULL,  # Placeholder for FDR values, update as needed
-                   # zi_fdr = NULL,  # Placeholder for Zero-Inflated FDR values, update as needed
-                   residuals = DataFrame(
-                     purrr::map_dfr(results, ~ .x[[3]]) |>
-                       tibble::add_column(.before = 1, strain = rownames(se))
-                   ),
+                   row_data = rowData(se),
+                   coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
+                   std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
+                   p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
+                   zi_coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,1])),
+                   zi_std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,2])),
+                   zi_p_values = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,4])),
+                   residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
                    design = model.matrix(design, data = as.data.frame(colData(se))),
                    # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
