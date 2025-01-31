@@ -6,6 +6,7 @@
 #' @param file_path Character. Path to the Sylph query or profile output file (tab-separated format).
 #' @param meta_data data.frame. A tibble or data frame containing sample metadata.
 #' The **first column must contain sample names** that match exactly with the sample names in the Sylph output.
+#' @param variable Character. Name of the input variable to import, either `Adjusted_ANI` or  `Naive_ANI`. Defaults to `Adjusted_ANI`.
 #' @param clean_names Logical. If `TRUE`, file paths will be stripped of their directory path and file extension,
 #' leaving only the base file name. Defaults to `TRUE`.
 #'

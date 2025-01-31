@@ -11,12 +11,18 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     data.table,
+    dplyr,
     ggplot2,
     glmmTMB,
     harmonicmeanp,
+    Matrix,
+    methods,
     pbapply,
     purrr,
     readr,
     S4Vectors,
-    SummarizedExperiment
+    SummarizedExperiment,
+    tibble,
+    tidyr
 RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)

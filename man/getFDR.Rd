@@ -7,11 +7,11 @@
 getFDR(object)
 }
 \arguments{
-\item{object}{An object of class `betaGLM`.}
+\item{object}{An object of class \code{betaGLM}.}
 }
 \value{
-A `DataFrame` or `NULL` containing FDR values.
+A \code{DataFrame} or \code{NULL} containing FDR values.
 }
 \description{
-Returns the false discovery rates (FDR) from a `betaGLM` object, if available.
+Returns the false discovery rates (FDR) from a \code{betaGLM} object, if available.
 }

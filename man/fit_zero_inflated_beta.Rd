@@ -21,7 +21,7 @@ fit_zero_inflated_beta(
 
 \item{fixed_priors}{Optional priors for the model.}
 
-\item{se}{A `SummarizedExperiment` object containing the assay data.}
+\item{se}{A \code{SummarizedExperiment} object containing the assay data.}
 
 \item{row_index}{The index of the feature (row) to be processed.}
 
@@ -31,9 +31,9 @@ fit_zero_inflated_beta(
 }
 \value{
 A list with model coefficients, zero-inflation coefficients, residuals,
-        log-likelihood, and convergence status.
+log-likelihood, and convergence status.
 }
 \description{
 Fits a zero-inflated beta regression for a single feature in an assay
-using `glmmTMB`.
+using \code{glmmTMB}.
 }

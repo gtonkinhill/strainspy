@@ -30,14 +30,20 @@ filter_by_presence <- function(se, min_nonzero = 10) {
   if (!inherits(se, "SummarizedExperiment")) {
     stop("`se` must be a SummarizedExperiment object.")
   }
+  
+  # Isn't it convenient to use an abundance threshold instead (like: 0.05 * ncol)?
+  if(min_nonzero %% 1 != 0) {
+    stop("`min_zero` must be an integer.")
+  }
 
   # Count the number of non-zero entries in each row of the assay
-  nonzero_counts <- Matrix::rowSums(assays(se)[[1]] != 0)
+  nonzero_counts <- Matrix::rowSums(SummarizedExperiment::assays(se)[[1]] != 0)
 
   # Identify which rows have at least 'min_nonzero' non-zero entries
   rows_to_keep <- nonzero_counts >= min_nonzero
 
   # Filter the assays, rowData, and colData in the SummarizedExperiment
+  cat("Retained", length(rows_to_keep), "rows after filtering\n")
   filtered_se <- se[rows_to_keep, ]
 
   # Return the filtered SummarizedExperiment

@@ -1,8 +1,4 @@
-#' @importFrom S4Vectors DataFrame
-
-
 # setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
-
 
 #' betaGLM: A Class for Generalized Linear Models with Zero-Inflation
 #'
@@ -22,6 +18,9 @@
 #' @slot design A matrix representing the design matrix of the model.
 #' @slot assay A matrix containing the assay data used for fitting the model.
 #' @slot call The matched call of the model.
+#' 
+#' @importFrom S4Vectors DataFrame
+#' 
 #' @export
 methods::setClass("betaGLM",
                   slots = list(
@@ -95,6 +94,9 @@ methods::setMethod("getFDR", "betaGLM", function(object) {
 #'
 #' @param object An object of class `betaGLM`.
 #' @return A list summarizing the `betaGLM` object.
+#' 
+#' @importFrom utils head
+#' 
 #' @export
 methods::setMethod("summary", "betaGLM", function(object) {
   list(

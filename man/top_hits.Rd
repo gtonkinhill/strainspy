@@ -7,11 +7,11 @@
 top_hits(object, coef = 2, method = "holm", alpha = 0.1)
 }
 \arguments{
-\item{object}{A `betaGLM` object.}
+\item{object}{A \code{betaGLM} object.}
 
 \item{coef}{The coefficient to report and use for p-value adjustment. Defaults to 2.}
 
-\item{method}{The method for p-value adjustment. Available methods are a subset of those in `p.adjust`,
+\item{method}{The method for p-value adjustment. Available methods are a subset of those in \code{p.adjust},
 specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
 and "BH" (Benjamini-Hochberg)}
 

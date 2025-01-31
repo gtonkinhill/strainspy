@@ -15,20 +15,22 @@ read_sylph(
 \item{file_path}{Character. Path to the Sylph query or profile output file (tab-separated format).}
 
 \item{meta_data}{data.frame. A tibble or data frame containing sample metadata.
-The **first column must contain sample names** that match exactly with the sample names in the Sylph output.}
+The \strong{first column must contain sample names} that match exactly with the sample names in the Sylph output.}
 
-\item{clean_names}{Logical. If `TRUE`, file paths will be stripped of their directory path and file extension,
-leaving only the base file name. Defaults to `TRUE`.}
+\item{variable}{Character. Name of the input variable to import, either \code{Adjusted_ANI} or  \code{Naive_ANI}. Defaults to \code{Adjusted_ANI}.}
+
+\item{clean_names}{Logical. If \code{TRUE}, file paths will be stripped of their directory path and file extension,
+leaving only the base file name. Defaults to \code{TRUE}.}
 }
 \value{
 A SummarizedExperiment object with the following components:
-  \item{assays}{A matrix containing numeric features such as `Adjusted_ANI`, `Taxonomic_abundance`, `Median_cov`, etc.}
-  \item{rowData}{DataFrame containing metadata for each sequence, such as `Contig_name` and `Genome_file`.}
-  \item{colData}{DataFrame containing information for each sample (derived from the `Sample_file` field).}
+\item{assays}{A matrix containing numeric features such as \code{Adjusted_ANI}, \code{Taxonomic_abundance}, \code{Median_cov}, etc.}
+\item{rowData}{DataFrame containing metadata for each sequence, such as \code{Contig_name} and \code{Genome_file}.}
+\item{colData}{DataFrame containing information for each sample (derived from the \code{Sample_file} field).}
 }
 \description{
 This function reads a Sylph output file (either query or profile), parses the data, and returns a SummarizedExperiment object.
-Optionally, metadata can be provided, which will be loaded into the `colData` of the SummarizedExperiment object.
+Optionally, metadata can be provided, which will be loaded into the \code{colData} of the SummarizedExperiment object.
 }
 \examples{
 \dontrun{
