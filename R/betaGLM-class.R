@@ -1,7 +1,7 @@
 #' @importFrom S4Vectors DataFrame
 
 
-# setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
+setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 
 
 #' betaGLM: A Class for Generalized Linear Models with Zero-Inflation
@@ -29,9 +29,9 @@ methods::setClass("betaGLM",
                     coefficients = "DataFrame",
                     std_errors = "DataFrame",
                     p_values = "DataFrame",
-                    zi_coefficients = "DataFrame",
-                    zi_std_errors = "DataFrame",
-                    zi_p_values = "DataFrame",
+                    zi_coefficients = "DataFrameOrNULL",
+                    zi_std_errors = "DataFrameOrNULL",
+                    zi_p_values = "DataFrameOrNULL",
                     residuals = "DataFrame",
                     design = "matrix",
                     assay = "matrix",
