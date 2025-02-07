@@ -7,12 +7,12 @@
 filter_by_presence(se, min_nonzero = 10)
 }
 \arguments{
-\item{se}{A `SummarizedExperiment` object.}
+\item{se}{A \code{SummarizedExperiment} object.}
 
 \item{min_nonzero}{Integer. The minimum number of non-zero entries required to retain a row. Default is 10.}
 }
 \value{
-A filtered `SummarizedExperiment` object with only the rows that meet the criteria.
+A filtered \code{SummarizedExperiment} object with only the rows that meet the criteria.
 }
 \description{
 This function filters a SummarizedExperiment object to keep only rows (features/strains)

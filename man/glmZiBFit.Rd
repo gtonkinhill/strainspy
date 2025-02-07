@@ -7,25 +7,25 @@
 glmZiBFit(se, design, nthreads = 1, scale_continous = TRUE, BPPARAM = NULL)
 }
 \arguments{
-\item{se}{SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.}
+\item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{BPPARAM}{Optional `BiocParallelParam` object. If not provided, the function
+\item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
 
-\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.}
+\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 }
 \value{
 A list with the following components:
 \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-\item{fit}{The fitted `glmmTMB` model object.}
+\item{fit}{The fitted \code{glmmTMB} model object.}
 \item{call}{The original function call.}
 }
 \description{
-This function fits a zero-inflated beta regression model using the `glmmTMB` package.
-It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
+This function fits a zero-inflated beta regression model using the \code{glmmTMB} package.
+It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
 and fits a zero-inflated beta regression model on the assay data.
 }
 \examples{

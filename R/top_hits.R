@@ -11,6 +11,9 @@
 #'   and "BH" (Benjamini-Hochberg)
 #' @param alpha The significance level to use for filtering results. Defaults to 0.1.
 #' @return A tibble with the top hits, sorted by adjusted p-value.
+#' 
+#' @importFrom stats p.adjust
+#' 
 #' @export
 top_hits <- function(object, coef=2, method = "holm", alpha=0.1) {
   # Validate input

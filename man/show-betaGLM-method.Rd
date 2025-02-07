@@ -7,8 +7,8 @@
 \S4method{show}{betaGLM}(object)
 }
 \arguments{
-\item{object}{An object of class `betaGLM`.}
+\item{object}{An object of class \code{betaGLM}.}
 }
 \description{
-Displays a summary of a `betaGLM` object, including the number of coefficients.
+Displays a summary of a \code{betaGLM} object, including the number of coefficients.
 }

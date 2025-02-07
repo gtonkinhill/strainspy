@@ -7,11 +7,11 @@
 getResiduals(object)
 }
 \arguments{
-\item{object}{An object of class `betaGLM`.}
+\item{object}{An object of class \code{betaGLM}.}
 }
 \value{
-A `DataFrame` containing residuals.
+A \code{DataFrame} containing residuals.
 }
 \description{
-Returns the residuals from a `betaGLM` object.
+Returns the residuals from a \code{betaGLM} object.
 }

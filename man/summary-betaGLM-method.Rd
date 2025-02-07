@@ -7,13 +7,13 @@
 \S4method{summary}{betaGLM}(object)
 }
 \arguments{
-\item{object}{An object of class `betaGLM`.}
+\item{object}{An object of class \code{betaGLM}.}
 }
 \value{
-A list summarizing the `betaGLM` object.
+A list summarizing the \code{betaGLM} object.
 }
 \description{
-Provides a high-level summary of a `betaGLM` object, including its call,
+Provides a high-level summary of a \code{betaGLM} object, including its call,
 coefficients, zero-inflation coefficients, dispersion, and the availability
 of FDR and residuals.
 }

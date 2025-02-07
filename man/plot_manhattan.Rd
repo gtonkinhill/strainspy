@@ -16,16 +16,16 @@ plot_manhattan(
 )
 }
 \arguments{
-\item{object}{A `betaGLM` object.}
+\item{object}{A \code{betaGLM} object.}
 
 \item{coef}{The number of the coefficient from which to generate the plot (default=2).}
 
 \item{plot}{If set to false, the function will return a tibble with data used to generate the plot.}
 }
 \value{
-A `ggplot` object showing the Manhattan plot.
+A \code{ggplot} object showing the Manhattan plot.
 }
 \description{
-This function creates a Manhattan plot from a `betaGLM` object, with separate facets
+This function creates a Manhattan plot from a \code{betaGLM} object, with separate facets
 for the Zero-Inflation and Beta distribution parts of the model.
 }

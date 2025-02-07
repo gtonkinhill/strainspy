@@ -7,11 +7,11 @@
 getZICoefficients(object)
 }
 \arguments{
-\item{object}{An object of class `betaGLM`.}
+\item{object}{An object of class \code{betaGLM}.}
 }
 \value{
-A `DataFrame` containing zero-inflation coefficients.
+A \code{DataFrame} containing zero-inflation coefficients.
 }
 \description{
-Returns the zero-inflation coefficients from a `betaGLM` object.
+Returns the zero-inflation coefficients from a \code{betaGLM} object.
 }
