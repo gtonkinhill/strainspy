@@ -32,7 +32,7 @@ methods::setClass("betaGLM",
                     zi_coefficients = "DataFrameOrNULL",
                     zi_std_errors = "DataFrameOrNULL",
                     zi_p_values = "DataFrameOrNULL",
-                    residuals = "DataFrame",
+                    residuals = "DataFrameOrNULL",
                     design = "matrix",
                     assay = "matrix",
                     call = "call"
@@ -101,8 +101,6 @@ methods::setMethod("summary", "betaGLM", function(object) {
     call = object@call,
     coefficients = head(object@coefficients),
     zi_coefficients = head(object@zi_coefficients),
-    dispersion = object@dispersion,
-    fdr_available = !is.null(object@fdr),
     residuals_available = !is.null(object@residuals)
   )
 })
