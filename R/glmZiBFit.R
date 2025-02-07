@@ -10,6 +10,7 @@
 #'        to one 1.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
+#' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.
 #'
 #' @return A list with the following components:
 #' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
@@ -42,17 +43,18 @@
 #' }
 #'
 #' @export
-glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL) {
+glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL,
+                      method='glmmTMB') {
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
   }
-  
+
   # Validate input
   if (!inherits(se, "SummarizedExperiment")) {
     stop("`se` must be a SummarizedExperiment object.")
   }
-  
+
   # colData (sample metadata)
   col_data <- colData(se)
   if (scale_continous==TRUE){
@@ -62,25 +64,25 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
       }
     }
   }
-  
+
   # Ensure the design is a formula
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
   combined_formula <- as.formula(paste("Value", deparse(design), sep = " "))
-  
+
   # Ensure that rownames of colData match colnames of the assay
   if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
     stop("Column names of assay data do not match row names of colData.")
   }
-  
+
   # Define priors
   nbeta <- ncol(model.matrix(design, col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
     coef  = rep(as.character(seq(1,nbeta)), 2))
-  
+
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
     # Check the operating system and set the backend accordingly
@@ -94,26 +96,36 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   } else {
     BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
   }
-  
+
   # Split rows into 50-row chunks
   row_chunks <- split(
     seq_len(nrow(se)),
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
-  
-  results <- BiocParallel::bplapply(
-    row_chunks,
-    function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices,],
-                                                 col_data, combined_formula, design, fixed_priors),
-    BPPARAM = BPPARAM
-  )
-  
+
+  if (method=='glmmTMB'){
+    results <- BiocParallel::bplapply(
+      row_chunks,
+      function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices,],
+                                                   col_data, combined_formula, design, fixed_priors),
+      BPPARAM = BPPARAM
+    )
+  } else{
+    results <- BiocParallel::bplapply(
+      row_chunks,
+      function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices,],
+                                                   col_data, combined_formula, design, fixed_priors),
+      BPPARAM = BPPARAM
+    )
+  }
+
+
   # Flatten the results by removing the first layer of lists
   results <- do.call(c, results)
-  
+
   # Clean up
   BiocParallel::bpstop(BPPARAM)
-  
+
   # Create the betaGLM object
   ZIBetaGLM <- methods::new("betaGLM",
                             row_data = rowData(se),
@@ -128,7 +140,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
                             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                             call = match.call()  # Store the function call for reproducibility
   )
-  
+
   return(ZIBetaGLM)
 }
 
@@ -148,14 +160,14 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 #' @param feature Optional name of the feature for debugging or error messages.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
-#'         
+#'
 #' @importFrom stats residuals
 fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
-  
+
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
-    
+
     # Run the zero-inflated beta regression
     fit <- tryCatch({
       glmmTMB::glmmTMB(
@@ -166,16 +178,16 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
         family = glmmTMB::beta_family(link = "logit")
       )
     }, error = function(e) NULL)
-    
+
     # Handle the case where the model could not be fitted
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
       return(NULL)
     }
-    
+
     # Extract summary statistics
     smry <- summary(fit)
-    
+
     # Return results as a list
     return(list(
       coefficients = smry$coefficients$cond,
@@ -185,8 +197,68 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
       convergence = fit$fit$convergence
     ))
   })
-  
+
   return(chunk_results)
 }
 
+
+
+#' Fit Zero-Inflated Beta Regression for a Single Feature using the gamlss package
+#'
+#' Fits a zero-inflated beta regression for a single feature in an assay
+#' using `glmmTMB`.
+#'
+#' @param se A `SummarizedExperiment` object containing the assay data.
+#' @param row_index The index of the feature (row) to be processed.
+#' @param col_data A data frame containing the design matrix and additional covariates.
+#' @param combined_formula The formula for the conditional mean model.
+#' @param design The formula for the zero-inflation model.
+#' @param fixed_priors Optional priors for the model.
+#' @param nt Number of threads for parallel computation in model fitting.
+#' @param feature Optional name of the feature for debugging or error messages.
+#' @return A list with model coefficients, zero-inflation coefficients, residuals,
+#'         log-likelihood, and convergence status.
+#'
+#' @importFrom stats residuals
+fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
+
+  chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
+    # Extract the values for the current feature
+    col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+
+    # Run the zero-inflated beta regression
+    fit <- tryCatch({
+      gamlss::gamlss(
+        formula = combined_formula,
+        sigma.fo = ~1,
+        nu.fo = design,
+        data = col_data[, all.vars(combined_formula)],
+        family = gamlss.dist::BEZI,
+        control = gamlss::gamlss.control(trace=FALSE)
+      )
+    }, error = function(e) NULL)
+
+    # Handle the case where the model could not be fitted
+    if (is.null(fit)) {
+      warning("Failed to fit the model for species index: ", row_index)
+      return(NULL)
+    }
+
+    # Extract summary statistics
+    smry <- summary(fit)
+    smry <- map(split(1:nrow(smry), cumsum(rownames(smry) == "(Intercept)")),
+        ~ {smry[.x,,drop=FALSE]})
+
+    # Return results as a list
+    return(list(
+      coefficients = smry[[1]],
+      coefficients_zi = smry[[3]],
+      residuals = NULL,
+      log_likelihood = NA,
+      convergence = fit$converged
+    ))
+  })
+
+  return(chunk_results)
+}
 
