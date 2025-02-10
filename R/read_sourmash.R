@@ -193,7 +193,7 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
 #' The path to the output of `sourmash sig manifest` can be provided to try and add back the data automatically (Default = NULL). 
 #' If provided, columns `md5`, `name` and `filename` are required.  This function uses `name` and `md5` to match the manifest data with sourmash outputs. 
 #' In the final output, `filename` will be used to identify each hit. If the `filename` is a path, the basename without extensions will be used instead.
-#' @param output_file The name of the output file. Interally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
+#' @param output Save path for the output file. Interally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
 #' @param strip_unusable Remove columns containing data not useful for further analysis. Default T. 
 #' @export
 merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, strip_unusable = T){
