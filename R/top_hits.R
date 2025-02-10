@@ -9,34 +9,32 @@
 #' @param method The method for p-value adjustment. Available methods are a subset of those in `p.adjust`,
 #'   specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
 #'   and "BH" (Benjamini-Hochberg)
-#' @param alpha The significance level to use for filtering results. Defaults to 0.1.
 #' @return A tibble with the top hits, sorted by adjusted p-value.
-#' 
-#' @importFrom stats p.adjust
-#' 
 #' @export
-top_hits <- function(object, coef=2, method = "holm", alpha=0.1) {
+#' @importFrom dplyr mutate
+#' @importFrom tibble as_tibble add_column
+top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
   # Validate input
   if (!inherits(object, "betaGLM")) {
     stop("Input must be a betaGLM object.")
   }
 
   # Check method is one of the available options
-  if (!method %in% c("bonferroni", "BH", "BY", "holm")) {
+  if (!method %in% c("bonferroni", "BH", "holm", "BY", "holm")) {
     stop("Method must be one of 'bonferroni', 'BH', or 'holm'.")
   }
 
-  # Check coef index validity
-  if (coef > length(slot(object, "coefficients")) || coef < 1) {
-    stop("Invalid coefficient index: ", coef)
-  }
+  # check if taxonomy is a string
+  # if (!is.null(taxonomy) && is.character(taxonomy)) {
+  #   tax <- read_taxonomy(taxonomy)
+  # }
 
   # Extract p-values & coefficients
-  res <- tibble::as_tibble(slot(object, 'row_data')) |>
-    tibble::add_column(coefficient=slot(object, 'coefficients')[[coef]]) |>
-    tibble::add_column(std_error=slot(object, 'std_errors')[[coef]]) |>
-    tibble::add_column(p_value=slot(object, 'p_values')[[coef]]) |>
-    tibble::add_column(p_adjust=p.adjust(slot(object, 'p_values')[[coef]], method = method)) |>
+  res <- tibble::as_tibble(object@row_data) |>
+    tibble::add_column(coefficient=object@coefficients[[coef]]) |>
+    tibble::add_column(std_error=object@std_errors[[coef]]) |>
+    tibble::add_column(p_value=object@p_values[[coef]]) |>
+    tibble::add_column(p_adjust=p.adjust(object@p_values[[coef]], method = method)) |>
     dplyr::arrange(p_adjust)
 
   # Add zero-inflated coefficients if available
@@ -50,7 +48,11 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.1) {
   }
 
   # Filter on provided alpha
-  res <- res |> dplyr::filter(pmin(p_adjust, zi_p_adjust) <= alpha)
+  if (!is.null(object@zi_coefficients)){
+    res <- res |> dplyr::filter(pmin(p_adjust, zi_p_adjust) <= alpha)
+  } else {
+    res <- res |> dplyr::filter(p_adjust <= alpha)
+  }
 
   return(res)
 }

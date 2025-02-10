@@ -4,7 +4,7 @@
 \alias{top_hits}
 \title{Provides the top results of a betaGLM object, sorted by adjusted p-value.}
 \usage{
-top_hits(object, coef = 2, method = "holm", alpha = 0.1)
+top_hits(object, coef = 2, method = "holm", alpha = 0.05)
 }
 \arguments{
 \item{object}{A \code{betaGLM} object.}
@@ -14,8 +14,6 @@ top_hits(object, coef = 2, method = "holm", alpha = 0.1)
 \item{method}{The method for p-value adjustment. Available methods are a subset of those in \code{p.adjust},
 specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
 and "BH" (Benjamini-Hochberg)}
-
-\item{alpha}{The significance level to use for filtering results. Defaults to 0.1.}
 }
 \value{
 A tibble with the top hits, sorted by adjusted p-value.

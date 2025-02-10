@@ -37,8 +37,9 @@
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit <- glmZiBFit(se,  design, nthreads=4)
-#' summary(fit)
+#' fit_4 <- glmZiBFit(se, design, nthreads=4, method='gamlss')
+#' min(fit_4@p_values[,2])
+#' top_hits(fit, alpha=0.5)
 #'
 #' }
 #'
@@ -122,6 +123,8 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
   # Flatten the results by removing the first layer of lists
   results <- do.call(c, results)
+
+  min(purrr::map_dfr(results, ~ .x[[1]][,4])[,2])
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
@@ -225,6 +228,7 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+    temp_dat <- col_data[, all.vars(combined_formula)]
 
     # Run the zero-inflated beta regression
     fit <- tryCatch({
@@ -232,9 +236,13 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
         formula = combined_formula,
         sigma.fo = ~1,
         nu.fo = design,
-        data = col_data[, all.vars(combined_formula)],
+        data = temp_dat,
         family = gamlss.dist::BEZI,
-        control = gamlss::gamlss.control(trace=FALSE)
+        control = gamlss::gamlss.control(trace=FALSE),
+        # mu.start = 0.5,
+        # nu.start = 0.3,
+        # sigma.start = 1,
+        # tau.start = 1
       )
     }, error = function(e) NULL)
 
@@ -245,14 +253,22 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     }
 
     # Extract summary statistics
-    smry <- summary(fit)
-    smry <- map(split(1:nrow(smry), cumsum(rownames(smry) == "(Intercept)")),
-        ~ {smry[.x,,drop=FALSE]})
+    stdout <- capture.output(smry <- summary(fit, robust=TRUE))
+
+    index <- unlist(purrr::map(fit$parameters, ~{
+      rep(.x, length(fit[[paste0(.x, '.coefficients')]]))
+    }))
+
+    smry <- purrr::map(fit$parameters, ~{
+      smry[.x==index,,drop=FALSE]
+    })
+
+    names(smry) <- fit$parameters
 
     # Return results as a list
     return(list(
-      coefficients = smry[[1]],
-      coefficients_zi = smry[[3]],
+      coefficients = smry$mu,
+      coefficients_zi = smry$nu,
       residuals = NULL,
       log_likelihood = NA,
       convergence = fit$converged

@@ -4,7 +4,14 @@
 \alias{glmZiBFit}
 \title{glmZiBFit}
 \usage{
-glmZiBFit(se, design, nthreads = 1, scale_continous = TRUE, BPPARAM = NULL)
+glmZiBFit(
+  se,
+  design,
+  nthreads = 1,
+  scale_continous = TRUE,
+  BPPARAM = NULL,
+  method = "glmmTMB"
+)
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
@@ -14,6 +21,8 @@ to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
+
+\item{method}{Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.}
 
 \item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 }
@@ -42,8 +51,9 @@ se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit <- glmZiBFit(se,  design, nthreads=4)
-summary(fit)
+fit_4_TMB <- glmZiBFit(se, design, nthreads=4, method='glmmTMB')
+min(fit_1@p_values[,2])
+top_hits(fit, alpha=0.5)
 
 }
 
