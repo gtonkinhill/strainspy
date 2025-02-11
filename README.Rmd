@@ -107,7 +107,7 @@ plot_manhattan(fit, taxonomy = taxonomy, method = 'HMP')
 ## Example using Sourmash output
 ```{r}
 example_sourmash_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
-sm <- read_sylph(example_sourmash_path, meta_data)
+sm <- read_sourmash(example_sourmash_path, meta_data)
 ```
 All remaining functions are compatible with this output. 
 
