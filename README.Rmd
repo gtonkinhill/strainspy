@@ -113,6 +113,17 @@ All remaining functions are compatible with this output.
 
 **Note:** `strainspy` provides a function to merge `sourmash gather` and `sourmash search` outputs. See help for details.
 
+## Example using MetaPhlAn output
+```{r}
+example_metaphlan_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
+example_taxonomy_path <- system.file("extdata", "metaphlan_taxonomy.tsv.gz", package = "strainspy")
+mp <- read_metaphlan(example_metaphlan_path, meta_data)
+```
+All remaining functions are compatible with this output. 
+
+**Note:** `strainspy` provides a function to merge `MetaPhlAn` profiles and generate the taxonomy file. See help for details.
+
+
 ## Citation
 
 To cite strainspy please use

@@ -3,6 +3,6 @@
 .RData
 .Ruserdata
 .Rbuildignore
-.Rproj
+*.Rproj
 TEST_DATA
 .DS_Store
