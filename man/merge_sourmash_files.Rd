@@ -19,7 +19,8 @@ The path to the output of \verb{sourmash sig manifest} can be provided to try an
 If provided, columns \code{md5}, \code{name} and \code{filename} are required.  This function uses \code{name} and \code{md5} to match the manifest data with sourmash outputs.
 In the final output, \code{filename} will be used to identify each hit. If the \code{filename} is a path, the basename without extensions will be used instead.}
 
-\item{output}{Save path for the output file. Interally, data.table::fwrite is used, provide the extension \code{gz} to save a compressed file.}
+
+\item{output}{Save path for the output file. Internally, data.table::fwrite is used, provide the extension \code{gz} to save a compressed file.}
 
 \item{strip_unusable}{Remove columns containing data not useful for further analysis. Default T.}
 }

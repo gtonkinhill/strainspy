@@ -54,6 +54,7 @@ se <- read_sylph(example_sylph_path, meta_data)
 # Filter by presence. This will remove any strains that are not present in at
 # least 30 samples
 se <- filter_by_presence(se, min_nonzero = 30)
+#> Retained 3010 rows after filtering
 ```
 
 ### Fit the model
@@ -112,6 +113,31 @@ plot_manhattan(fit, taxonomy = taxonomy, method = "HMP")
 ```
 
 ![](inst/vignette-supp/unnamed-chunk-8-1.png)<!-- -->
+
+## Example using Sourmash output
+
+``` r
+example_sourmash_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
+sm <- read_sourmash(example_sourmash_path, meta_data)
+```
+
+All remaining functions are compatible with this output.
+
+**Note:** `strainspy` provides a function to merge `sourmash gather` and
+`sourmash search` outputs. See help for details.
+
+## Example using MetaPhlAn output
+
+``` r
+example_metaphlan_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
+example_taxonomy_path <- system.file("extdata", "metaphlan_taxonomy.tsv.gz", package = "strainspy")
+mp <- read_metaphlan(example_metaphlan_path, meta_data)
+```
+
+All remaining functions are compatible with this output.
+
+**Note:** `strainspy` provides a function to merge `MetaPhlAn` profiles
+and generate the taxonomy file. See help for details.
 
 ## Citation
 
