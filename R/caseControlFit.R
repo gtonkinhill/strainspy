@@ -34,8 +34,8 @@
 #'
 #' design <- as.formula("Case_status ~ Value + Age_at_collection")
 #'
-#' fit <- caseControlFit(se,  design, nthreads=4)
-#' summary(fit)
+#' fit <- caseControlFit(se, design, nthreads=4)
+#' min(fit@p_values[,2], na.rm=TRUE)
 #'
 #' }
 #'
@@ -147,6 +147,8 @@ fit_logit_model <- function(se_subset, col_data, design, fixed_priors, min_ident
     # Extract the values for the current feature
     col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
     col_data$Value[col_data$Value < min_identity] <- min_identity
+    # Scale to be between 0 and 1. (min-max scaling)
+    col_data$Value <- (col_data$Value-min_identity)/(1-min_identity)
 
     # Run the zero-inflated beta regression
     fit <- tryCatch({

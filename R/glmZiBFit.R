@@ -70,7 +70,8 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
-  combined_formula <- as.formula(paste("Value", deparse(design), sep = " "))
+  combined_formula <- as.formula(paste(c("Value", as.character(design)),
+                                       collapse = " "))
 
   # Ensure that rownames of colData match colnames of the assay
   if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
@@ -185,7 +186,22 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
     # Handle the case where the model could not be fitted
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
-      return(NULL)
+
+      m <- model.matrix(design, col_data)
+      na_matrix <- matrix(NA,
+                          nrow = ncol(m),
+                          ncol = 4,
+                          dimnames = list(colnames(m),
+                                          c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+
+      return(list(
+        coefficients = na_matrix,
+        coefficients_zi = NULL,
+        residuals = rep(NA, nrow(col_data)),
+        log_likelihood = NA,
+        convergence = FALSE
+      ))
+
     }
 
     # Extract summary statistics
@@ -209,7 +225,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #' Fit Zero-Inflated Beta Regression for a Single Feature using the gamlss package
 #'
 #' Fits a zero-inflated beta regression for a single feature in an assay
-#' using `glmmTMB`.
+#' using `gamlss`.
 #'
 #' @param se A `SummarizedExperiment` object containing the assay data.
 #' @param row_index The index of the feature (row) to be processed.
@@ -249,7 +265,21 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     # Handle the case where the model could not be fitted
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
-      return(NULL)
+
+      m <- model.matrix(design, col_data)
+      na_matrix <- matrix(NA,
+                          nrow = ncol(m),
+                          ncol = 4,
+                          dimnames = list(colnames(m),
+                                          c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+
+      return(list(
+        coefficients = na_matrix,
+        coefficients_zi = NULL,
+        residuals = rep(NA, nrow(col_data)),
+        log_likelihood = NA,
+        convergence = FALSE
+      ))
     }
 
     # Extract summary statistics

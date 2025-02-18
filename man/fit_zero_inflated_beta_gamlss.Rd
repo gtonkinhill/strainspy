@@ -35,5 +35,5 @@ log-likelihood, and convergence status.
 }
 \description{
 Fits a zero-inflated beta regression for a single feature in an assay
-using \code{glmmTMB}.
+using \code{gamlss}.
 }

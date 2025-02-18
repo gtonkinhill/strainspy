@@ -52,8 +52,8 @@ se <- filter_by_presence(se)
 
 design <- as.formula("Case_status ~ Value + Age_at_collection")
 
-fit <- caseControlFit(se,  design, nthreads=4)
-summary(fit)
+fit <- caseControlFit(se, design, nthreads=4)
+min(fit@p_values[,2], na.rm=TRUE)
 
 }
 
