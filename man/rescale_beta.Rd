@@ -47,10 +47,10 @@ m <- glmmTMB::glmmTMB(vals ~ cat, data=df,
 coefs <- glmmTMB::fixef(m)$cond
 zi_coefs <- glmmTMB::fixef(m)$zi
 
-cat("Simulated log-odds", log(difference), "\n",
-    "Inferred log-odds", coefs["catb"])
+cat("Simulated log-odds ratio", log(beta_difference), "\n",
+    "Inferred log-odds ratio", coefs["catb"])
 
-cat("Simulated log-odds", treat$expected_zi, "\n",
-    "Inferred log-odds", zi_coefs["catb"])
+cat("Simulated log-odds ratio", treat$expected_zi, "\n",
+    "Inferred log-odds ratio", zi_coefs["catb"])
 
 }

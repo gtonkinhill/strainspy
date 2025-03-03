@@ -51,7 +51,7 @@ se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit <- glmFit(se,  design, nthreads=4, family="gaussian")
+fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
 summary(fit)
 
 }

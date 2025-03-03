@@ -1,0 +1,56 @@
+---
+title: "Simulations"
+output: html_document
+date: "2025-02-04"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Download data
+
+Sample 200 sample IDs from the Zeevi et al., dataset (PRJEB11532)
+
+```
+{ head -n 1 PRJEB11532_ena_meta.tsv; tail -n +2 PRJEB11532_ena_meta.tsv | shuf -n 200; } > subsample200_PRJEB11532_ena_meta.tsv
+cut -f1 subsample200_PRJEB11532_ena_meta.tsv > subsample200_PRJEB11532_ids.tsv
+
+
+kingfisher get --run-identifiers-list subsample200_PRJEB11532_ids.tsv --download-threads 5 -m ena-ascp ena-ftp aws-http prefetch
+```
+
+### Run Sylph
+
+Run Sylph (v0.8.0) in 'query' mode using the GTDB 99% identity dataset.
+
+```
+sylph query gtdb_ordered_99.syldb -u --read-seq-id 99.9 -t 100  -1 ./*_1.fastq.gz -2 ./*_2.fastq.gz -o ./zeevi_PRJEB11532_query_gtdb_220_id99.tsv ./ERR*[0-9][0-9].fastq.gz
+```
+
+### Load data
+
+```{r}
+library(strainspy)
+
+# Load Zeevi the GTDB 99% identity dataset
+data <- read_sylph("~/Documents/strainspy_manuscript/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
+data <- filter_by_presence(data, min_nonzero = 150)
+```
+
+### Simulate changes in identity
+
+```{r}
+set.seed(789)
+
+
+```
+
+### Simulate changes in presence/absence
+
+
+### Simulate both identity and presence/absence changes
+
+
