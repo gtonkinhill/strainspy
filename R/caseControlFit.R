@@ -4,11 +4,10 @@
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param min_identity A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
-#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #'
@@ -48,7 +47,7 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
   }
 
   # colData (sample metadata)
-  col_data <- colData(se)
+  col_data <- SummarizedExperiment::colData(se)
   if (scale_continous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
@@ -63,7 +62,7 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
   }
 
   # Ensure that rownames of colData match colnames of the assay
-  if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
+  if (!all(colnames(SummarizedExperiment::assays(se)[[1]]) %in% rownames(col_data))) {
     stop("Column names of assay data do not match row names of colData.")
   }
 
@@ -110,10 +109,10 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 
   # Create the betaGLM object
   ZIBetaGLM <- new("betaGLM",
-                   row_data = rowData(se),
-                   coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
-                   std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
-                   p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
+                   row_data = SummarizedExperiment::rowData(se),
+                   coefficients = S4Vectors::DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
+                   std_errors = S4Vectors::DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
+                   p_values = S4Vectors::DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
                    zi_coefficients = NULL,
                    zi_std_errors = NULL,
                    zi_p_values = NULL,
@@ -127,9 +126,9 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 }
 
 
-#' Fit Zero-Inflated Beta Regression for a Single Feature
+#' Fit Logistic Regression for a Single Feature
 #'
-#' Fits a zero-inflated beta regression for a single feature in an assay
+#' Fits a logistic regression for a single feature in an assay
 #' using `glmmTMB`.
 #'
 #' @param se A `SummarizedExperiment` object containing the assay data.
