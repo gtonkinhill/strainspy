@@ -114,6 +114,51 @@ colnames(op) = c("sf", "test", "tp", "fn", "fp", "tn")
 
 ### Simulate changes in presence/absence
 ```{r}
+zero_props = seq(0.2, 0.72, by = 0.05)
+op = data.frame()
+for(zero_prop in zero_props){
+  exp_beta = c()
+  exp_zi = c()
+  se = data # NULL
+  
+  data_matrix <- SummarizedExperiment::assay(se) # NULL
+  vals_to_mod = data_matrix[sel, cases]
+  
+  for(i in 1:length(sel)){ 
+    tmp = rescale_beta(x = data_matrix[sel[i], cases]/100,
+                       beta = 1,
+                       zi = zero_prop)
+    
+    vals_to_mod[i,] = tmp$rescaled*100
+    exp_beta[i] = tmp$expected_beta
+    exp_zi[i] = tmp$expected_zi
+  }
+  
+  # add modified counts for cases
+  data_matrix[sel, cases] = vals_to_mod
+  
+  # add modified assay back to se
+  SummarizedExperiment::assay(se) <- data_matrix
+  
+  fit_zib_updated = strainspy:::update_fit(fit = fit_zib_null, se = se, update_idx = sel, nthreads = 10)
+  fit_ob_updated = strainspy:::update_fit(fit = fit_ob_null, se = se, update_idx = sel, nthreads = 10)
+  fit_cascon_updated = strainspy:::update_fit(fit = fit_cascon_null, se = se, update_idx = sel, nthreads = 10)
+  cat(zero_prop, "\n")
+  
+  op = rbind(op, 
+             cbind(zero_prop, 
+                   rbind(
+                     c("zib", strainspy:::get_confusion_mx(top_hits = top_hits(fit_zib_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("ob", strainspy:::get_confusion_mx(top_hits = top_hits(fit_ob_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("cc", strainspy:::get_confusion_mx(top_hits = top_hits(fit_cascon_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)))))
+}
+
+colnames(op) = c("z_prop", "test", "tp", "fn", "fp", "tn")
+```
+
+
+### Simulate both identity and presence/absence changes
+```{r}
 zero_props = c(0,seq(0.2, 0.72, by = 0.05))
 scale_factors = c(seq(0.965, 0.995, by = 0.005),0.999,1)
 op = data.frame()
@@ -165,7 +210,12 @@ op$fn = as.numeric(op$fn)
 op$fp = as.numeric(op$fp)
 op$tn = as.numeric(op$tn)
 
-# saveRDS(op, "TEST_DATA/zeevi/TEMP_FITS/test_outputs.rds")
+# Generate a manhattan plot with ground truth
+strainspy:::plot_manhattan_gt(fit_zib_updated, method = "holm", ground_truth = contigs)
+
+```
+## Generate heatmaps
+```{r}
 library(ggplot2)
 library(dplyr)
 library(viridis)
@@ -206,46 +256,3 @@ ggplot(op, aes(x = zero_prop, y = scale_factor, fill = fp)) +
 
 ```
 
-### Simulate both identity and presence/absence changes
-```{r}
-zero_props = seq(0.2, 0.72, by = 0.05)
-op = data.frame()
-for(zero_prop in zero_props){
-  exp_beta = c()
-  exp_zi = c()
-  se = data # NULL
-  
-  data_matrix <- SummarizedExperiment::assay(se) # NULL
-  vals_to_mod = data_matrix[sel, cases]
-  
-  for(i in 1:length(sel)){ 
-    tmp = rescale_beta(x = data_matrix[sel[i], cases]/100,
-                       beta = 1,
-                       zi = zero_prop)
-    
-    vals_to_mod[i,] = tmp$rescaled*100
-    exp_beta[i] = tmp$expected_beta
-    exp_zi[i] = tmp$expected_zi
-  }
-  
-  # add modified counts for cases
-  data_matrix[sel, cases] = vals_to_mod
-  
-  # add modified assay back to se
-  SummarizedExperiment::assay(se) <- data_matrix
-  
-  fit_zib_updated = strainspy:::update_fit(fit = fit_zib_null, se = se, update_idx = sel, nthreads = 10)
-  fit_ob_updated = strainspy:::update_fit(fit = fit_ob_null, se = se, update_idx = sel, nthreads = 10)
-  fit_cascon_updated = strainspy:::update_fit(fit = fit_cascon_null, se = se, update_idx = sel, nthreads = 10)
-  cat(zero_prop, "\n")
-  
-  op = rbind(op, 
-             cbind(zero_prop, 
-                   rbind(
-                     c("zib", strainspy:::get_confusion_mx(top_hits = top_hits(fit_zib_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
-                     c("ob", strainspy:::get_confusion_mx(top_hits = top_hits(fit_ob_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
-                     c("cc", strainspy:::get_confusion_mx(top_hits = top_hits(fit_cascon_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)))))
-}
-
-colnames(op) = c("z_prop", "test", "tp", "fn", "fp", "tn")
-```
