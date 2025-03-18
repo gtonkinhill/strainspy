@@ -35,9 +35,14 @@
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
+#' design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit_4 <- glmZiBFit(se, design, nthreads=4, method='gamlss')
+#' se <- readRDS("~/Downloads/temp_se.RDS")
+#' design <- readRDS("~/Downloads/temp_design.RDS")
+#'
+#' se <- se[1:5]
+#' fit_4 <- glmZiBFit(se[1:5], design, nthreads=1)#, method='gamlss')
 #' min(fit_4@p_values[,2])
 #' top_hits(fit, alpha=0.5)
 #'
@@ -108,14 +113,14 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   if (method=='glmmTMB'){
     results <- BiocParallel::bplapply(
       row_chunks,
-      function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices,],
+      function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
                                                    col_data, combined_formula, design, fixed_priors),
       BPPARAM = BPPARAM
     )
   } else{
     results <- BiocParallel::bplapply(
       row_chunks,
-      function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices,],
+      function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
                                                    col_data, combined_formula, design, fixed_priors),
       BPPARAM = BPPARAM
     )
@@ -124,8 +129,6 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
   # Flatten the results by removing the first layer of lists
   results <- do.call(c, results)
-
-  min(purrr::map_dfr(results, ~ .x[[1]][,4])[,2])
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
@@ -140,6 +143,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
                             zi_std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,2])),
                             zi_p_values = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,4])),
                             residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
+                            convergence = purrr::map_lgl(results, ~ .x$convergence),
                             design = model.matrix(design, data = as.data.frame(colData(se))),
                             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                             call = match.call()  # Store the function call for reproducibility
@@ -196,7 +200,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 
       return(list(
         coefficients = na_matrix,
-        coefficients_zi = NULL,
+        coefficients_zi = na_matrix,
         residuals = rep(NA, nrow(col_data)),
         log_likelihood = NA,
         convergence = FALSE
@@ -213,7 +217,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
       coefficients_zi = smry$coefficients$zi,
       residuals = residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
-      convergence = fit$fit$convergence
+      convergence = fit$fit$convergence==0
     ))
   })
 
@@ -262,20 +266,21 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
       )
     }, error = function(e) NULL)
 
+
     # Handle the case where the model could not be fitted
+    m <- model.matrix(design, col_data)
+    na_matrix <- matrix(NA,
+                        nrow = ncol(m),
+                        ncol = 4,
+                        dimnames = list(colnames(m),
+                                        c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
 
-      m <- model.matrix(design, col_data)
-      na_matrix <- matrix(NA,
-                          nrow = ncol(m),
-                          ncol = 4,
-                          dimnames = list(colnames(m),
-                                          c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
-
       return(list(
         coefficients = na_matrix,
-        coefficients_zi = NULL,
+        coefficients_zi = na_matrix,
         residuals = rep(NA, nrow(col_data)),
         log_likelihood = NA,
         convergence = FALSE
@@ -288,6 +293,18 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     index <- unlist(purrr::map(fit$parameters, ~{
       rep(.x, length(fit[[paste0(.x, '.coefficients')]]))
     }))
+
+    if (length(index) != nrow(smry)) {
+      warning("Failed to fit the model for species index: ", row_index)
+
+      return(list(
+        coefficients = na_matrix,
+        coefficients_zi = NULL,
+        residuals = rep(NA, nrow(col_data)),
+        log_likelihood = NA,
+        convergence = FALSE
+      ))
+    }
 
     smry <- purrr::map(fit$parameters, ~{
       smry[.x==index,,drop=FALSE]

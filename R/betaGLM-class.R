@@ -34,6 +34,7 @@ methods::setClass("betaGLM",
                     zi_std_errors = "DataFrameOrNULL",
                     zi_p_values = "DataFrameOrNULL",
                     residuals = "DataFrameOrNULL",
+                    convergence = "logical",
                     design = "matrix",
                     assay = "matrix",
                     call = "call"

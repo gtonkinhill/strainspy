@@ -49,9 +49,14 @@ example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package =
 se <- read_sylph(example_path, example_meta)
 se <- filter_by_presence(se)
 
+design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit_4 <- glmZiBFit(se, design, nthreads=4, method='gamlss')
+se <- readRDS("~/Downloads/temp_se.RDS")
+design <- readRDS("~/Downloads/temp_design.RDS")
+
+se <- se[1:5]
+fit_4 <- glmZiBFit(se[1:5], design, nthreads=1)#, method='gamlss')
 min(fit_4@p_values[,2])
 top_hits(fit, alpha=0.5)
 

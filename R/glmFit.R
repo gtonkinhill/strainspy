@@ -65,7 +65,8 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
-  combined_formula <- as.formula(paste("Value", deparse(design), sep = " "))
+  combined_formula <- as.formula(paste(c("Value", as.character(design)),
+                                       collapse = " "))
 
   # Ensure that rownames of colData match colnames of the assay
   if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
@@ -123,6 +124,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
                    zi_std_errors = NULL,
                    zi_p_values = NULL,
                    residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
+                   convergence = purrr::map_lgl(results, ~ .x$convergence),
                    design = model.matrix(design, data = as.data.frame(colData(se))),
                    # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
@@ -177,7 +179,7 @@ fit_model <- function(se_subset, col_data, combined_formula, fixed_priors, famil
       coefficients_zi = NULL,
       residuals = residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
-      convergence = fit$fit$convergence
+      convergence = fit$fit$convergence==0
     ))
   })
 
