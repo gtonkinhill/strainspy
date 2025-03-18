@@ -34,8 +34,8 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
     tibble::add_column(coefficient=object@coefficients[[coef]]) |>
     tibble::add_column(std_error=object@std_errors[[coef]]) |>
     tibble::add_column(p_value=object@p_values[[coef]]) |>
-    tibble::add_column(p_adjust=p.adjust(object@p_values[[coef]], method = method)) |>
-    dplyr::arrange(p_adjust)
+    tibble::add_column(p_adjust=p.adjust(object@p_values[[coef]], method = method)) # |>
+    # dplyr::arrange(p_adjust)
 
   # Add zero-inflated coefficients if available
   if (!is.null(object@zi_coefficients)){
@@ -43,8 +43,15 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
       tibble::add_column(zi_coefficient=object@zi_coefficients[[coef]]) |>
       tibble::add_column(zi_std_error=object@zi_std_errors[[coef]]) |>
       tibble::add_column(zi_p_value=object@zi_p_values[[coef]]) |>
-      tibble::add_column(zi_p_adjust=p.adjust(object@zi_p_values[[coef]], method = method)) |>
-      dplyr::arrange(pmin(p_adjust, zi_p_adjust))
+      tibble::add_column(zi_p_adjust=p.adjust(object@zi_p_values[[coef]], method = method))  #|>
+      # dplyr::arrange(pmin(p_adjust, zi_p_adjust))
+  }
+  
+  ## Arrange by adjusted p_value
+  if(!is.null(object@zi_coefficients)) {
+    res <- res |> dplyr::arrange(pmin(p_adjust, zi_p_adjust))
+  } else {
+    res <- res |> dplyr::arrange(p_adjust)
   }
 
   # Filter on provided alpha

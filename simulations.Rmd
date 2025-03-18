@@ -1,8 +1,10 @@
 ---
 title: "Simulations"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 date: "2025-02-04"
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 
@@ -47,29 +49,228 @@ sylph query /data1/gerryt/sylph_analyses/gtdb-r220-c200-dbv1.syldb -u --read-seq
 ```
 
 
-
-### Load data
+### Load data and prepare for simulations
 
 ```{r}
 library(strainspy)
 
 # Load Zeevi the GTDB 99% identity dataset
-data <- read_sylph("~/Documents/strainspy_manuscript/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
+# data <- read_sylph("~/Documents/strainspy_manuscript/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
+data <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
 data <- filter_by_presence(data, min_nonzero = 150)
+
+# Get the ids of cases after a random split
+set.seed(789)
+cascon = rbinom(round(SummarizedExperiment::ncol(data)),  1, 0.5)
+cases = which(cascon == 1)
+
+# setup metadata
+meta_data = data.frame(run_accession = colnames(data),
+                       Case_status = cascon)
+
+meta_data$Case_status <- factor(meta_data$Case_status)
+data = strainspy:::modify_metadata(se = data, meta_data = meta_data)
+
+# randomly select 100 entries to rescale abundance - ensure omit NA from cascon model
+fit_cascon_null = readRDS("TEST_DATA/zeevi/TEMP_FITS/null_cascon.rds")
+set.seed(789)
+sel = sample(which(!is.na(fit_cascon_null@coefficients$X.Intercept.)), 100)
+contigs = data@elementMetadata$Contig_name[sel]
+
+# fit the 3 models using update option
+fit_ob_null = readRDS("TEST_DATA/zeevi/TEMP_FITS/null_ob.rds")
+fit_zib_null = readRDS("TEST_DATA/zeevi/TEMP_FITS/null_zib.rds")
+
 ```
 
 ### Simulate changes in identity
-
 ```{r}
-set.seed(789)
+# run through by varying beta
+scale_factors = c(seq(0.965, 0.995, by = 0.005),0.999,1)
+op = data.frame()
+for(scale_factor in scale_factors){
+  exp_beta = c()
+  exp_zi = c()
+  se = data # NULL
+  
+  data_matrix <- SummarizedExperiment::assay(se) # NULL
+  vals_to_mod = data_matrix[sel, cases]
+  
+  for(i in 1:length(sel)){ 
+    tmp = rescale_beta(x = data_matrix[sel[i], cases]/100,
+                       beta = scale_factor,
+                       zi = 0)
+    
+    vals_to_mod[i,] = tmp$rescaled*100
+    exp_beta[i] = tmp$expected_beta
+    exp_zi[i] = tmp$expected_zi
+  }
+  
+  # add modified counts for cases
+  data_matrix[sel, cases] = vals_to_mod
+  
+  # add modified assay back to se
+  SummarizedExperiment::assay(se) <- data_matrix
+  
+  fit_zib_updated = strainspy:::update_fit(fit = fit_zib_null, se = se, update_idx = sel, nthreads = 10)
+  fit_ob_updated = strainspy:::update_fit(fit = fit_ob_null, se = se, update_idx = sel, nthreads = 10)
+  fit_cascon_updated = strainspy:::update_fit(fit = fit_cascon_null, se = se, update_idx = sel, nthreads = 10)
+  cat(scale_factor, "\n")
+  
+  op = rbind(op, 
+             cbind(scale_factor, 
+                   rbind(
+                     c("zib", strainspy:::get_confusion_mx(top_hits = top_hits(fit_zib_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("ob", strainspy:::get_confusion_mx(top_hits = top_hits(fit_ob_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("cc", strainspy:::get_confusion_mx(top_hits = top_hits(fit_cascon_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)))))
+}
 
+colnames(op) = c("sf", "test", "tp", "fn", "fp", "tn")
 
 
 ```
 
 ### Simulate changes in presence/absence
+```{r}
+zero_props = seq(0.2, 0.72, by = 0.05)
+op = data.frame()
+for(zero_prop in zero_props){
+  exp_beta = c()
+  exp_zi = c()
+  se = data # NULL
+  
+  data_matrix <- SummarizedExperiment::assay(se) # NULL
+  vals_to_mod = data_matrix[sel, cases]
+  
+  for(i in 1:length(sel)){ 
+    tmp = rescale_beta(x = data_matrix[sel[i], cases]/100,
+                       beta = 1,
+                       zi = zero_prop)
+    
+    vals_to_mod[i,] = tmp$rescaled*100
+    exp_beta[i] = tmp$expected_beta
+    exp_zi[i] = tmp$expected_zi
+  }
+  
+  # add modified counts for cases
+  data_matrix[sel, cases] = vals_to_mod
+  
+  # add modified assay back to se
+  SummarizedExperiment::assay(se) <- data_matrix
+  
+  fit_zib_updated = strainspy:::update_fit(fit = fit_zib_null, se = se, update_idx = sel, nthreads = 10)
+  fit_ob_updated = strainspy:::update_fit(fit = fit_ob_null, se = se, update_idx = sel, nthreads = 10)
+  fit_cascon_updated = strainspy:::update_fit(fit = fit_cascon_null, se = se, update_idx = sel, nthreads = 10)
+  cat(zero_prop, "\n")
+  
+  op = rbind(op, 
+             cbind(zero_prop, 
+                   rbind(
+                     c("zib", strainspy:::get_confusion_mx(top_hits = top_hits(fit_zib_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("ob", strainspy:::get_confusion_mx(top_hits = top_hits(fit_ob_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                     c("cc", strainspy:::get_confusion_mx(top_hits = top_hits(fit_cascon_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)))))
+}
+
+colnames(op) = c("z_prop", "test", "tp", "fn", "fp", "tn")
+```
 
 
 ### Simulate both identity and presence/absence changes
+```{r}
+zero_props = c(0,seq(0.2, 0.72, by = 0.05))
+scale_factors = c(seq(0.965, 0.995, by = 0.005),0.999,1)
+op = data.frame()
 
+for(scale_factor in scale_factors){
+  for(zero_prop in zero_props){
+    
+    t0 = Sys.time()
+    
+    exp_beta = c()
+    exp_zi = c()
+    se = data # NULL
+    
+    data_matrix <- SummarizedExperiment::assay(se) # NULL
+    vals_to_mod = data_matrix[sel, cases]
+    
+    for(i in 1:length(sel)){ 
+      tmp = rescale_beta(x = data_matrix[sel[i], cases]/100,
+                         beta = scale_factor,
+                         zi = zero_prop)
+      
+      vals_to_mod[i,] = tmp$rescaled*100
+      exp_beta[i] = tmp$expected_beta
+      exp_zi[i] = tmp$expected_zi
+    }
+    
+    # add modified counts for cases
+    data_matrix[sel, cases] = vals_to_mod
+    
+    # add modified assay back to se
+    SummarizedExperiment::assay(se) <- data_matrix
+    
+    fit_zib_updated = strainspy:::update_fit(fit = fit_zib_null, se = se, update_idx = sel, nthreads = 10)
+    fit_ob_updated = strainspy:::update_fit(fit = fit_ob_null, se = se, update_idx = sel, nthreads = 10)
+    fit_cascon_updated = strainspy:::update_fit(fit = fit_cascon_null, se = se, update_idx = sel, nthreads = 10)
+    cat("eval_time (min) =", Sys.time() - t0, "sf =", scale_factor, "zp =",  zero_prop, "\n")
+    
+    op = rbind(op, 
+               cbind(zero_prop, scale_factor,
+                     rbind(
+                       c("zib", strainspy:::get_confusion_mx(top_hits = top_hits(fit_zib_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                       c("ob", strainspy:::get_confusion_mx(top_hits = top_hits(fit_ob_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)),
+                       c("cc", strainspy:::get_confusion_mx(top_hits = top_hits(fit_cascon_updated), gt_contigs = contigs, all_contigs = rownames(se), print_cm = T)))))
+  }
+}
+colnames(op) = c("zero_prop", "scale_factor", "test", "tp", "fn", "fp", "tn")
+op$tp = as.numeric(op$tp)
+op$fn = as.numeric(op$fn)
+op$fp = as.numeric(op$fp)
+op$tn = as.numeric(op$tn)
+
+# Generate a manhattan plot with ground truth
+strainspy:::plot_manhattan_gt(fit_zib_updated, method = "holm", ground_truth = contigs)
+
+```
+## Generate heatmaps
+```{r}
+library(ggplot2)
+library(dplyr)
+library(viridis)
+
+op$sensitivity = as.numeric(op$tp) / (as.numeric(op$tp) +  (as.numeric(op$tn) - as.numeric(op$fp)) )*100
+op$test <- factor(op$test)
+
+ggplot(op, aes(x = zero_prop, y = scale_factor, fill = sensitivity)) +
+  geom_tile() +
+  scale_fill_viridis_c(name = "Sensitivity") +  # Viridis color scale
+  facet_wrap(~ test) +  # Separate plots for each test
+  labs(
+    x = "Zero Proportion",
+    y = "Scale Factor",
+    # title = "Sensitivity Across Tests"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),  # Styling facet labels
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels if needed
+  )
+
+ggplot(op, aes(x = zero_prop, y = scale_factor, fill = fp)) +
+  geom_tile() +
+  scale_fill_viridis_c(name = "False Positives") +  # Viridis color scale
+  facet_wrap(~ test) +  # Separate plots for each test
+  labs(
+    x = "Zero Proportion",
+    y = "Scale Factor",
+    # title = "Sensitivity Across Tests"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 12, face = "bold"),  # Styling facet labels
+    axis.text.x = element_text(angle = 45, hjust = 1)  # Rotate x-axis labels if needed
+  )
+
+
+```
 

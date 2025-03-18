@@ -5,7 +5,7 @@
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function

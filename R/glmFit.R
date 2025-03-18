@@ -1,11 +1,11 @@
 #' glmFit
 #'
-#' This function fits a ordinalbeta regression model using the `glmmTMB` package.
+#' This function fits a ordinal beta regression model using the `glmmTMB` package.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
