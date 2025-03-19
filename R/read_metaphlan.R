@@ -162,9 +162,10 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
 #' @param metaphlan_files A character vector of file paths to merge. Optionally, if the input is named, `names(metaphlan_files)` will be used as sample identifiers in place of the filename.
 #' @param output_folder Folder path to save outputs.
 #' @param output_filename File name for the two outputs. By default, the two files will be saved as metaphlan_merged.tsv.gz and metaphlan_taxonomy.tsv.gz
+#' @param sgb_database bool. Specify whether the default sgb database was used for profiling. Set to FALSE if `sgb_to_gtdb_profile.py` was run on the profiles as a post processing step. Default TRUE
 #' 
 #' @export
-merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filename = "metaphlan"){
+merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filename = "metaphlan", sgb_database = T){
   if (length(metaphlan_files) == 0) {
     stop("No metaphlan profiles provided.")
   }
@@ -183,21 +184,44 @@ merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filenam
     names(metaphlan_files) = xx
   }
   
-  data_list <- lapply(seq_along(metaphlan_files), function(i) {
-    file = metaphlan_files[i]
-    tmp = data.table::fread(file);
-    tmp = tmp[, .(`#clade_name`, relative_abundance)]
-    tmp = tmp[grepl("t__", `#clade_name`)]
-    tmp[, query_name := names(metaphlan_files)[i]]
-    
-    tmp[, genome := sub(".*t__", "", `#clade_name`)]  # Extract everything after "t__"
-    tmp[, taxonomy := sub("\\|t__.*", "", `#clade_name`)]  # Remove everything after "|t__"
-    tmp[, taxonomy := sub("^k__", "d__", taxonomy)]
-    tmp[, taxonomy := gsub("\\|", ";", taxonomy)]
+  # sgb files go to t__ level
+  # gtdb files go to s__ level
+  if(sgb_database == T) {
+    data_list <- lapply(seq_along(metaphlan_files), function(i) {
+      file = metaphlan_files[i]
+      tmp = data.table::fread(file);
+      tmp = tmp[, .(`#clade_name`, relative_abundance)]
+      tmp = tmp[grepl("t__", `#clade_name`)]
+      tmp[, query_name := names(metaphlan_files)[i]]
+      
+      tmp[, genome := sub(".*t__", "", `#clade_name`)]  # Extract everything after "t__"
+      tmp[, taxonomy := sub("\\|t__.*", "", `#clade_name`)]  # Remove everything after "|t__"
+      tmp[, taxonomy := sub("^k__", "d__", taxonomy)]
+      tmp[, taxonomy := gsub("\\|", ";", taxonomy)]
+      
+    }
+    )
+  } else {
+    data_list <- lapply(seq_along(metaphlan_files), function(i) {
+      file = metaphlan_files[i]
+      tmp = data.table::fread(file);
+      tmp = tmp[, .(`#clade_name`, relative_abundance)]
+      tmp = tmp[grepl("s__", `#clade_name`)]
+      tmp[, query_name := names(metaphlan_files)[i]]
+      
+      tmp[, genome := sub(".*s__", "", `#clade_name`)]  # Extract everything after "t__"
+      tmp[, taxonomy := sub("\\|s__.*", "", `#clade_name`)]  # Remove everything after "|t__"
+      tmp[, taxonomy := gsub("\\|", ";", taxonomy)]
+      
+    }
+    )
     
   }
-  )
   merged_data <- data.table::rbindlist(data_list, use.names = TRUE, fill = TRUE)
+  
+  if(nrow(merged_data) == 0){
+    stop("There is no data available in the provided files. Currently sgb_database=", sgb_database,  ", see help for more information.")
+  }
   
   output_table <- merged_data[, .(query_name, name = genome, relative_abundance = relative_abundance)]
   taxonomy_table <- unique(merged_data[, .(genome, taxonomy)])
