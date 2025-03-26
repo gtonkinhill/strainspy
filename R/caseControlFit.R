@@ -68,7 +68,7 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 
   # Define priors
   col_data$Value <- 1 # dummy variable for the response
-  nbeta <- ncol(model.matrix(design, col_data))
+  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", nbeta),
     class = rep("fixef", each=nbeta),

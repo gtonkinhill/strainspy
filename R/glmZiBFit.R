@@ -36,14 +36,11 @@
 #' se <- filter_by_presence(se)
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
-#' design <- as.formula(" ~ Case_status + Age_at_collection")
+#' design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
+#' design <- as.formula(" ~ Case_status")
 #'
-#' se <- readRDS("~/Downloads/temp_se.RDS")
-#' design <- readRDS("~/Downloads/temp_design.RDS")
-#'
-#' se <- se[1:5]
-#' fit_4 <- glmZiBFit(se[1:5], design, nthreads=1)#, method='gamlss')
-#' min(fit_4@p_values[,2])
+#' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='glmmTMB')
+#' min(fit@p_values[,2])
 #' top_hits(fit, alpha=0.5)
 #'
 #' }
@@ -84,7 +81,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(design, col_data))
+  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
@@ -144,7 +141,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
                             zi_p_values = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,4])),
                             residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
                             convergence = purrr::map_lgl(results, ~ .x$convergence),
-                            design = model.matrix(design, data = as.data.frame(colData(se))),
+                            design = design,
                             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                             call = match.call()  # Store the function call for reproducibility
   )

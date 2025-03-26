@@ -16,6 +16,8 @@ glmZiBFit(
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
+\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
+
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
@@ -23,8 +25,6 @@ to one 1.}
 will configure an appropriate backend automatically.}
 
 \item{method}{Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.}
-
-\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 }
 \value{
 A list with the following components:
@@ -50,14 +50,11 @@ se <- read_sylph(example_path, example_meta)
 se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
-design <- as.formula(" ~ Case_status + Age_at_collection")
+design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
+design <- as.formula(" ~ Case_status")
 
-se <- readRDS("~/Downloads/temp_se.RDS")
-design <- readRDS("~/Downloads/temp_design.RDS")
-
-se <- se[1:5]
-fit_4 <- glmZiBFit(se[1:5], design, nthreads=1)#, method='gamlss')
-min(fit_4@p_values[,2])
+fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='glmmTMB')
+min(fit@p_values[,2])
 top_hits(fit, alpha=0.5)
 
 }

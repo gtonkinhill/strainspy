@@ -45,7 +45,7 @@ sylph profile /data1/gerryt/sylph_analyses/gtdb-r220-c200-dbv1.syldb -u --read-s
 ```
 
 ```
-sylph query /data1/gerryt/sylph_analyses/gtdb-r220-c200-dbv1.syldb -u --read-seq-id 99.9 -t 25  -1 ./*_1.fastq.gz -2 ./*_2.fastq.gz -o ./zeevi_PRJEB11532_querye_gtdb_220_id95.tsv ./ERR*[0-9][0-9].fastq.gz
+sylph query /data1/gerryt/sylph_analyses/gtdb-r220-c200-dbv1.syldb -u --read-seq-id 99.9 -t 25  -1 ./*_1.fastq.gz -2 ./*_2.fastq.gz -o ./zeevi_PRJEB11532_query_gtdb_220_id95.tsv ./ERR*[0-9][0-9].fastq.gz
 ```
 
 

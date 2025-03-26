@@ -16,6 +16,8 @@ caseControlFit(
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
+\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
+
 \item{min_identity}{A numeric value specifying the minimum identity threshold to consider (default=0.98).}
 
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
@@ -23,10 +25,6 @@ to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
-
-\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
-
-\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.}
 }
 \value{
 A list with the following components:

@@ -1,11 +1,11 @@
 #' glmFit
 #'
-#' This function fits a ordinal beta regression model using the `glmmTMB` package.
+#' This function fits a ordinalbeta regression model using the `glmmTMB` package.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
@@ -34,7 +34,7 @@
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
+#' fit <- glmFit(se[1:2],  design, nthreads=4, family=glmmTMB::ordbeta())
 #' summary(fit)
 #'
 #' }
@@ -74,7 +74,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(design, col_data))
+  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", nbeta),
     class = rep("fixef", each=nbeta),
@@ -125,7 +125,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
                    zi_p_values = NULL,
                    residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
                    convergence = purrr::map_lgl(results, ~ .x$convergence),
-                   design = model.matrix(design, data = as.data.frame(colData(se))),
+                   design = design,
                    # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
   )

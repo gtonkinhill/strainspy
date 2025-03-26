@@ -2,7 +2,7 @@
 % Please edit documentation in R/caseControlFit.R
 \name{fit_logit_model}
 \alias{fit_logit_model}
-\title{Fit Zero-Inflated Beta Regression for a Single Feature}
+\title{Fit Logistic Regression for a Single Feature}
 \usage{
 fit_logit_model(se_subset, col_data, design, fixed_priors, min_identity)
 }
@@ -26,6 +26,6 @@ A list with model coefficients, zero-inflation coefficients, residuals,
 log-likelihood, and convergence status.
 }
 \description{
-Fits a zero-inflated beta regression for a single feature in an assay
+Fits a logistic regression for a single feature in an assay
 using \code{glmmTMB}.
 }
