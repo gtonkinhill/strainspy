@@ -60,10 +60,13 @@ rescale_beta <- function(x, beta = 0.95, zi=0.1) {
   }
   
   if(p2 > p1){ # when zi > 0
-    x_rescaled[
-      sample(which(x_rescaled!=0),
-             size=rbinom(1, length(x_rescaled), p2) - sum(x_rescaled==0),
-             replace=FALSE)] <- 0
+    # We cannot guarantee this won't fail for very small zi values, if that happens, return input
+    sz <- rbinom(1, length(x_rescaled), p2) - sum(x_rescaled==0)
+    nz = which(x_rescaled!=0)
+    if(sz < length(nz) & sz > 0) {
+      selected <- sample(which(x_rescaled!=0), sz, replace=FALSE)
+      x_rescaled[selected] <- 0
+    } 
   }
   
   

@@ -4,9 +4,10 @@
 #'
 #' @param se SummarizedExperiment object generated from `strainspy` read functions.
 #' @param meta_data data.frame. A tibble or data frame containing sample metadata.
+#' @param replace bool. If T, the meta data in se (i.e., `se@coldata`) will be replaced with the provided meta_data file. Default F.
 #' The **first column must contain sample names** that match exactly with the `colnames(se)`.
 #' @return SummmarizedExperiment object `se`, updated with the new meta data.
-modify_metadata <- function(se, meta_data) {
+modify_metadata <- function(se, meta_data, replace = F) {
   meta_samples <- unique(meta_data[[1]])
   if (length(missing_from_meta <- setdiff(se@colData$Sample_file, meta_samples)) > 0) {
     stop("The following samples from 'se' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
@@ -22,13 +23,28 @@ modify_metadata <- function(se, meta_data) {
     stop("Mismatch between se rownames and assay order")
   }
   
-  new_metadata <- S4Vectors::DataFrame(base::merge(se@colData, meta_data,
-                                                   by.x = "Sample_file",
-                                                   by.y = names(meta_data)[1],
-                                                   all.x = TRUE,
-                                                   sort = FALSE)) # Keeps all Sample_file entries from se
+  if(replace == T){
+    se@colData@listData = list(se@colData@listData$Sample_file)
+  }
   
-  se@colData@listData = as.list(new_metadata)
+  # we can't have the same colname in se@colData and meta_data
+  test_cols = which(colnames(meta_data) %in% colnames(se@colData))
+  if(length(test_cols) >0) {
+    warning(paste("Columns:", colnames(meta_data)[test_cols], "exist(s) in se@colData and will be dropped without merging. Set replace = T to replace instead" ))
+    meta_data = meta_data[,-test_cols]
+  }
+  
+  if(ncol(meta_data) > 0) {
+    new_metadata <- S4Vectors::DataFrame(base::merge(se@colData, meta_data,
+                                                     by.x = "Sample_file",
+                                                     by.y = names(meta_data)[1],
+                                                     all.x = TRUE,
+                                                     sort = FALSE)) # Keeps all Sample_file entries from se
+    
+    se@colData@listData = as.list(new_metadata)
+  } else {
+    warning("No new metadata to add, returning the same se object.")
+  }
   
   return(se)
 }
@@ -176,8 +192,8 @@ get_confusion_mx <- function(top_hits, gt_contigs, all_contigs, print_cm = TRUE)
 #' @importFrom tidyr pivot_longer
 #' @importFrom dplyr mutate
 plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
-                           alpha=0.05, levels = c("Phylum", "Genus", "Species", "Strain"),
-                           colour_level = "Phylum", plot=TRUE, ground_truth = NULL) {
+                              alpha=0.05, levels = c("Phylum", "Genus", "Species", "Strain"),
+                              colour_level = "Phylum", plot=TRUE, ground_truth = NULL) {
   
   # Validate input
   if (!inherits(object, "betaGLM")) {
@@ -309,3 +325,72 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
   
   return(gg)
 }
+
+#' Generate a Violin plot for a subset of contigs for a given categorical phenotype 
+#'
+#' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
+#' @param phenotype One variable in `colnames(se@colData)`, except `Sample_File`. The selected variable must be categorical
+#' @param contigs A vector of contigs to generate violin plots
+#' @param contig_names A vector of names for the contigs to use in the plot, useful when the original contig names are too long. Must be the same length and order as `contig_names`. Default NULL.
+#' @param drop_ANI_zeros Bool. If TRUE, ANI 0 values will not be included in the violin plot. Default FALSE. A warning will be generated to inform that ANI 0 rows are dropped.
+#' @param plot If set to false, the function will return a tibble with data used to generate the plot.
+plot_violin <- function(se, phenotype, contigs, contig_names = NULL, drop_ANI_zeros = FALSE, plot = TRUE){
+  if(length(phenotype) != 1) {
+    stop("Only one phenotype can be plotted at a time")
+  }
+  
+  if(! (phenotype %in% colnames(se@colData)) ){
+    stop("Phenotype not found in colnames(se@colData)")
+  }
+
+  if( ! is.factor(se@colData[[phenotype]])) {
+    stop("Phenotype must be a factor")
+  }
+  
+  chk_contigs = contigs %in% rownames(se)
+  if( ! all(chk_contigs)  ){
+    cat(paste(contigs[!chk_contigs], '\n', sep = ""))
+    stop("Above contigs are missing from rownames(se)")
+  }
+  
+  tmp = as.data.frame(t(as.matrix(SummarizedExperiment::assay(se[contigs, ]))))
+  tmp = cbind(se@colData[[phenotype]], tmp)
+  
+  if(!is.null(contig_names)){
+    colnames(tmp) = c(phenotype, contig_names)
+  } else {
+    colnames(tmp) = c(phenotype, colnames(tmp)[-1])
+  }
+  
+  df_long <- tidyr::pivot_longer(tmp, cols = -phenotype, names_to = "Contig", values_to = "ANI")
+  
+  if(drop_ANI_zeros){
+    df_long$ANI[df_long$ANI == 0] = NA
+  }
+  
+  phenotype <- rlang::sym(phenotype)
+  
+  if(!plot){
+    return(df_long)
+  } else {
+    ggplot(df_long, aes(x = Contig, y = ANI, fill = !!phenotype)) +
+      geom_violin(trim = FALSE, alpha = 0.6) +
+      theme_minimal() +
+      labs(x = "Contigs", y = "ANI") +
+      scale_fill_brewer(palette = "Set2") +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  }
+  
+  
+}
+
+
+
+
+
+
+
+
+
+
+
