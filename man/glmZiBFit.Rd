@@ -42,6 +42,7 @@ and fits a zero-inflated beta regression model on the assay data.
 library(SummarizedExperiment)
 library(strainspy)
 library(glmmTMB)
+library(gamlss)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
@@ -49,13 +50,12 @@ example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package =
 se <- read_sylph(example_path, example_meta)
 se <- filter_by_presence(se)
 
-design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
 design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
+design <- as.formula(" ~ Case_status + Age_at_collection + gamlss::random(Sex)")
 design <- as.formula(" ~ Case_status")
 
-fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='glmmTMB')
-min(fit@p_values[,2])
-top_hits(fit, alpha=0.5)
+fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='gamlss')
+top_hits(fit, alpha=1)
 
 }
 

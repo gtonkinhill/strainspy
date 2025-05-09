@@ -49,7 +49,7 @@ ani_distance <- function(se, taxonomy=NULL, tax_level="Species", collapse_method
       stop("Invalid collapse method. Must be 'representative', 'mean' or 'max'.")
     }
   } else {
-    ani_vals <- t(SummarizedExperiment::assays(se)[[1]])
+    ani_vals <- t(as.matrix(SummarizedExperiment::assays(se)[[1]]))
   }
 
   # Calculate distances

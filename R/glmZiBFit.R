@@ -18,6 +18,7 @@
 #' \item{call}{The original function call.}
 #'
 #' @import SummarizedExperiment
+#' @import gamlss
 #' @importFrom glmmTMB glmmTMB
 #' @importFrom stats model.matrix
 #' @importFrom methods new
@@ -28,6 +29,7 @@
 #' library(SummarizedExperiment)
 #' library(strainspy)
 #' library(glmmTMB)
+#' library(gamlss)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
@@ -35,13 +37,12 @@
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
-#' design <- as.formula(" ~ Case_status + Age_at_collection +total_sequences + Age_at_collection + How_often_do_you_eat_GRAINS + Day_of_stool_collection_excess_gas + Ulcer_past_3_months+ Day_of_stool_collection_constipation + Antihistamines + Co_Q_10 + sample_name")
 #' design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
+#' design <- as.formula(" ~ Case_status + Age_at_collection + gamlss::random(Sex)")
 #' design <- as.formula(" ~ Case_status")
 #'
-#' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='glmmTMB')
-#' min(fit@p_values[,2])
-#' top_hits(fit, alpha=0.5)
+#' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='gamlss')
+#' top_hits(fit, alpha=1)
 #'
 #' }
 #'
@@ -81,7 +82,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
+  nbeta <- ncol(model.matrix(strainspy:::strip_random_effects(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
@@ -247,6 +248,11 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
     temp_dat <- col_data[, all.vars(combined_formula)]
 
+    # convert characters to factors
+    temp_dat[] <- lapply(temp_dat, function(x) {
+      if (is.character(x)) factor(x) else x
+    })
+
     # Run the zero-inflated beta regression
     fit <- tryCatch({
       gamlss::gamlss(
@@ -261,11 +267,13 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
         # sigma.start = 1,
         # tau.start = 1
       )
-    }, error = function(e) NULL)
+    }, error = function(e) {
+      return(NULL)
+    })
 
 
     # Handle the case where the model could not be fitted
-    m <- model.matrix(design, col_data)
+    m <- model.matrix(design, temp_dat)
     na_matrix <- matrix(NA,
                         nrow = ncol(m),
                         ncol = 4,
@@ -288,7 +296,7 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     stdout <- capture.output(smry <- summary(fit, robust=TRUE))
 
     index <- unlist(purrr::map(fit$parameters, ~{
-      rep(.x, length(fit[[paste0(.x, '.coefficients')]]))
+      rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]))))
     }))
 
     if (length(index) != nrow(smry)) {
@@ -296,7 +304,7 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
 
       return(list(
         coefficients = na_matrix,
-        coefficients_zi = NULL,
+        coefficients_zi = na_matrix,
         residuals = rep(NA, nrow(col_data)),
         log_likelihood = NA,
         convergence = FALSE
@@ -321,4 +329,5 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
 
   return(chunk_results)
 }
+
 
