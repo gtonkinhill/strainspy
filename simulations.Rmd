@@ -56,7 +56,7 @@ library(strainspy)
 
 # Load Zeevi the GTDB 99% identity dataset
 # data <- read_sylph("~/Documents/strainspy_manuscript/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
-data <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
+data <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id98.tsv.gz")
 data <- filter_by_presence(data, min_nonzero = 150)
 
 # Get the ids of cases after a random split
@@ -303,6 +303,9 @@ meta_data$microbial_load = (meta_data$microbial_load_raw - min(meta_data$microbi
 
 data = strainspy:::modify_metadata(se = data, meta_data = meta_data)
 
+# # does the linear model work with this as well?
+# load_lm_fit = strainspy:::abundanceFit(data, as.formula('~microbial_load'), nthreads = 10)
+
 # Use load as a predictor (numeric/normalised)
 load_zib_fit = glmZiBFit(data,  as.formula('~microbial_load'), nthreads = 10)
 load_ob_fit = glmFit(data,  as.formula('~microbial_load'), nthreads = 10)
@@ -327,41 +330,71 @@ contig_names = c("Flavonifractor sp. DFI.6.63", "Lachnospiraceae bacterium HGM11
 
 strainspy:::plot_violin(data, 'microbial_load_HML', unique(union(union(union(s1,s2), s3), s4)), contig_names, drop_ANI_zeros = T)
 
+# Sylph abundance
+data_abund = read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_profile_gtdb_220_id98.tsv.gz", variable = "Taxonomic_abundance")
+data_abund <- filter_by_presence(data_abund, min_nonzero = 50)
+meta_data_sa = meta_data
+meta_data_sa = meta_data_sa[sapply(colnames(data_abund), function(x) which(x == meta_data_sa$run_accession)),]
+
+all(meta_data_sa$run_accession == colnames(data_abund))
+
+data_abund = strainspy:::modify_metadata(se = data_abund, meta_data = meta_data_sa)
+load_lm_fit = strainspy::abundanceFit(data_abund, as.formula('~microbial_load'), nthreads = 10)
+
+
+data_abund2 = data_abund[, which(data_abund$microbial_load_HML == "L" | data_abund$microbial_load_HML == "H")]
+data_abund2 <- filter_by_presence(data_abund2, min_nonzero = 10)
+
+data_abund2$microbial_load_HML = as.character(data_abund2$microbial_load_HML)
+data_abund2$microbial_load_HML = factor(data_abund2$microbial_load_HML, labels = c("L", "H"))
+
+
+top_hits(load_lm_fit)
+
+strainspy:::plot_violin(data_abund, phenotype = "microbial_load_HML", top_hits(load_lm_fit)$Contig_name, contig_names = c("Mediterraneibacter butyricigenes",
+                                                                                                                          "Eubacterium segne",
+                                                                                                                          "Lachnospira hominis"),
+                        drop_ANI_zeros = T)
+
+### METAPHLAN IS DIFFICULT TO COMPARE, DROP THIS FOR NOW
 # How bad is abundance in comparison?
 # mp_files = dir("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/", pattern = "*_profiled.tsv", full.names = T)
 # strainspy::merge_metaphlan_files(metaphlan_files = mp_files, output_folder = "TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/")
-mp_sgb = strainspy::read_metaphlan("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/metaphlan_merged.tsv.gz")
-
-# use the gtdb database for easier comparisons
-# merge_metaphlan_files(dir("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/", "*gtdb.tsv", full.names = T), output_folder = "TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/", output_filename = "gtdb", sgb_database = F)
-mp_gtdb = strainspy::read_metaphlan("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/gtdb_merged.tsv.gz")
-
-
-mp <- mp_gtdb
-mp <- filter_by_presence(mp, min_nonzero = 5, rescale_abundance = T)
-# meta_data needs to be renamed
-meta_data_mp = meta_data
-meta_data_mp$run_accession = paste(gsub("_1$", "", meta_data_mp$run_accession), "_profiled_gtdb", sep = "")
-meta_data_mp = meta_data_mp[unname(sapply(colnames(mp), function(x) which(x == meta_data_mp$run_accession))),]
-all(meta_data_mp$run_accession == colnames(mp)) # check
-
-mp = strainspy:::modify_metadata(se = mp, meta_data = meta_data_mp)
-# Use load as a predictor (numeric/normalised)
-load_zib_mp_fit = glmZiBFit(mp,  as.formula('~microbial_load'), nthreads = 10)
-load_ob_mp_fit = glmFit(mp,  as.formula('~microbial_load'), nthreads = 10)
-
-# Keep high/medium/low 0/0.5/1 (factor)
-loadHML_zib_mp_fit = glmZiBFit(mp,  as.formula('~microbial_load_HML'), nthreads = 10)
-loadHML_ob_mp_fit = glmFit(mp,  as.formula('~microbial_load_HML'), nthreads = 10)
-
-
-s1 = top_hits(load_zib_mp_fit)$Contig_name
-s2 = top_hits(load_ob_mp_fit)$Contig_name
-s3 = top_hits(loadHML_zib_mp_fit)$Contig_name
-s4 = top_hits(loadHML_ob_mp_fit)$Contig_name
-
-# strainspy:::plot_violin(mp, 'microbial_load_HML', unique(union(union(union(s1,s2), s3), s4)), drop_ANI_zeros = T)
-strainspy:::plot_violin(mp, 'microbial_load_HML',s2, drop_ANI_zeros = T)
+# mp_sgb = strainspy::read_metaphlan("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/metaphlan_merged.tsv.gz")
+# 
+# # use the gtdb database for easier comparisons
+# # merge_metaphlan_files(dir("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/", "*gtdb.tsv", full.names = T), output_folder = "TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/", output_filename = "gtdb", sgb_database = F)
+# mp_gtdb = strainspy::read_metaphlan("TEST_DATA/zeevi/mpa_vJun23_CHOCOPhlAnSGB_202307/gtdb_merged.tsv.gz")
+# 
+# 
+# mp <- mp_gtdb
+# mp <- filter_by_presence(mp, min_nonzero = 10)
+# # meta_data needs to be renamed
+# meta_data_mp = meta_data
+# meta_data_mp$run_accession = paste(gsub("_1$", "", meta_data_mp$run_accession), "_profiled_gtdb", sep = "")
+# meta_data_mp = meta_data_mp[unname(sapply(colnames(mp), function(x) which(x == meta_data_mp$run_accession))),]
+# all(meta_data_mp$run_accession == colnames(mp)) # check
+# 
+# mp = strainspy:::modify_metadata(se = mp, meta_data = meta_data_mp)
+# 
+# load_lm_fit = strainspy:::abundanceFit(mp, as.formula('~microbial_load'), nthreads = 10)
+# 
+# # Use load as a predictor (numeric/normalised)
+# load_zib_mp_fit = glmZiBFit(mp,  as.formula('~microbial_load'), nthreads = 10)
+# load_ob_mp_fit = glmFit(mp,  as.formula('~microbial_load'), nthreads = 10)
+# 
+# # Keep high/medium/low 0/0.5/1 (factor)
+# loadHML_zib_mp_fit = glmZiBFit(mp,  as.formula('~microbial_load_HML'), nthreads = 10)
+# loadHML_ob_mp_fit = glmFit(mp,  as.formula('~microbial_load_HML'), nthreads = 10)
+# 
+# 
+# s1 = top_hits(load_zib_mp_fit)$Contig_name
+# s2 = top_hits(load_ob_mp_fit)$Contig_name
+# s3 = top_hits(loadHML_zib_mp_fit)$Contig_name
+# s4 = top_hits(loadHML_ob_mp_fit)$Contig_name
+# 
+# # strainspy:::plot_violin(mp, 'microbial_load_HML', unique(union(union(union(s1,s2), s3), s4)), drop_ANI_zeros = T)
+# strainspy:::plot_violin(mp, 'microbial_load_HML',s2, drop_ANI_zeros = T)
 
 # Simulation steps:
 # Vary identity of 1000 randomly selected features

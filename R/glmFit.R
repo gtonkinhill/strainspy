@@ -52,7 +52,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   }
 
   # colData (sample metadata)
-  col_data <- colData(se)
+  col_data <- SummarizedExperiment::colData(se)
   if (scale_continous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
