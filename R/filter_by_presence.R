@@ -24,7 +24,7 @@
 #' }
 #'
 #' @export
-filter_by_presence <- function(se, min_nonzero = 10, rescale_abundance = F) {
+filter_by_presence <- function(se, min_nonzero = 10) {
 
   # Check that the input is a SummarizedExperiment object
   if (!inherits(se, "SummarizedExperiment")) {
@@ -38,20 +38,13 @@ filter_by_presence <- function(se, min_nonzero = 10, rescale_abundance = F) {
 
   # Count the number of non-zero entries in each row of the assay
   nonzero_counts <- Matrix::rowSums(SummarizedExperiment::assays(se)[[1]] != 0)
-
+  
   # Identify which rows have at least 'min_nonzero' non-zero entries
   rows_to_keep <- nonzero_counts >= min_nonzero
-
-  # Filter the assays, rowData, and colData in the SummarizedExperiment
+    
+  # Filter the assays, rowDatcolors()# Filter the assays, rowData, and colData in the SummarizedExperiment
   cat("Retained", sum(rows_to_keep), "rows after filtering\n")
   filtered_se <- se[rows_to_keep, ]
-
-  if(rescale_abundance){
-    warning("Setting rescale_abundance=T rescales each sample's abundances to sum to 100. This option should be not be used with ANI data.")
-    asy = SummarizedExperiment::assay(filtered_se)
-    asy = apply(asy, 2, function(x) x/sum(x)*100)
-    SummarizedExperiment::assay(filtered_se) = asy
-  }
   
   # Return the filtered SummarizedExperiment
   return(filtered_se)
@@ -104,6 +97,11 @@ filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundan
   
   # Filter the assays, rowData, and colData in the SummarizedExperiment
   cat("Retained", sum(rows_to_keep), "rows after filtering\n")
+  
+  # diagnostic plot
+  ord = order(nonzero_counts)
+  plot(nonzero_counts[ord], col = ifelse(rows_to_keep==T, "red", "blue")[ord]) + abline(h = min_nonzero)
+  
   filtered_se <- se[rows_to_keep, ]
   
   if(rescale_abundance){
