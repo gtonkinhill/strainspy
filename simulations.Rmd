@@ -5,7 +5,7 @@ output:
   html_document: default
 date: "2025-02-04"
 editor_options:
-  chunk_output_type: console
+  chunk_output_type: console 
 ---
 
 ```{r setup, include=FALSE}
