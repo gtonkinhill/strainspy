@@ -12,6 +12,7 @@ LazyData: true
 Imports: 
     data.table,
     dplyr,
+    gamlss,
     ggplot2,
     glmmTMB,
     harmonicmeanp,

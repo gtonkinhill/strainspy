@@ -40,7 +40,7 @@
 #' }
 #'
 #' @export
-abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=gaussian(link = "identity"), BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("lmerTest", quietly = TRUE)) {
     stop("The 'lmerTest' package is required but is not installed. Please install it with install.packages('lmerTest').")
@@ -122,7 +122,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=gl
   
   # Create the betaGLM object
   GLM <- new("betaGLM",
-             row_data = rowData(se),
+             row_data = SummarizedExperiment::rowData(se),
              coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
              std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
              p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
@@ -131,7 +131,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=gl
              zi_p_values = NULL,
              residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
              convergence = purrr::map_lgl(results, ~ .x$convergence),
-             design = model.matrix(design, data = as.data.frame(colData(se))),
+             design = design,
              # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
              call = match.call()  # Store the function call for reproducibility
   )

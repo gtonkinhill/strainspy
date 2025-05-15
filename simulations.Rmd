@@ -1,11 +1,11 @@
 ---
 title: "Simulations"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 date: "2025-02-04"
 editor_options:
-  chunk_output_type: console 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -56,7 +56,7 @@ library(strainspy)
 
 # Load Zeevi the GTDB 99% identity dataset
 # data <- read_sylph("~/Documents/strainspy_manuscript/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
-data <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id98.tsv.gz")
+data <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id99.tsv.gz")
 data <- filter_by_presence(data, min_nonzero = 150)
 
 # Get the ids of cases after a random split
@@ -283,7 +283,21 @@ ggplot(op, aes(x = zero_prop, y = scale_factor, fill = fp)) +
 
 Microbial load was predicted using https://github.com/grp-bork/microbial_load_predictor.
 ```{r}
+data_orig <- read_sylph("TEST_DATA/zeevi/zeevi_PRJEB11532_query_gtdb_220_id98.tsv.gz", variable = )
+data <- filter_by_presence(data_orig, min_nonzero = 50)
 mic_load = readRDS("TEST_DATA/zeevi/microbial_load.rds")
+
+# Get the ids of cases after a random split
+set.seed(789)
+cascon = rbinom(round(SummarizedExperiment::ncol(data)),  1, 0.5)
+cases = which(cascon == 1)
+
+# setup metadata
+meta_data = data.frame(run_accession = colnames(data),
+                       Case_status = cascon)
+
+meta_data$Case_status <- factor(meta_data$Case_status)
+data = strainspy:::modify_metadata(se = data, meta_data = meta_data)
 
 # This is somewhat arbitrary, but should work for simluations
 mic_load$color = "green"
@@ -304,7 +318,7 @@ meta_data$microbial_load = (meta_data$microbial_load_raw - min(meta_data$microbi
 data = strainspy:::modify_metadata(se = data, meta_data = meta_data)
 
 # # does the linear model work with this as well?
-# load_lm_fit = strainspy:::abundanceFit(data, as.formula('~microbial_load'), nthreads = 10)
+load_lm_fit = strainspy:::abundanceFit(data, as.formula('~microbial_load'), nthreads = 10)
 
 # Use load as a predictor (numeric/normalised)
 load_zib_fit = glmZiBFit(data,  as.formula('~microbial_load'), nthreads = 10)
