@@ -82,7 +82,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strainspy:::strip_random_effects(design), col_data))
+  nbeta <- ncol(model.matrix(strainspy:::nobars_(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
