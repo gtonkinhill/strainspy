@@ -8,6 +8,7 @@
 #' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
@@ -65,16 +66,23 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
+  
+  # check if formula is valid
+  nbd = nobars_(design)
+  if(is.null(nbd)){
+    stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
+  } 
+  
   combined_formula <- as.formula(paste(c("Value", as.character(design)),
                                        collapse = " "))
 
   # Ensure that rownames of colData match colnames of the assay
-  if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
+  if (!all(colnames(SummarizedExperiment::assays(se)[[1]]) %in% rownames(col_data))) {
     stop("Column names of assay data do not match row names of colData.")
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
+  nbeta <- ncol(model.matrix(nbd, col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", nbeta),
     class = rep("fixef", each=nbeta),
@@ -114,9 +122,19 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   # Clean up
   BiocParallel::bpstop(BPPARAM)
 
+  # sometimes results can be an empty list, remove those dynamically
+  rmidx = which(sapply(results, length) == 0)
+  
+  if(length(rmidx) > 0) {
+    seRD = SummarizedExperiment::rowData(se)[-rmidx, ]
+    results[rmidx] <- NULL
+  } else {
+    seRD = SummarizedExperiment::rowData(se)
+  }
+  
   # Create the betaGLM object
   ZIBetaGLM <- new("betaGLM",
-                   row_data = rowData(se),
+                   row_data = seRD,
                    coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                    std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
                    p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),

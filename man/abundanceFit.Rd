@@ -9,7 +9,7 @@ abundanceFit(
   design,
   nthreads = 1,
   scale_continous = TRUE,
-  family = glmmTMB::ordbeta(),
+  transform = NULL,
   BPPARAM = NULL
 )
 }
@@ -21,7 +21,9 @@ abundanceFit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{family}{A family object. Defaults to \code{gaussian(link = "identity")}.}
+\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+
+\item{transform}{If data is already transformed, set to \code{NULL} (default). Supported options: arcsin transform \code{arcsin} or centered log ratio \code{CLR}. \code{CLR} requires \code{compositions} package.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}

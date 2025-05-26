@@ -8,7 +8,7 @@
 #' @param coef The coefficient to report and use for p-value adjustment. Defaults to 2.
 #' @param method The method for p-value adjustment. Available methods are a subset of those in `p.adjust`,
 #'   specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
-#'   and "BH" (Benjamini-Hochberg)
+#'   and "BH" (Benjamini-Hochberg) and "BY".
 #' @return A tibble with the top hits, sorted by adjusted p-value.
 #' @export
 #' @importFrom dplyr mutate
@@ -20,8 +20,8 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
   }
 
   # Check method is one of the available options
-  if (!method %in% c("bonferroni", "BH", "holm", "BY", "holm")) {
-    stop("Method must be one of 'bonferroni', 'BH', or 'holm'.")
+  if (!method %in% c("bonferroni", "BH", "BY", "holm")) {
+    stop("Method must be one of 'bonferroni', 'BH', 'holm', 'BY', or 'holm'.")
   }
 
   # check if taxonomy is a string

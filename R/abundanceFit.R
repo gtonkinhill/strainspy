@@ -8,7 +8,8 @@
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
-#' @param family A family object. Defaults to `gaussian(link = "identity")`.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
+#' @param transform If data is already transformed, set to `NULL` (default). Supported options: arcsin transform `arcsin` or centered log ratio `CLR`. `CLR` requires `compositions` package.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #'
@@ -40,7 +41,7 @@
 #' }
 #'
 #' @export
-abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=gaussian(link = "identity"), BPPARAM=NULL) {
+abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform=NULL, BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("lmerTest", quietly = TRUE)) {
     stop("The 'lmerTest' package is required but is not installed. Please install it with install.packages('lmerTest').")
@@ -56,7 +57,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=ga
   if (scale_continous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
-        col_data[[col]] <- scale(col_data[[col]])  # Scale numeric columns
+        col_data[[col]] <- as.numeric(scale(col_data[[col]]))  # Scale numeric columnsa + convert from matrix to vector (we are guaranteed to go col by col)
       }
     }
   }
@@ -65,6 +66,13 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=ga
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
+  
+  # check if formula is valid
+  nbd = nobars_(design)
+  if(is.null(nbd)){
+    stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
+  } 
+  
   combined_formula <- as.formula(paste(c("Value", as.character(design)),
                                        collapse = " "))
   
@@ -92,6 +100,24 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=ga
     seq_len(nrow(se)),
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
+  
+  # transform - this is probably not the optimal way to do this!
+  if(!is.null(transform)){
+    if(transform == "arcsin") {
+      
+      SummarizedExperiment::assay(se) <- as(apply(SummarizedExperiment::assay(se) , 2, function(x) asin(sqrt(x/100))), 'dgRMatrix')
+      
+    } else if(transform == "CLR") {
+      if (!requireNamespace("compositions", quietly = TRUE)) {
+        stop("The 'compositions' package is required for CLR transformation, but is not installed. Please install it with install.packages('compositions').")
+      }
+      
+      SummarizedExperiment::assay(se) <- as(apply(SummarizedExperiment::assay(se) , 2, function(x) compositions::clr(x)), 'dgRMatrix')
+      
+    } else {
+      stop("Unknown transform = ", transform, ' --- see ?strainspy::abundanceFit')
+    }
+  }
   
   # simple model
   if( length(grep("\\|", deparse(design))) == 0 ) {
@@ -121,11 +147,13 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=ga
   BiocParallel::bpstop(BPPARAM)
   
   # Create the betaGLM object
+  p_val_idx = ncol(results[[1]]$coefficients)
+  
   GLM <- new("betaGLM",
              row_data = SummarizedExperiment::rowData(se),
              coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
              std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
-             p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
+             p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,p_val_idx])),
              zi_coefficients = NULL,
              zi_std_errors = NULL,
              zi_p_values = NULL,
@@ -154,7 +182,7 @@ fit_lm <- function(se_subset, col_data, combined_formula) {
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- log10(as.vector(se_subset[row_index, ] + 1e-5))
+    col_data$Value <- se_subset[row_index, ] 
     # for ordBeta, values can be in the closed interval [0,1], but for log linked functions, best to avoid 0
     
     # Run the zero-inflated beta regression
@@ -201,7 +229,7 @@ fit_lmer <- function(se_subset, col_data, combined_formula) {
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- log10(as.vector(se_subset[row_index, ] + 1e-5))
+    col_data$Value <- se_subset[row_index, ]
     # for ordBeta, values can be in the closed interval [0,1], but for log linked functions, best to avoid 0
     
     # Run the zero-inflated beta regression

@@ -4,7 +4,7 @@
 \alias{filter_by_presence}
 \title{filter_by_presence}
 \usage{
-filter_by_presence(se, min_nonzero = 10, rescale_abundance = F)
+filter_by_presence(se, min_nonzero = 10)
 }
 \arguments{
 \item{se}{A \code{SummarizedExperiment} object.}

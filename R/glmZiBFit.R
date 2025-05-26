@@ -8,6 +8,7 @@
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.
@@ -73,6 +74,13 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
+  
+  # check if formula is valid
+  nbd = nobars_(design)
+  if(is.null(nbd)){
+    stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
+  } 
+  
   combined_formula <- as.formula(paste(c("Value", as.character(design)),
                                        collapse = " "))
 
@@ -82,7 +90,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strainspy:::nobars_(design), col_data))
+  nbeta <- ncol(model.matrix(nbd, col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),

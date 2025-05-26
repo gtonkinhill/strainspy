@@ -23,10 +23,21 @@ if(all(names(load_metacardis) == metadata$Accession) ) metadata$load_m = load_me
 se_98_abundance = strainspy:::modify_metadata(se = se_98_abundance, meta_data = metadata)
 se_98_ANI = strainspy:::modify_metadata(se = se_98_ANI, meta_data = metadata)
 
-se_98_ANI <- filter_by_presence(se_98_ANI, min_nonzero = 50)
+se_98_ANI <- filter_by_presence(se_98_ANI, min_nonzero = 10)
+se_98_abundance <- filter_by_presence(se_98_abundance, min_nonzero = 5)
 
-design <- as.formula(" ~ cohort + 1|timepoint + 1|patientID")
-fit = glmFit(se_98_ANI, design, 10L)
+design <- as.formula("~ cohort + timepoint + (1 + timepoint | patientID)")
+
+fit_ANI = glmFit(se_98_ANI, design, 10L)
+top_hits(fit_ANI)
+plot_manhattan(fit_ANI)
+
+fit_AB = abundanceFit(se = se_98_abundance, design = design, nthreads = 10L, transform = 'CLR')
+top_hits(fit_AB)
+plot_manhattan(fit_AB)
+
+
+
 
 
 # Get the ids of cases after a random split

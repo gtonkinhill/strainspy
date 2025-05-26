@@ -16,15 +16,17 @@ glmFit(
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
-\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
-
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
+
+\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
 
 \item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
+
+\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 }
 \value{
 A list with the following components:
@@ -33,7 +35,7 @@ A list with the following components:
 \item{call}{The original function call.}
 }
 \description{
-This function fits a ordinal beta regression model using the \code{glmmTMB} package.
+This function fits a ordinalbeta regression model using the \code{glmmTMB} package.
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
 and fits a zero-inflated beta regression model on the assay data.
 }
