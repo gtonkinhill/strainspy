@@ -24,6 +24,7 @@
 #' @importFrom stats model.matrix
 #' @importFrom methods new
 #' @importFrom stats as.formula
+#' 
 #'
 #' @examples
 #' \dontrun{
@@ -138,10 +139,20 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
+  
+  # sometimes results can be an empty list, remove those dynamically
+  rmidx = which(sapply(results, length) == 0)
+  
+  if(length(rmidx) > 0) {
+    seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
+    results[rmidx] <- NULL
+  } else {
+    seRD = SummarizedExperiment::rowData(se)
+  }
 
   # Create the betaGLM object
   ZIBetaGLM <- methods::new("betaGLM",
-                            row_data = rowData(se),
+                            row_data = seRD,
                             coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                             std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
                             p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
@@ -221,7 +232,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
     return(list(
       coefficients = smry$coefficients$cond,
       coefficients_zi = smry$coefficients$zi,
-      residuals = residuals(fit, type = "response"),
+      residuals = stats::residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
       convergence = fit$fit$convergence==0
     ))

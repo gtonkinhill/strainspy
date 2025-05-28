@@ -7,7 +7,7 @@
 glmFit(
   se,
   design,
-  nthreads = 1,
+  nthreads = 1L,
   scale_continous = TRUE,
   family = glmmTMB::ordbeta(),
   BPPARAM = NULL
@@ -15,6 +15,8 @@ glmFit(
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
+
+\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
@@ -25,8 +27,6 @@ to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
-
-\item{formula}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 }
 \value{
 A list with the following components:

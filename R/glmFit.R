@@ -5,7 +5,7 @@
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param formula Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
 #' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
@@ -41,7 +41,7 @@
 #' }
 #'
 #' @export
-glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+glmFit <- function(se, design, nthreads=1L, scale_continous=TRUE, family=glmmTMB::ordbeta(), BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -126,7 +126,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   rmidx = which(sapply(results, length) == 0)
   
   if(length(rmidx) > 0) {
-    seRD = SummarizedExperiment::rowData(se)[-rmidx, ]
+    seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
     results[rmidx] <- NULL
   } else {
     seRD = SummarizedExperiment::rowData(se)
@@ -195,7 +195,7 @@ fit_model <- function(se_subset, col_data, combined_formula, fixed_priors, famil
     return(list(
       coefficients = smry$coefficients$cond,
       coefficients_zi = NULL,
-      residuals = residuals(fit, type = "response"),
+      residuals = stats::residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
       convergence = fit$fit$convergence==0
     ))

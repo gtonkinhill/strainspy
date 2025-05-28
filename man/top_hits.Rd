@@ -13,7 +13,7 @@ top_hits(object, coef = 2, method = "holm", alpha = 0.05)
 
 \item{method}{The method for p-value adjustment. Available methods are a subset of those in \code{p.adjust},
 specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
-and "BH" (Benjamini-Hochberg)}
+and "BH" (Benjamini-Hochberg) and "BY".}
 }
 \value{
 A tibble with the top hits, sorted by adjusted p-value.

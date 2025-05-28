@@ -2,11 +2,15 @@
 % Please edit documentation in R/utils.R
 \name{nobars_}
 \alias{nobars_}
-\title{nobars_ copied from https://github.com/bbolker/reformulas
-This function can work with formulas like ~cohort + timepoint + (1 + timepoint | patientID), above fails
-We can either use it like this, or add reformulas (or lme4) as a dependency}
+\title{Remove random effects from model}
 \usage{
 nobars_(term)
+}
+\arguments{
+\item{term}{Formula object}
+}
+\value{
+A formula without mixed components
 }
 \description{
 nobars_ copied from https://github.com/bbolker/reformulas

@@ -17,9 +17,11 @@
 #' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
 #' \item{fit}{The fitted `glmmTMB` model object.}
 #' \item{call}{The original function call.}
-#'
+#' 
+#' @importFrom lmerTest lmer
 #' @import SummarizedExperiment
 #' @importFrom glmmTMB glmmTMB
+#' @importFrom stats residuals logLik
 #'
 #' @examples
 #' \dontrun{
@@ -124,16 +126,16 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_lm(se_subset = SummarizedExperiment::assay(se)[row_indices,],
-                                     col_data = col_data, 
-                                     combined_formula =  combined_formula),
+                                   col_data = col_data, 
+                                   combined_formula =  combined_formula),
       BPPARAM = BPPARAM
     )
   } else {
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_lmer(se_subset = SummarizedExperiment::assay(se)[row_indices,],
-                                   col_data = col_data, 
-                                   combined_formula =  combined_formula),
+                                     col_data = col_data, 
+                                     combined_formula =  combined_formula),
       BPPARAM = BPPARAM
     )
   }
@@ -146,11 +148,21 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
   # Clean up
   BiocParallel::bpstop(BPPARAM)
   
+  # sometimes results can be an empty list, remove those dynamically
+  rmidx = which(sapply(results, length) == 0)
+  
+  if(length(rmidx) > 0) {
+    seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
+    results[rmidx] <- NULL
+  } else {
+    seRD = SummarizedExperiment::rowData(se)
+  }
+  
   # Create the betaGLM object
   p_val_idx = ncol(results[[1]]$coefficients)
   
   GLM <- new("betaGLM",
-             row_data = SummarizedExperiment::rowData(se),
+             row_data = seRD,
              coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
              std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
              p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,p_val_idx])),
@@ -206,8 +218,8 @@ fit_lm <- function(se_subset, col_data, combined_formula) {
     return(list(
       coefficients = smry$coefficients,
       coefficients_zi = NULL,
-      residuals = residuals(fit, type = "response"),
-      log_likelihood = as.numeric(logLik(fit)),
+      residuals = stats::residuals(fit, type = "response"),
+      log_likelihood = as.numeric(stats::logLik(fit)),
       # OLS usually converged when solution exists.
       convergence = 0
     ))
@@ -234,9 +246,13 @@ fit_lmer <- function(se_subset, col_data, combined_formula) {
     
     # Run the zero-inflated beta regression
     fit <- tryCatch({
-      lmerTest::lmer(
-        formula = combined_formula,
-        data = col_data
+      suppressMessages(
+        suppressWarnings(
+          lmerTest::lmer(
+            formula = combined_formula,
+            data = col_data
+          )
+        )
       )
     }, error = function(e) NULL)
     
@@ -253,8 +269,8 @@ fit_lmer <- function(se_subset, col_data, combined_formula) {
     return(list(
       coefficients = smry$coefficients,
       coefficients_zi = NULL,
-      residuals = residuals(fit, type = "response"),
-      log_likelihood = as.numeric(logLik(fit)),
+      residuals = stats::residuals(fit, type = "response"),
+      log_likelihood = as.numeric(stats::logLik(fit)),
       # OLS usually converged when solution exists.
       convergence = fit@optinfo$conv$opt
     ))

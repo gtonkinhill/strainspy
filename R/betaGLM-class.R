@@ -5,6 +5,10 @@ setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 #' betaGLM: A Class for Generalized Linear Models with Zero-Inflation
 #'
 #' The `betaGLM` class is designed to store the results of strainspy
+#' 
+#' @importClassesFrom S4Vectors DataFrame
+#' @importMethodsFrom S4Vectors show
+#'
 #'
 #' @slot row_data A `DataFrame` containing row data.
 #' @slot coefficients A `DataFrame` containing model coefficients.
@@ -20,8 +24,6 @@ setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 #' @slot design A matrix representing the design matrix of the model.
 #' @slot assay A matrix containing the assay data used for fitting the model.
 #' @slot call The matched call of the model.
-#'
-#' @importFrom S4Vectors DataFrame
 #'
 #' @export
 methods::setClass("betaGLM",
