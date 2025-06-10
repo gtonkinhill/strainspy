@@ -35,7 +35,7 @@ A list with the following components:
 \item{call}{The original function call.}
 }
 \description{
-This function fits a zero-inflated beta regression model using the \code{glmmTMB} package.
+This function fits a zero-inflated beta regression model using either \code{glmmTMB} or \code{gamlss} packages.
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
 and fits a zero-inflated beta regression model on the assay data.
 }

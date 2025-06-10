@@ -7,11 +7,11 @@
 fit_lm(se_subset, col_data, combined_formula)
 }
 \arguments{
+\item{se_subset}{A \code{SummarizedExperiment} object containing the assay data.}
+
 \item{col_data}{A data frame containing the design matrix and additional covariates.}
 
 \item{combined_formula}{The formula for the conditional mean model.}
-
-\item{se}{A \code{SummarizedExperiment} object containing the assay data.}
 }
 \value{
 A list with model coefficients, zero-inflation coefficients, residuals,

@@ -1,6 +1,6 @@
 #' glmZiBFit
 #'
-#' This function fits a zero-inflated beta regression model using the `glmmTMB` package.
+#' This function fits a zero-inflated beta regression model using either `glmmTMB` or `gamlss` packages.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
@@ -135,14 +135,16 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
 
   # Flatten the results by removing the first layer of lists
-  results <- do.call(c, results)
+  results <- unname(do.call(c, results))
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
   
   # sometimes results can be an empty list, remove those dynamically
   rmidx = which(sapply(results, length) == 0)
-  
+  # sometimes the loglikelihood is NA when the result failed
+  rmidx = c(rmidx, which(is.na(unlist(lapply(results, function(x) x$log_likelihood)))))
+  rmidx = unique(rmidx)
   if(length(rmidx) > 0) {
     seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
     results[rmidx] <- NULL
@@ -175,14 +177,11 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 #' Fits a zero-inflated beta regression for a single feature in an assay
 #' using `glmmTMB`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @param design The formula for the zero-inflation model.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 #'
@@ -248,14 +247,11 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #' Fits a zero-inflated beta regression for a single feature in an assay
 #' using `gamlss`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @param design The formula for the zero-inflation model.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 #'

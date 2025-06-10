@@ -2,9 +2,12 @@
 % Please edit documentation in R/betaGLM-class.R
 \name{getFDR}
 \alias{getFDR}
+\alias{getFDR,betaGLM-method}
 \title{Access False Discovery Rates (FDR)}
 \usage{
 getFDR(object)
+
+\S4method{getFDR}{betaGLM}(object)
 }
 \arguments{
 \item{object}{An object of class \code{betaGLM}.}

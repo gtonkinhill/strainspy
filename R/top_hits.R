@@ -9,6 +9,8 @@
 #' @param method The method for p-value adjustment. Available methods are a subset of those in `p.adjust`,
 #'   specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
 #'   and "BH" (Benjamini-Hochberg) and "BY".
+#' @param alpha Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.
+#' 
 #' @return A tibble with the top hits, sorted by adjusted p-value.
 #' @export
 #' @importFrom dplyr mutate

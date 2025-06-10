@@ -22,6 +22,7 @@
 #' @import SummarizedExperiment
 #' @importFrom glmmTMB glmmTMB
 #' @importFrom stats residuals logLik
+#' @importFrom methods as
 #'
 #' @examples
 #' \dontrun{
@@ -185,7 +186,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
 #'
 #' Fits a simple linear model for functions without random effects using stats::lm()
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
@@ -232,7 +233,7 @@ fit_lm <- function(se_subset, col_data, combined_formula) {
 #'
 #' Fits a linear model for a single feature in an assay using `lmerTest::lmer()`
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,

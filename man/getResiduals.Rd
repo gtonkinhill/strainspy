@@ -2,9 +2,12 @@
 % Please edit documentation in R/betaGLM-class.R
 \name{getResiduals}
 \alias{getResiduals}
+\alias{getResiduals,betaGLM-method}
 \title{Access Residuals}
 \usage{
 getResiduals(object)
+
+\S4method{getResiduals}{betaGLM}(object)
 }
 \arguments{
 \item{object}{An object of class \code{betaGLM}.}

@@ -21,6 +21,16 @@ plot_manhattan_gt(
 
 \item{coef}{The number of the coefficient from which to generate the plot (default=2).}
 
+\item{taxonomy}{An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).}
+
+\item{method}{Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm".}
+
+\item{alpha}{Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.}
+
+\item{levels}{Character vector. Taxonomic levels to include in the plot when \code{taxonomy} is provided. Defaults to c("Phylum", "Genus", "Species", "Strain").}
+
+\item{colour_level}{Character. Taxonomic level used for coloring the plot segments. Defaults to "Phylum".}
+
 \item{plot}{If set to false, the function will return a tibble with data used to generate the plot.}
 
 \item{ground_truth}{A vector of ground truth contigs}

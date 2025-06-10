@@ -20,6 +20,8 @@ plot_manhattan(
 
 \item{coef}{The number of the coefficient from which to generate the plot (default=2).}
 
+\item{taxonomy}{An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).}
+
 \item{method}{Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm".}
 
 \item{alpha}{Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.}

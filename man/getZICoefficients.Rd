@@ -2,9 +2,12 @@
 % Please edit documentation in R/betaGLM-class.R
 \name{getZICoefficients}
 \alias{getZICoefficients}
+\alias{getZICoefficients,betaGLM-method}
 \title{Access Zero-Inflation Coefficients}
 \usage{
 getZICoefficients(object)
+
+\S4method{getZICoefficients}{betaGLM}(object)
 }
 \arguments{
 \item{object}{An object of class \code{betaGLM}.}

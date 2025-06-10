@@ -157,14 +157,13 @@ glmFit <- function(se, design, nthreads=1L, scale_continous=TRUE, family=glmmTMB
 #' Fits a zero-inflated beta regression for a single feature in an assay
 #' using `glmmTMB`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
-#' @return A list with model coefficients, zero-inflation coefficients, residuals,
+#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
+#' 
+#' #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 fit_model <- function(se_subset, col_data, combined_formula, fixed_priors, family) {
 

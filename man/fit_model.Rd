@@ -7,23 +7,18 @@
 fit_model(se_subset, col_data, combined_formula, fixed_priors, family)
 }
 \arguments{
+\item{se_subset}{A \code{SummarizedExperiment} object containing the assay data.}
+
 \item{col_data}{A data frame containing the design matrix and additional covariates.}
 
 \item{combined_formula}{The formula for the conditional mean model.}
 
 \item{fixed_priors}{Optional priors for the model.}
 
-\item{se}{A \code{SummarizedExperiment} object containing the assay data.}
+\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.
 
-\item{row_index}{The index of the feature (row) to be processed.}
-
-\item{nt}{Number of threads for parallel computation in model fitting.}
-
-\item{feature}{Optional name of the feature for debugging or error messages.}
-}
-\value{
-A list with model coefficients, zero-inflation coefficients, residuals,
-log-likelihood, and convergence status.
+#' @return A list with model coefficients, zero-inflation coefficients, residuals,
+log-likelihood, and convergence status.}
 }
 \description{
 Fits a zero-inflated beta regression for a single feature in an assay

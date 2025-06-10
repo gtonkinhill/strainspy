@@ -17,10 +17,8 @@ setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 #' @slot zi_coefficients A `DataFrame` containing zero-inflation coefficients.
 #' @slot zi_std_errors A `DataFrame` containing zero-inflation standard errors.
 #' @slot zi_p_values A `DataFrame` containing zero-inflation p-values.
-#' @slot fdr A `DataFrame` or `NULL`, containing false discovery rates (FDR).
-#' @slot zi_fdr A `DataFrame` or `NULL`, containing zero-inflation FDR values.
-#' @slot dispersion A numeric vector containing dispersion estimates for the model.
 #' @slot residuals A `DataFrame` containing residuals from the model.
+#' @slot convergence A logical indicating whether model fitting converged.
 #' @slot design A matrix representing the design matrix of the model.
 #' @slot assay A matrix containing the assay data used for fitting the model.
 #' @slot call The matched call of the model.
@@ -41,6 +39,11 @@ methods::setClass("betaGLM",
                     assay = "matrix",
                     call = "call"
                   ))
+
+# I have removed the following slots because they are not being used and throw a warning during check
+# @slot fdr A `DataFrame` or `NULL`, containing false discovery rates (FDR).
+# @slot zi_fdr A `DataFrame` or `NULL`, containing zero-inflation FDR values.
+# @slot dispersion A numeric vector containing dispersion estimates for the model.
 
 #' Show Method for betaGLM
 #'
@@ -63,6 +66,9 @@ methods::setMethod("show", "betaGLM", function(object) {
 #' @return A `DataFrame` containing zero-inflation coefficients.
 #' @export
 methods::setGeneric("getZICoefficients", function(object) methods::standardGeneric("getZICoefficients"))
+
+#' @rdname getZICoefficients
+#' @export
 methods::setMethod("getZICoefficients", "betaGLM", function(object) {
   object@zi_coefficients
 })
@@ -75,6 +81,9 @@ methods::setMethod("getZICoefficients", "betaGLM", function(object) {
 #' @return A `DataFrame` containing residuals.
 #' @export
 methods::setGeneric("getResiduals", function(object) methods::standardGeneric("getResiduals"))
+
+#' @rdname getResiduals
+#' @export
 methods::setMethod("getResiduals", "betaGLM", function(object) {
   object@residuals
 })
@@ -87,6 +96,9 @@ methods::setMethod("getResiduals", "betaGLM", function(object) {
 #' @return A `DataFrame` or `NULL` containing FDR values.
 #' @export
 methods::setGeneric("getFDR", function(object) methods::standardGeneric("getFDR"))
+
+#' @rdname getFDR
+#' @export
 methods::setMethod("getFDR", "betaGLM", function(object) {
   object@fdr
 })

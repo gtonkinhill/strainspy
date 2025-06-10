@@ -185,6 +185,11 @@ get_confusion_mx <- function(top_hits, gt_contigs, all_contigs, print_cm = TRUE)
 #'
 #' @param object A `betaGLM` object.
 #' @param coef The number of the coefficient from which to generate the plot (default=2).
+#' @param taxonomy An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).
+#' @param method Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm".
+#' @param alpha Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.
+#' @param levels Character vector. Taxonomic levels to include in the plot when `taxonomy` is provided. Defaults to c("Phylum", "Genus", "Species", "Strain").
+#' @param colour_level Character. Taxonomic level used for coloring the plot segments. Defaults to "Phylum".
 #' @param plot If set to false, the function will return a tibble with data used to generate the plot.
 #' @param ground_truth A vector of ground truth contigs
 #' @return A `ggplot` object showing the Manhattan plot.

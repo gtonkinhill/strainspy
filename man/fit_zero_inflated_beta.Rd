@@ -13,6 +13,8 @@ fit_zero_inflated_beta(
 )
 }
 \arguments{
+\item{se_subset}{A \code{SummarizedExperiment} object containing the assay data.}
+
 \item{col_data}{A data frame containing the design matrix and additional covariates.}
 
 \item{combined_formula}{The formula for the conditional mean model.}
@@ -20,14 +22,6 @@ fit_zero_inflated_beta(
 \item{design}{The formula for the zero-inflation model.}
 
 \item{fixed_priors}{Optional priors for the model.}
-
-\item{se}{A \code{SummarizedExperiment} object containing the assay data.}
-
-\item{row_index}{The index of the feature (row) to be processed.}
-
-\item{nt}{Number of threads for parallel computation in model fitting.}
-
-\item{feature}{Optional name of the feature for debugging or error messages.}
 }
 \value{
 A list with model coefficients, zero-inflation coefficients, residuals,

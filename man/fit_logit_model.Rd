@@ -7,19 +7,15 @@
 fit_logit_model(se_subset, col_data, design, fixed_priors, min_identity)
 }
 \arguments{
+\item{se_subset}{A \code{SummarizedExperiment} object containing the assay data.}
+
 \item{col_data}{A data frame containing the design matrix and additional covariates.}
+
+\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 
 \item{fixed_priors}{Optional priors for the model.}
 
-\item{se}{A \code{SummarizedExperiment} object containing the assay data.}
-
-\item{row_index}{The index of the feature (row) to be processed.}
-
-\item{combined_formula}{The formula for the conditional mean model.}
-
-\item{nt}{Number of threads for parallel computation in model fitting.}
-
-\item{feature}{Optional name of the feature for debugging or error messages.}
+\item{min_identity}{A numeric value specifying the minimum identity threshold to consider (default=0.98).}
 }
 \value{
 A list with model coefficients, zero-inflation coefficients, residuals,

@@ -2,28 +2,34 @@ Package: strainspy
 Type: Package
 Title: Strain Level Microbiome Wide Association Studies
 Version: 0.1.0
+Depends: R (>= 3.5.0)
 Author: Gerry Tonkin-Hill
 Maintainer: Gerry Tonkin-Hill <g.tonkinhill@gmail.com>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
-Imports: 
+Imports:
+    BiocParallel,
     data.table,
     dplyr,
     gamlss,
+    gamlss.dist,
+    ggbeeswarm,
     ggplot2,
+    ggrepel,
+    ggthemes,
     glmmTMB,
     harmonicmeanp,
+    lmerTest,
     Matrix,
     methods,
-    pbapply,
     purrr,
-    readr,
     S4Vectors,
     stats,
+    stringr,
     SummarizedExperiment,
+    rlang,
     tibble,
     tidyr
 Suggests:

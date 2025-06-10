@@ -24,13 +24,9 @@ The \code{betaGLM} class is designed to store the results of strainspy
 
 \item{\code{zi_p_values}}{A \code{DataFrame} containing zero-inflation p-values.}
 
-\item{\code{fdr}}{A \code{DataFrame} or \code{NULL}, containing false discovery rates (FDR).}
-
-\item{\code{zi_fdr}}{A \code{DataFrame} or \code{NULL}, containing zero-inflation FDR values.}
-
-\item{\code{dispersion}}{A numeric vector containing dispersion estimates for the model.}
-
 \item{\code{residuals}}{A \code{DataFrame} containing residuals from the model.}
+
+\item{\code{convergence}}{A logical indicating whether model fitting converged.}
 
 \item{\code{design}}{A matrix representing the design matrix of the model.}
 
