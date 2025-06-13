@@ -9,4 +9,10 @@
 library(testthat)
 library(strainspy)
 
+if (!requireNamespace("R.utils", quietly = TRUE)) {
+  install.packages("R.utils", repos = "https://cloud.r-project.org")
+}
+
+library(R.utils)
+
 test_check("strainspy")
