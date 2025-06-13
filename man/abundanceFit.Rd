@@ -18,43 +18,45 @@ abundanceFit(
 
 \item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
 
-\item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
-to one 1.}
+\item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{TRUE}.}
 
 \item{transform}{If data is already transformed, set to \code{NULL} (default). Supported options: arcsin transform \code{arcsin} or centered log ratio \code{CLR}. \code{CLR} requires \code{compositions} package.}
 
-\item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
-will configure an appropriate backend automatically.}
+\item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function will configure an appropriate backend automatically.}
 }
 \value{
-A list with the following components:
-\item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-\item{fit}{The fitted \code{glmmTMB} model object.}
-\item{call}{The original function call.}
+A \code{betaGLM} object with the following components:
+\item{row_data}{A DFrame with 6 slots with feature details}
+\item{coefficients}{A DFrame with coefficients for each feature, standard errors, z-values, p-values, and FDR for each feature.}
+\item{std_errors}{A DFrame of standard errors for each feature}
+\item{p_values}{A DFrame of p-values for each feature}
+\item{residuals}{A DFrame of residual vectors for each feature}
+\item{convergence}{A named logical vector indicating convergence for each feature}
+\item{design}{Formula used in the call to \code{abundanceFit}}
+\item{call}{Call to \code{abundanceFit}}
 }
 \description{
-This function fits a linear regression model to proportional abundance data using either \code{stats::lm()} or \code{lmerTest::lmer()} for models with random effects.
-It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
-and fits a linear model on the assay data. It transforms the abundance data using: \code{log10(proportional_abundance + 1e-5)} prior to fitting.
+This function fits a linear regression model using \code{stats::lm()} or \code{lmerTest::lmer()}. The latter is used for models with random effects.
+It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula, and fits a linear model on the assay data.
+}
+\details{
+Generally, these linear models are useful to model compositional abundance data (e.g. \code{Taxonomic_abundance} in Sylph Profile) with appropriate transforms.
 }
 \examples{
 \dontrun{
-library(SummarizedExperiment)
 library(strainspy)
-library(glmmTMB)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-se <- read_sylph(example_path, example_meta)
-se <- filter_by_presence(se)
+se <- read_sylph(file_path = example_path, meta_data = example_meta, variable = 'Taxonomic_abundance')
+se <- filter_by_presence(se, 20)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
-
-fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
-summary(fit)
+fit <- abundanceFit(se,  design, nthreads=parallel::detectCores(), transform='CLR')
+top_hits(fit, alpha = 0.5)
 
 }
 

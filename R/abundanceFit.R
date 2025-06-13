@@ -1,22 +1,26 @@
 #' abundanceFit
 #'
-#' This function fits a linear regression model to proportional abundance data using either `stats::lm()` or `lmerTest::lmer()` for models with random effects. 
-#' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
-#' and fits a linear model on the assay data. It transforms the abundance data using: `log10(proportional_abundance + 1e-5)` prior to fitting.
-#'
+#' This function fits a linear regression model using `stats::lm()` or `lmerTest::lmer()`. The latter is used for models with random effects. 
+#' It takes a `SummarizedExperiment` object as input, along with a user-defined formula, and fits a linear model on the assay data.
+#' 
+#' Generally, these linear models are useful to model compositional abundance data (e.g. `Taxonomic_abundance` in Sylph Profile) with appropriate transforms.
+#' 
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
-#' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
-#'        to one 1.
-#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
+#' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults to one 1.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `TRUE`.
 #' @param transform If data is already transformed, set to `NULL` (default). Supported options: arcsin transform `arcsin` or centered log ratio `CLR`. `CLR` requires `compositions` package.
-#' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
-#'        will configure an appropriate backend automatically.
+#' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
 #'
-#' @return A list with the following components:
-#' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-#' \item{fit}{The fitted `glmmTMB` model object.}
-#' \item{call}{The original function call.}
+#' @return A `betaGLM` object with the following components:
+#' \item{row_data}{A DFrame with 6 slots with feature details}
+#' \item{coefficients}{A DFrame with coefficients for each feature, standard errors, z-values, p-values, and FDR for each feature.}
+#' \item{std_errors}{A DFrame of standard errors for each feature}
+#' \item{p_values}{A DFrame of p-values for each feature}
+#' \item{residuals}{A DFrame of residual vectors for each feature}
+#' \item{convergence}{A named logical vector indicating convergence for each feature}
+#' \item{design}{Formula used in the call to `abundanceFit`}
+#' \item{call}{Call to `abundanceFit`} 
 #' 
 #' @importFrom lmerTest lmer
 #' @import SummarizedExperiment
@@ -26,20 +30,18 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(SummarizedExperiment)
 #' library(strainspy)
-#' library(glmmTMB)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-#' se <- read_sylph(example_path, example_meta)
-#' se <- filter_by_presence(se)
+#' 
+#' se <- read_sylph(example_path, example_meta, 'Taxonomic_abundance')
+#' se <- filter_by_presence(se, 20)
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
-#'
-#' fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
-#' summary(fit)
+#' fit <- abundanceFit(se,  design, nthreads=parallel::detectCores(), transform='CLR')
+#' top_hits(fit, alpha = 0.5)
 #'
 #' }
 #'
@@ -144,7 +146,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
   
   
   # Flatten the results by removing the first layer of lists
-  results <- do.call(c, results)
+  results <- unname(do.call(c, results))
   
   # Clean up
   BiocParallel::bpstop(BPPARAM)
@@ -222,7 +224,7 @@ fit_lm <- function(se_subset, col_data, combined_formula) {
       residuals = stats::residuals(fit, type = "response"),
       log_likelihood = as.numeric(stats::logLik(fit)),
       # OLS usually converged when solution exists.
-      convergence = 0
+      convergence = 1
     ))
   })
   

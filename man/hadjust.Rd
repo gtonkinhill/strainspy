@@ -11,7 +11,7 @@ hadjust(object, coef = 2, method = "HMP", taxonomy = NULL, index_range = FALSE)
 
 \item{coef}{The coefficient to use for p-value adjustment. Defaults to 2.}
 
-\item{method}{The method for p-value adjustment. Options include "bonferroni", "BH", and Harmonic Mean P-value (HMP).}
+\item{method}{The method for p-value adjustment. Options include "bonferroni" and Harmonic Mean P-value (HMP).}
 
 \item{taxonomy}{A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.}
 

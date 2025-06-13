@@ -10,8 +10,7 @@ plot_manhattan(
   taxonomy = NULL,
   method = "holm",
   alpha = 0.05,
-  levels = c("Phylum", "Genus", "Species", "Strain"),
-  colour_level = "Phylum",
+  tax_levels = c("Phylum", "Genus", "Species", "Strain"),
   plot = TRUE
 )
 }
@@ -26,9 +25,9 @@ plot_manhattan(
 
 \item{alpha}{Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.}
 
-\item{levels}{Character vector. Taxonomic levels to include in the plot when \code{taxonomy} is provided. Defaults to c("Phylum", "Genus", "Species", "Strain").}
-
-\item{colour_level}{Character. Taxonomic level used for coloring the plot segments. Defaults to "Phylum".}
+\item{tax_levels}{Character vector. Subset of taxonomic levels: c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Strain") to include in the plot.
+Defaults to c("Phylum", "Genus", "Species", "Strain"). Provided levels will be reordered by the standard hierarchy and the highest level is used for colouring. If it has >30 categories,
+the legend is replaced by a named vector.}
 
 \item{plot}{If set to false, the function will return a tibble with data used to generate the plot.}
 }

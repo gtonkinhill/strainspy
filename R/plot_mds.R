@@ -46,7 +46,7 @@ plot_mds <- function(se,
   plot <- ggplot2::ggplot(mds, mapping = ggplot2::aes(
     x = Dim1, y = Dim2, colour = phenotype)) +
     ggplot2::geom_point() +
-    ggthemes::theme_few()
+    ggthemes::theme_clean(base_size = 16)
 
   # Gradient colouring if continuous data
   if(is.numeric(col)) {

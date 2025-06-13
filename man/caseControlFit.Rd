@@ -16,7 +16,7 @@ caseControlFit(
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
-\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{ ~ Group + (1|Sample)}.}
+\item{design}{Formula. A formula to specify the fixed and random effects, e.g., \code{Outcome ~ Value + Covariate + (1|Sample)}.}
 
 \item{min_identity}{A numeric value specifying the minimum identity threshold to consider (default=0.98).}
 
@@ -29,10 +29,15 @@ to one 1.}
 will configure an appropriate backend automatically.}
 }
 \value{
-A list with the following components:
-\item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-\item{fit}{The fitted \code{glmmTMB} model object.}
-\item{call}{The original function call.}
+A \code{betaGLM} object with the following components:
+\item{row_data}{A DFrame with 6 slots with feature details}
+\item{coefficients}{A DFrame with coefficients for each feature, standard errors, z-values, p-values, and FDR for each feature.}
+\item{std_errors}{A DFrame of standard errors for each feature}
+\item{p_values}{A DFrame of p-values for each feature}
+\item{residuals}{A DFrame of residual vectors for each feature}
+\item{convergence}{A named logical vector indicating convergence for each feature}
+\item{design}{Formula used in the call to \code{caseControlFit}}
+\item{call}{Call to \code{caseControlFit}}
 }
 \description{
 This function fits a logistic regression model similar to that published in the original Sylph paper.
@@ -40,7 +45,6 @@ It takes a \code{SummarizedExperiment} object as input, along with a user-define
 }
 \examples{
 \dontrun{
-library(SummarizedExperiment)
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
@@ -52,7 +56,7 @@ se <- filter_by_presence(se)
 
 design <- as.formula("Case_status ~ Value + Age_at_collection")
 
-fit <- caseControlFit(se, design, nthreads=4)
+fit <- caseControlFit(se, design, nthreads=parallel::detectCores())
 min(fit@p_values[,2], na.rm=TRUE)
 
 }

@@ -28,10 +28,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(SummarizedExperiment)
 #' library(strainspy)
-#' library(glmmTMB)
-#' library(gamlss)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
@@ -39,12 +36,11 @@
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
-#' design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
-#' design <- as.formula(" ~ Case_status + Age_at_collection + gamlss::random(Sex)")
 #' design <- as.formula(" ~ Case_status")
 #'
-#' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='gamlss')
-#' top_hits(fit, alpha=1)
+#' fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
+#' top_hits(fit, alpha=0.5)
+#' plot_manhattan(fit)
 #'
 #' }
 #'
@@ -311,7 +307,7 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     stdout <- capture.output(smry <- summary(fit, robust=TRUE))
 
     index <- unlist(purrr::map(fit$parameters, ~{
-      rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]))))
+      rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]) )))
     }))
 
     if (length(index) != nrow(smry)) {
@@ -336,8 +332,8 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     return(list(
       coefficients = smry$mu,
       coefficients_zi = smry$nu,
-      residuals = NULL,
-      log_likelihood = NA,
+      residuals = fit$residuals,
+      log_likelihood = as.numeric(logLik(fit)),
       convergence = fit$converged
     ))
   })

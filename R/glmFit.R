@@ -23,9 +23,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' library(SummarizedExperiment)
 #' library(strainspy)
-#' library(glmmTMB)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
@@ -35,8 +33,9 @@
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit <- glmFit(se[1:2],  design, nthreads=4, family=glmmTMB::ordbeta())
-#' summary(fit)
+#' fit <- glmFit(se,  design, nthreads=parallel::detectCores(), family=glmmTMB::ordbeta())
+#' top_hits(fit, alpha=0.5)
+#' plot_manhattan(fit)
 #'
 #' }
 #'
@@ -117,7 +116,7 @@ glmFit <- function(se, design, nthreads=1L, scale_continous=TRUE, family=glmmTMB
   )
 
   # Flatten the results by removing the first layer of lists
-  results <- do.call(c, results)
+  results <- unname(do.call(c, results))
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)

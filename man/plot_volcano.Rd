@@ -7,15 +7,15 @@
 plot_volcano(
   fit,
   coef = 2,
-  alpha = 0.05,
-  palette = c("#DAA520", "#3CB371", "#483D8B"),
+  alpha = 0.5,
+  palette = rev(viridis::viridis(3)),
   label = FALSE,
-  regex = "\\\\b[A-Z][a-z]+ [a-z]+(?: [a-z]+)?(?: [A-Z]{2,}[^\\\\s,]*)*",
+  contig_names = NULL,
   plot = TRUE
 )
 }
 \arguments{
-\item{fit}{A \code{betaGLM} object containing model results.}
+\item{fit}{A betaGLM object containing model results.}
 
 \item{coef}{Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.}
 
@@ -25,12 +25,14 @@ plot_volcano(
 
 \item{label}{Logical, whether to label most signifcant points of the plot with Species name.}
 
-\item{regex}{String, a regular expression which can be used to format the labels}
+\item{contig_names}{Optional character vector to replace long contig names in the plot.
+Must match the length and order of \code{top_hits(fit, coef = coef, alpha = alpha)$Contig_name}.
+If NULL (default), shortening will be attempted automatically.}
 
 \item{plot}{Logical, whether to return a ggplot object (default: TRUE). If FALSE, returns the processed data.}
 }
 \value{
-A ggplot2 object if \code{plot = TRUE}, otherwise a dataframe containing the relevant statistics.
+A ggplot2 object if plot = TRUE, otherwise a dataframe containing the relevant statistics.
 }
 \description{
 This function creates a volcano plot from the results of a betaGLM analysis,
@@ -42,9 +44,10 @@ example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package =
 example_meta <- readr::read_csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 se <- read_sylph(example_path, example_meta)
+se <- filter_by_presence(se)
 design <- as.formula(" ~ Case_status + Sex")
-fit <- glmZiBFit(se[1:100,], design, nthreads=1, method='gamlss')
-plot_volcano(fit, coef = 2)
+fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
+plot_volcano(fit_glmmtmb, coef = 2, label = T)
 }
 
 }

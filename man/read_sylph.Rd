@@ -34,17 +34,18 @@ Optionally, metadata can be provided, which will be loaded into the \code{colDat
 }
 \examples{
 \dontrun{
-  # Read a Sylph file (query or profile) into a SummarizedExperiment object
-  example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-  se <- read_sylph(example_path)
-  # View the SummarizedExperiment
-  se
-  # View the assays (numerical matrix)
-  assay(se)
-  # View the rowData (metadata for contigs)
-  rowData(se)
-  # View the colData (metadata for samples)
-  colData(se)
+library(strainspy)
+library(SummarizedExperiment)
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+se <- read_sylph(example_path)
+# View the SummarizedExperiment
+se
+# View the assays (numerical matrix)
+assay(se)
+# View the rowData (metadata for contigs)
+rowData(se)
+# View the colData (metadata for samples)
+colData(se)
 }
 \dontrun{
   # Read a Sylph file (query or profile) with associated metadata into a SummarizedExperiment object

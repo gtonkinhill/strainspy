@@ -90,6 +90,31 @@ clean_contig_names <- function(contig_names, max_length = 50, return_map = F) {
 }
 
 
+#' Generate colours for Manhattan plots
+#' 
+#' This function generates a vector of colours for plotting, prioritising a fixed palette of 21 distinct colours.
+#' If more than 21 colours are required, additional colours are generated using \code{grDevices::rainbow()}.
+#'
+#' @importFrom grDevices rainbow
+#' 
+#' @param n Integer. The number of colours needed.
+#'
+#' @return A character vector of \code{n} colour hex codes.
+get_colors <- function(n) {
+  base_colors <- c(
+    '#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00',
+    '#cab2d6','#6a3d9a','#b15928','#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462',
+    '#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5'
+  )
+  if (n <= length(base_colors)) {
+    return(base_colors[seq_len(n)])
+  } else {
+    extra_needed <- n - length(base_colors)
+    extra_colors <- sample(grDevices::rainbow(extra_needed))
+    return(c(base_colors, extra_colors))
+  }
+}
+
 # #' Remove random effects from model
 # #'
 # #' @param formula Formula object

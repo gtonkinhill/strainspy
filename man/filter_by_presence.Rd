@@ -24,11 +24,8 @@ The same rows are filtered from all assays in the SummarizedExperiment.
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 se <- read_sylph(example_path)
 
-# Filter to keep only rows with at least 10 non-zero entries in the Adjusted_ANI assay
-filtered_se <- filter_by_presence(se)
-
-# View the filtered object
-filtered_se
+# Filter to keep only rows with at least 20 non-zero entries in the Adjusted_ANI assay
+filtered_se <- filter_by_presence(se, min_nonzero = 20)
 }
 
 }

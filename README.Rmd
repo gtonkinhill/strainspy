@@ -5,7 +5,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+<!-- README.md is generated from README.Rmd. Please only edit the Rmd file -->
 
 ```{r, echo = FALSE}
 knitr::opts_chunk$set(
@@ -62,7 +62,7 @@ example_taxonomy_path <- system.file("extdata", "example_taxonomy.tsv.gz", packa
 ```{r}
 # Read in metadata
 meta_data <- readr::read_csv(example_meta_path)
-
+meta_data$Case_status = factor(meta_data$Case_status) # Required for visualising
 # Read in sylph profile
 se <- read_sylph(example_sylph_path, meta_data)
 
@@ -89,13 +89,26 @@ top_hits(fit, alpha = 0.5)
 # Create Manhattan plot
 plot_manhattan(fit, method = 'holm')
 
-# Read in taxonomy
-taxonomy <- read_taxonomy(example_taxonomy_path)
+# Create Volcano plot
+plot_volcano(fit, label = T)
+```
+
+## Visualise the distribution of top hits with Case_status
+# Including zeros
+```{r}
+plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.5)$Contig_name, show_points = T)
+```
+# Excluding zeros
+```{r}
+plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.5)$Contig_name, show_points = T, drop_zeros = T)
 ```
 
 ### Incorporate taxonomy
 
 ```{r}
+# Read in taxonomy
+taxonomy <- read_taxonomy(example_taxonomy_path)
+
 # Perform hierarchical multiple testing adjustment of p-values
 hier_p <- hadjust(fit, taxonomy=taxonomy)
 head(hier_p)

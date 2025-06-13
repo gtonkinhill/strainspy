@@ -16,11 +16,8 @@
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #' se <- read_sylph(example_path)
 #'
-#' # Filter to keep only rows with at least 10 non-zero entries in the Adjusted_ANI assay
-#' filtered_se <- filter_by_presence(se)
-#'
-#' # View the filtered object
-#' filtered_se
+#' # Filter to keep only rows with at least 20 non-zero entries in the Adjusted_ANI assay
+#' filtered_se <- filter_by_presence(se, min_nonzero = 20)
 #' }
 #'
 #' @export
@@ -31,7 +28,6 @@ filter_by_presence <- function(se, min_nonzero = 10) {
     stop("`se` must be a SummarizedExperiment object.")
   }
 
-  # Isn't it convenient to use an abundance threshold instead (like: 0.05 * ncol)?
   if(min_nonzero %% 1 != 0) {
     stop("`min_zero` must be an integer.")
   }

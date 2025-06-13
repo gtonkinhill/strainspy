@@ -15,7 +15,7 @@ Imports:
     dplyr,
     gamlss,
     gamlss.dist,
-    ggbeeswarm,
+    ggforce,
     ggplot2,
     ggrepel,
     ggthemes,
@@ -31,8 +31,11 @@ Imports:
     SummarizedExperiment,
     rlang,
     tibble,
-    tidyr
+    tidyr,
+    viridis
 Suggests:
-    compositions
+    compositions,
+    testthat (>= 3.0.0)
 RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)
+Config/testthat/edition: 3
