@@ -9,10 +9,8 @@
 library(testthat)
 library(strainspy)
 
-if (!requireNamespace("R.utils", quietly = TRUE)) {
-  install.packages("R.utils", repos = "https://cloud.r-project.org")
-}
-
-library(R.utils)
+library(R.utils) 
+# We annoyingly need R.utils to be able to read a zipped csv file using read.csv
+# Ignore note about import not being used, github workflow fails if this is removed
 
 test_check("strainspy")

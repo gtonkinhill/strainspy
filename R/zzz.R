@@ -8,5 +8,5 @@ utils::globalVariables(c(
   "p.adjust", "p_adjust", "p_value", "phenotype", "prcomp", "pred", "query_name",
   "rbinom", "relative_abundance", "row_indices", "set", "slotNames",
   "str_extract", "strip_random_effects", "tax", "taxonomy", "tibble",
-  "zi_coefficient", "zi_p_adjust", "zi_p_value"
+  "zi_coefficient", "zi_p_adjust", "zi_p_value", 'isTip', 'y', 'label', 'Genome'
 ))

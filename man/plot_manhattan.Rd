@@ -8,6 +8,7 @@ plot_manhattan(
   object,
   coef = 2,
   taxonomy = NULL,
+  aggregate_by_taxa = NULL,
   method = "holm",
   alpha = 0.05,
   tax_levels = c("Phylum", "Genus", "Species", "Strain"),
@@ -21,20 +22,43 @@ plot_manhattan(
 
 \item{taxonomy}{An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).}
 
-\item{method}{Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm".}
+\item{aggregate_by_taxa}{Logical. If TRUE, aggregate p-values across \code{tax_levels} and visualise as a stacked segment plot. Requires \code{taxonomy}. If NULL (default), the function automatically sets it to TRUE when \code{taxonomy} is provided.}
+
+\item{method}{Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm". Only applicable if \code{aggregate_by_taxa = TRUE}.}
 
 \item{alpha}{Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.}
 
 \item{tax_levels}{Character vector. Subset of taxonomic levels: c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Strain") to include in the plot.
 Defaults to c("Phylum", "Genus", "Species", "Strain"). Provided levels will be reordered by the standard hierarchy and the highest level is used for colouring. If it has >30 categories,
-the legend is replaced by a named vector.}
+the legend is replaced by a named vector. Only applicable with \code{aggregate_by_taxa = TRUE}.}
 
-\item{plot}{If set to false, the function will return a tibble with data used to generate the plot.}
+\item{plot}{If set to false, the function will return a tibble with data used to generate the plot. NOTE: Will be disregarded if taxonomy is provided with the option \code{aggregate_by_taxa = FALSE}.}
 }
 \value{
-A \code{ggplot} object showing the Manhattan plot.
+A \code{ggplot} object showing the Manhattan plot if \code{plot = TRUE}, else a \code{data.frame} with plot data.
 }
 \description{
-This function creates a Manhattan plot from a \code{betaGLM} object, with separate facets
-for the Zero-Inflation and Beta distribution parts of the model.
+This function can generate multiple Manhattan plots from a \code{betaGLM} object.
+}
+\details{
+The generated plot will be more informative if taxonomic information is
+provided. Two types of plots can be generated with taxonomic information.
+\enumerate{
+\item Set \code{aggregate_by_taxa = TRUE} to aggregate p-values across taxonomic levels
+specified by \code{tax_levels}. This generates a stacked segment Manhattan plot.
+In this plot, -log10 p-values adjusted using \code{method} will be plotted in
+taxonomic ordering. Significance threshold will be \code{alpha}.
+\item Set \code{aggregate_by_taxa = FALSE} to generate a traditional Manhattan plot for
+all strains coloured by phylum. Unadjusted p-values will be plotted and
+Bonferroni significance thresholds (0.05, 0.01) will be shown. Strains will
+be in taxonomic ordering and a tree showing the taxonomic relationship between
+strains will be plotted below the Manhattan plot.
+}
+
+If taxonomic information is not provided (\code{taxonomy = NULL}), a plot with
+-log10 p-values adjusted using \code{method} will be generated. Strains will be
+plotted in alphabetical order. Significance threshold will be \code{alpha}.
+
+If Zero-Inflated Beta regression was used to model \code{object}, separate
+facets will be used for zero-inflated and beta components of the model.
 }

@@ -34,12 +34,13 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   }
 
   # Extract p-values & coefficients
-  if ("caseControlFit" == as.character(object@call)[[1]]) {
+  mdl = as.character(object@call)[[1]]
+  if ("caseControlFit" == mdl) {
     main_model <- "Logistic"
-  } else if ("glmZiBFit" == as.character(object@call)[[1]]) {
+  } else if ("glmZiBFit" == mdl | "glmFit" == mdl) {
     main_model <- "Beta"
   } else {
-    main_model <- "Unknown model"
+    main_model <- "Unknown model" # We need to expand this as we include models
   }
 
   beta_res <- tibble::as_tibble(slot(object, 'row_data')) |>

@@ -10,6 +10,7 @@ Description: More about what it does (maybe more than one line)
 License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
+    ape,
     BiocParallel,
     data.table,
     dplyr,
@@ -19,12 +20,15 @@ Imports:
     ggplot2,
     ggrepel,
     ggthemes,
+    ggtree,
     glmmTMB,
     harmonicmeanp,
     lmerTest,
     Matrix,
     methods,
+    patchwork,
     purrr,
+    R.utils,
     S4Vectors,
     stats,
     stringr,

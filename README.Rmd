@@ -33,21 +33,19 @@ knitr::opts_chunk$set(
 
 ```{r, eval = FALSE}
 install.packages("remotes")
-
 remotes::install_github("gtonkinhill/strainspy")
 ```
 
-If you would like to also build the vignette with your installation run:
 
+If you would like to also build the vignette with your installation run:
 ```{r, eval=FALSE}
 remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 ```
-
 ## Example
 
-Run strainspy
+This walkthrough demonstrates a typical `strainspy` analysis and showcases some of the models and outputs available. Here, we analyse a 200 sample subset of the data described in [Wallen *et al.* 2022](https://doi.org/10.1038/s41467-022-34667-x).
 
-**NOTE:** Be sure to replace the example paths with valid file paths on your system. The `system.file` function is used here only for demonstration purposes in this vignette and will not work outside the package environment.
+**NOTE:** Be sure to replace the example paths with valid file paths on your system. The `system.file()` function is used here only for demonstration purposes in this vignette and will not work outside the package environment.
 
 ```{r, fig.width =8, fig.height=6, fig.align='center'}
 library(strainspy)
@@ -76,36 +74,35 @@ se <- filter_by_presence(se, min_nonzero = 30)
 # Create design matrix
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-# Fit the model
-fit <- glmZiBFit(se,  design, nthreads=4)
+# Fit a Zero-inflated beta model
+fit <- glmZiBFit(se,  design, nthreads=parallel::detectCores())
 ```
 
 ### Summarise and plot the results
 
-```{r}
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 # Get top hits
 top_hits(fit, alpha = 0.5)
 
-# Create Manhattan plot
-plot_manhattan(fit, method = 'holm')
-
 # Create Volcano plot
-plot_volcano(fit, label = T)
+plot_volcano(fit, label = T, alpha = 0.5)
 ```
 
 ## Visualise the distribution of top hits with Case_status
-# Including zeros
-```{r}
+
+### Including zeros
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.5)$Contig_name, show_points = T)
 ```
-# Excluding zeros
-```{r}
+
+### Excluding zeros
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.5)$Contig_name, show_points = T, drop_zeros = T)
 ```
 
-### Incorporate taxonomy
+## Incorporate taxonomy
 
-```{r}
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 # Read in taxonomy
 taxonomy <- read_taxonomy(example_taxonomy_path)
 
@@ -113,8 +110,11 @@ taxonomy <- read_taxonomy(example_taxonomy_path)
 hier_p <- hadjust(fit, taxonomy=taxonomy)
 head(hier_p)
 
-# Create taxonomy informed Manhattan plot
-plot_manhattan(fit, taxonomy = taxonomy, method = 'HMP')
+# Create taxonomy informed Manhattan plot with adjusted p-values
+plot_manhattan(fit, taxonomy = taxonomy)
+
+# Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
+plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
 ## Example using Sourmash output

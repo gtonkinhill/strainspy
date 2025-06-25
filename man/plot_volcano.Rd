@@ -7,7 +7,7 @@
 plot_volcano(
   fit,
   coef = 2,
-  alpha = 0.5,
+  alpha = 0.05,
   palette = rev(viridis::viridis(3)),
   label = FALSE,
   contig_names = NULL,
@@ -19,7 +19,7 @@ plot_volcano(
 
 \item{coef}{Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.}
 
-\item{alpha}{Float indicating signficance level}
+\item{alpha}{Float indicating signficance level. Default is 0.05}
 
 \item{palette}{A vector of user defined palette to colour plot. Default is the viridis palette.}
 

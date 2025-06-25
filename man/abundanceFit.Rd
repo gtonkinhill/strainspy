@@ -51,7 +51,8 @@ library(strainspy)
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-se <- read_sylph(file_path = example_path, meta_data = example_meta, variable = 'Taxonomic_abundance')
+
+se <- read_sylph(example_path, example_meta, 'Taxonomic_abundance')
 se <- filter_by_presence(se, 20)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")

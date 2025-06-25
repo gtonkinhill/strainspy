@@ -16,7 +16,6 @@
 
 ``` r
 install.packages("remotes")
-
 remotes::install_github("gtonkinhill/strainspy")
 ```
 
@@ -28,10 +27,13 @@ remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 
 ## Example
 
-Run strainspy
+This walkthrough demonstrates a typical `strainspy` analysis and
+showcases some of the models and outputs available. Here, we analyse a
+200 sample subset of the data described in [Wallen *et al.*
+2022](https://doi.org/10.1038/s41467-022-34667-x).
 
 **NOTE:** Be sure to replace the example paths with valid file paths on
-your system. The `system.file` function is used here only for
+your system. The `system.file()` function is used here only for
 demonstration purposes in this vignette and will not work outside the
 package environment.
 
@@ -64,8 +66,8 @@ se <- filter_by_presence(se, min_nonzero = 30)
 # Create design matrix
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-# Fit the model
-fit <- glmZiBFit(se, design, nthreads = 4)
+# Fit a Zero-inflated beta model
+fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 #>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%
 ```
 
@@ -81,38 +83,32 @@ top_hits(fit, alpha = 0.5)
 #> 2 NZ_JAJEQM01… GCF_020687…      0.0198    0.0585 7.35e-1   1               1.30 
 #> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
 
-# Create Manhattan plot
-plot_manhattan(fit, method = "holm")
-```
-
-![](inst/vignette-supp/unnamed-chunk-7-1.png)<!-- -->
-
-``` r
-
 # Create Volcano plot
-plot_volcano(fit, label = T)
+plot_volcano(fit, label = T, alpha = 0.5)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-7-2.png)<!-- -->
+<img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
 
 ## Visualise the distribution of top hits with Case_status
 
-# Including zeros
+### Including zeros
 
 ``` r
 plot_ani_dist(se, "Case_status", top_hits(fit, alpha = 0.5)$Contig_name, show_points = T)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-8-1.png)<!-- --> \# Excluding zeros
+<img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />
+
+### Excluding zeros
 
 ``` r
 plot_ani_dist(se, "Case_status", top_hits(fit, alpha = 0.5)$Contig_name, show_points = T,
     drop_zeros = T)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-9-1.png)<!-- -->
+<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
 
-### Incorporate taxonomy
+## Incorporate taxonomy
 
 ``` r
 # Read in taxonomy
@@ -131,11 +127,20 @@ head(hier_p)
 #> 5 Genus   Beta  QAND01                        1           0.490    0.124 
 #> 6 Species Beta  QAND01 sp003150225            1           0.490    0.124
 
-# Create taxonomy informed Manhattan plot
-plot_manhattan(fit, taxonomy = taxonomy, method = "HMP")
+# Create taxonomy informed Manhattan plot with adjusted p-values
+plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-10-1.png)<!-- -->
+<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
+
+``` r
+
+# Create a traditional Manhattan plot coloured by taxonomy with unadjusted
+# p-values and Bonferroni significance thresholds
+plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
+```
+
+<img src="inst/vignette-supp/unnamed-chunk-10-2.png" width="100%" />
 
 ## Example using Sourmash output
 

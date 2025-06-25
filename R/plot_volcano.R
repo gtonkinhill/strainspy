@@ -7,7 +7,7 @@
 #' 
 #' @param fit A betaGLM object containing model results.
 #' @param coef Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.
-#' @param alpha Float indicating signficance level
+#' @param alpha Float indicating signficance level. Default is 0.05
 #' @param palette A vector of user defined palette to colour plot. Default is the viridis palette.
 #' @param label Logical, whether to label most signifcant points of the plot with Species name.
 #' @param contig_names Optional character vector to replace long contig names in the plot.
@@ -31,7 +31,7 @@
 #' }
 #'
 #' @export
-plot_volcano <- function(fit, coef = 2, alpha = 0.5,
+plot_volcano <- function(fit, coef = 2, alpha = 0.05,
                          palette = rev(viridis::viridis(3)),
                          label = FALSE, contig_names = NULL,
                          plot = TRUE) {
