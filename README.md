@@ -126,21 +126,23 @@ head(hier_p)
 #> 4 Family  Beta  QAND01                        4           0.129    0.124 
 #> 5 Genus   Beta  QAND01                        1           0.490    0.124 
 #> 6 Species Beta  QAND01 sp003150225            1           0.490    0.124
+```
 
-# Create taxonomy informed Manhattan plot with adjusted p-values
+### Create taxonomy informed Manhattan plot with adjusted p-values
+
+``` r
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-11-1.png" width="100%" />
+
+### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
 ``` r
-
-# Create a traditional Manhattan plot coloured by taxonomy with unadjusted
-# p-values and Bonferroni significance thresholds
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-10-2.png" width="100%" />
+![](inst/vignette-supp/unnamed-chunk-12-1.png)<!-- -->
 
 ## Example using Sourmash output
 

@@ -322,22 +322,29 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
         axis.ticks.x = ggplot2::element_blank(),
         legend.position = "none"
       ) +
-      ggplot2::labs(x = NULL, y = "-log10(p)")
+      ggplot2::labs(x = NULL, y = "-log10(p)") +
+      ggplot2::ggtitle(m)
+    
   }
   
   # generate the final plot
   # Ensure both lists are same length
   stopifnot(length(p_mh) == length(p_tree))
   
-  # Combine each Manhattan/tree pair vertically
-  combined_pairs <- Map(function(mh, tree, title) {
-    mh <- mh + ggplot2::ggtitle(title)
-    mh / tree + patchwork::plot_layout(heights = c(4, 1))
-  }, p_mh, p_tree, models)
+  # This one is fancy, but there is no point in plotting the tree twice!
+  # # Combine each Manhattan/tree pair vertically
+  # combined_pairs <- Map(function(mh, tree, title) {
+  #   mh <- mh + ggplot2::ggtitle(title)
+  #   mh / tree + patchwork::plot_layout(heights = c(4, 1))
+  # }, p_mh, p_tree, models)
   
   # Now lay them out side by side
-  return(patchwork::wrap_plots(combined_pairs, nrow = 1))
+  # return(patchwork::wrap_plots(combined_pairs, nrow = 1))
   
+  if(length(models) == 2) {
+    return(p_mh[[1]] / p_mh[[2]] / p_tree[[1]] + patchwork::plot_layout(heights = c(4, 4, 1)))
+  } else {
+    return(p_mh[[1]] / p_tree[[1]] + patchwork::plot_layout(heights = c(4, 1)))
+  }
   
-  return(p_mh / p_tree + patchwork::plot_layout(heights = c(4, 1)))
 }

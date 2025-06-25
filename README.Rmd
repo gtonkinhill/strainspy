@@ -109,11 +109,15 @@ taxonomy <- read_taxonomy(example_taxonomy_path)
 # Perform hierarchical multiple testing adjustment of p-values
 hier_p <- hadjust(fit, taxonomy=taxonomy)
 head(hier_p)
+```
 
-# Create taxonomy informed Manhattan plot with adjusted p-values
+### Create taxonomy informed Manhattan plot with adjusted p-values
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_manhattan(fit, taxonomy = taxonomy)
+```
 
-# Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
+### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
+```{r, fig.width=10, fig.height=6}
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
