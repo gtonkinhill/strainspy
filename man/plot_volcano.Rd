@@ -5,7 +5,7 @@
 \title{Generate a Volcano Plot from a betaGLM Object}
 \usage{
 plot_volcano(
-  fit,
+  object,
   coef = 2,
   alpha = 0.05,
   palette = rev(viridis::viridis(3)),
@@ -15,7 +15,7 @@ plot_volcano(
 )
 }
 \arguments{
-\item{fit}{A betaGLM object containing model results.}
+\item{object}{A strainspy_fit object containing model results.}
 
 \item{coef}{Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.}
 
@@ -26,7 +26,7 @@ plot_volcano(
 \item{label}{Logical, whether to label most signifcant points of the plot with Species name.}
 
 \item{contig_names}{Optional character vector to replace long contig names in the plot.
-Must match the length and order of \code{top_hits(fit, coef = coef, alpha = alpha)$Contig_name}.
+Must match the length and order of \code{top_hits(object, coef = coef, alpha = alpha)$Contig_name}.
 If NULL (default), shortening will be attempted automatically.}
 
 \item{plot}{Logical, whether to return a ggplot object (default: TRUE). If FALSE, returns the processed data.}

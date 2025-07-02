@@ -2,9 +2,9 @@
 
 setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 
-#' betaGLM: A Class for Generalized Linear Models with Zero-Inflation
+#' strainspy_fit: A Class for storing fit data from all strainspy models
 #'
-#' The `betaGLM` class is designed to store the results of strainspy
+#' The `strainspy_fit` class is designed to store the results of strainspy
 #' 
 #' @importClassesFrom S4Vectors DataFrame
 #' @importMethodsFrom S4Vectors show
@@ -24,7 +24,7 @@ setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 #' @slot call The matched call of the model.
 #'
 #' @export
-methods::setClass("betaGLM",
+methods::setClass("strainspy_fit",
                   slots = list(
                     row_data = "DataFrame",
                     coefficients = "DataFrame",
@@ -40,82 +40,93 @@ methods::setClass("betaGLM",
                     call = "call"
                   ))
 
-# I have removed the following slots because they are not being used and throw a warning during check
-# @slot fdr A `DataFrame` or `NULL`, containing false discovery rates (FDR).
-# @slot zi_fdr A `DataFrame` or `NULL`, containing zero-inflation FDR values.
-# @slot dispersion A numeric vector containing dispersion estimates for the model.
-
-#' Show Method for betaGLM
+#' Show Method for strainspy_fit
 #'
-#' Displays a summary of a `betaGLM` object, including the number of coefficients.
+#' Displays a summary of a `strainspy_fit` object, including model design,
+#' convergence, and coefficient matrix dimensions.
 #'
-#' @param object An object of class `betaGLM`.
+#' @param object An object of class `strainspy_fit`.
 #' @export
-methods::setMethod("show", "betaGLM", function(object) {
-  cat("betaGLM object\n")
-  cat("Number of coefficients:", nrow(object@coefficients), "\n")
-  cat("Number of zero-inflation coefficients:", nrow(object@zi_coefficients), "\n")
-  cat("Residuals available:", !is.null(object@residuals), "\n")
+methods::setMethod("show", "strainspy_fit", function(object) {
+  cat("strainspy_fit object\n")
+  cat(rep("-", 30), "\n", sep = "")
+  
+  cat("Design formula: ")
+  print(object@design)
+  
+  cat("Converged=", length(which(object@convergence==T)) , ", Failed=", length(which(object@convergence==F)), "\n", sep = '')
+  
+  cat("Coefficients: ", nrow(object@coefficients), " features x ", ncol(object@coefficients), " terms\n")
+  
+  if (!is.null(object@zi_coefficients)) {
+    cat("ZI Coefficients: ", nrow(object@zi_coefficients), " features x ", ncol(object@zi_coefficients), " terms\n")
+  } else {
+    cat("ZI Coefficients: None\n")
+  }
+  
+  cat("Residuals available: ", ifelse(!is.null(object@residuals), "Yes", "No"), "\n")
+  cat("Call:\n")
+  print(object@call)
 })
 
 #' Access Zero-Inflation Coefficients
 #'
-#' Returns the zero-inflation coefficients from a `betaGLM` object.
+#' Returns the zero-inflation coefficients from a `strainspy_fit` object.
 #'
-#' @param object An object of class `betaGLM`.
+#' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` containing zero-inflation coefficients.
 #' @export
 methods::setGeneric("getZICoefficients", function(object) methods::standardGeneric("getZICoefficients"))
 
 #' @rdname getZICoefficients
 #' @export
-methods::setMethod("getZICoefficients", "betaGLM", function(object) {
+methods::setMethod("getZICoefficients", "strainspy_fit", function(object) {
   object@zi_coefficients
 })
 
 #' Access Residuals
 #'
-#' Returns the residuals from a `betaGLM` object.
+#' Returns the residuals from a `strainspy_fit` object.
 #'
-#' @param object An object of class `betaGLM`.
+#' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` containing residuals.
 #' @export
 methods::setGeneric("getResiduals", function(object) methods::standardGeneric("getResiduals"))
 
 #' @rdname getResiduals
 #' @export
-methods::setMethod("getResiduals", "betaGLM", function(object) {
+methods::setMethod("getResiduals", "strainspy_fit", function(object) {
   object@residuals
 })
 
 #' Access False Discovery Rates (FDR)
 #'
-#' Returns the false discovery rates (FDR) from a `betaGLM` object, if available.
+#' Returns the false discovery rates (FDR) from a `strainspy_fit` object, if available.
 #'
-#' @param object An object of class `betaGLM`.
+#' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` or `NULL` containing FDR values.
 #' @export
 methods::setGeneric("getFDR", function(object) methods::standardGeneric("getFDR"))
 
 #' @rdname getFDR
 #' @export
-methods::setMethod("getFDR", "betaGLM", function(object) {
+methods::setMethod("getFDR", "strainspy_fit", function(object) {
   object@fdr
 })
 
-#' Summary Method for betaGLM
+#' Summary Method for strainspy_fit
 #'
-#' Provides a high-level summary of a `betaGLM` object, including its call,
+#' Provides a high-level summary of a `strainspy_fit` object, including its call,
 #' coefficients, zero-inflation coefficients, dispersion, and the availability
 #' of FDR and residuals.
 #'
-#' @param object An object of class `betaGLM`.
-#' @return A list summarizing the `betaGLM` object.
+#' @param object An object of class `strainspy_fit`.
+#' @return A list summarizing the `strainspy_fit` object.
 #'
 #' @importFrom utils head
 #'
 #' @export
-methods::setMethod("summary", "betaGLM", function(object) {
+methods::setMethod("summary", "strainspy_fit", function(object) {
   list(
     call = object@call,
     coefficients = head(object@coefficients),

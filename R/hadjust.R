@@ -4,7 +4,7 @@
 #' integrating taxonomic information. Various correction methods are available,
 #' including Harmonic Mean P-value (HMP), Bonferroni and Benjamini-Hochberg (BH).
 #'
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param coef The coefficient to use for p-value adjustment. Defaults to 2.
 #' @param method The method for p-value adjustment. Options include "bonferroni" and Harmonic Mean P-value (HMP).
 #' @param taxonomy A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.
@@ -20,8 +20,8 @@
 #' @export
 hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=FALSE) {
   # Validate input
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit object.")
   }
 
   # Check if taxonomy data is provided

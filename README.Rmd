@@ -145,30 +145,3 @@ All remaining functions are compatible with this output.
 
 To cite strainspy please use
 
-
-<!-- ## Introduction -->
-
-<!-- ```{r, echo = FALSE} -->
-<!-- intro_rmd <- 'vignettes/introduction.Rmd' -->
-
-<!-- raw_rmd <- readLines(intro_rmd) -->
-
-<!-- # remove yaml  -->
-<!-- yaml_lines <- grep("---", raw_rmd) -->
-
-<!-- # remove appendix (session info) -->
-<!-- appendix <- grep("Appendix", raw_rmd) -->
-
-<!-- compressed_rmd <- raw_rmd[c(-seq(yaml_lines[1], yaml_lines[2], by = 1),  -->
-<!--                             -seq(appendix, length(raw_rmd)))] -->
-<!-- writeLines(compressed_rmd, "child.Rmd") -->
-<!-- ``` -->
-
-<!-- ```{r, child = 'child.Rmd'} -->
-<!-- ``` -->
-
-<!-- ```{r cleanup, echo=FALSE, include=FALSE} -->
-<!-- if (file.exists("child.Rmd")) { -->
-<!--   file.remove("child.Rmd") -->
-<!-- } -->
-<!-- ``` -->

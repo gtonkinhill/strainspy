@@ -28,7 +28,6 @@ Imports:
     methods,
     patchwork,
     purrr,
-    R.utils,
     S4Vectors,
     stats,
     stringr,
@@ -39,6 +38,7 @@ Imports:
     viridis
 Suggests:
     compositions,
+    R.utils,
     testthat (>= 3.0.0)
 RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_manhattan.R
 \name{plot_manhattan}
 \alias{plot_manhattan}
-\title{Generate a strain Manhattan plot from a betaGLM object}
+\title{Generate a strain Manhattan plot from a strainspy_fit object}
 \usage{
 plot_manhattan(
   object,
@@ -16,7 +16,7 @@ plot_manhattan(
 )
 }
 \arguments{
-\item{object}{A \code{betaGLM} object.}
+\item{object}{A \code{strainspy_fit} object.}
 
 \item{coef}{The number of the coefficient from which to generate the plot (default=2).}
 
@@ -38,7 +38,7 @@ the legend is replaced by a named vector. Only applicable with \code{aggregate_b
 A \code{ggplot} object showing the Manhattan plot if \code{plot = TRUE}, else a \code{data.frame} with plot data.
 }
 \description{
-This function can generate multiple Manhattan plots from a \code{betaGLM} object.
+This function can generate multiple Manhattan plots from a \code{strainspy_fit} object.
 }
 \details{
 The generated plot will be more informative if taxonomic information is

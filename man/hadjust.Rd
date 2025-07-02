@@ -7,7 +7,7 @@
 hadjust(object, coef = 2, method = "HMP", taxonomy = NULL, index_range = FALSE)
 }
 \arguments{
-\item{object}{A \code{betaGLM} object.}
+\item{object}{A \code{strainspy_fit} object.}
 
 \item{coef}{The coefficient to use for p-value adjustment. Defaults to 2.}
 

@@ -23,4 +23,4 @@ mp_tax_path <- system.file("extdata", "metaphlan_taxonomy.tsv.gz", package = "st
 mp_tax = read.csv(mp_tax_path)
 
 
-# TODO: Write tests
+# Test a standard model 

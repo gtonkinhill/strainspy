@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation_helpers.R
 \name{plot_manhattan_gt}
 \alias{plot_manhattan_gt}
-\title{Generate a Manhattan plot from a betaGLM object, with the option to add ground truth}
+\title{Generate a Manhattan plot from a strainspy_fit object, with the option to add ground truth}
 \usage{
 plot_manhattan_gt(
   object,
@@ -17,7 +17,7 @@ plot_manhattan_gt(
 )
 }
 \arguments{
-\item{object}{A \code{betaGLM} object.}
+\item{object}{A \code{strainspy_fit} object.}
 
 \item{coef}{The number of the coefficient from which to generate the plot (default=2).}
 

@@ -1,10 +1,10 @@
-#' Provides the top results of a betaGLM object, sorted by adjusted p-value.
+#' Provides the top results of a strainspy_fit object, sorted by adjusted p-value.
 #'
-#' This function performs multiple testing adjustment on the results of a betaGLM object
+#' This function performs multiple testing adjustment on the results of a strainspy_fit object
 #' integrating taxonomic information. Various correction methods are available,
 #' including Harmonic Mean P-value (HMP), Bonferroni and Benjamini-Hochberg (BH).
 #'
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param coef The coefficient to report and use for p-value adjustment. Defaults to 2.
 #' @param method The method for p-value adjustment. Available methods are a subset of those in `p.adjust`,
 #'   specifically those valid for dependent tests. Common choices include "holm", "hochberg", "hommel",
@@ -17,8 +17,8 @@
 #' @importFrom tibble as_tibble add_column
 top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
   # Validate input
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit")
   }
 
   # Check method is one of the available options

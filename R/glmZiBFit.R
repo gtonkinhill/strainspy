@@ -13,10 +13,18 @@
 #'        will configure an appropriate backend automatically.
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.
 #'
-#' @return A list with the following components:
-#' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-#' \item{fit}{The fitted `glmmTMB` model object.}
-#' \item{call}{The original function call.}
+#' @return A `strainspy_fit` object with the following components:
+#' \item{row_data}{A DFrame with 6 slots with feature details}
+#' \item{coefficients}{A DFrame with coefficients for each feature}
+#' \item{std_errors}{A DFrame of standard errors for each feature}
+#' \item{p_values}{A DFrame of p-values for each feature}
+#' \item{zi_coefficients}{A DFrame of zero inflated coefficients for each feature}
+#' \item{zi_std_errors}{A DFrame of zero inflated standard errors for each feature}
+#' \item{zi_p_values}{A DFrame of zero inflated p-values for each feature}
+#' \item{residuals}{A DFrame of residual vectors for each feature}
+#' \item{convergence}{A named logical vector indicating convergence for each feature}
+#' \item{design}{Formula used in the call to `glmZiBFit`}
+#' \item{call}{Call to `glmZiBFit`} 
 #'
 #' @import SummarizedExperiment
 #' @import gamlss
@@ -148,8 +156,8 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
     seRD = SummarizedExperiment::rowData(se)
   }
 
-  # Create the betaGLM object
-  ZIBetaGLM <- methods::new("betaGLM",
+  # Create the strainspy_fit object
+  ZIBetaGLM <- methods::new("strainspy_fit",
                             row_data = seRD,
                             coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                             std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),

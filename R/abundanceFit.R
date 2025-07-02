@@ -12,9 +12,9 @@
 #' @param transform If data is already transformed, set to `NULL` (default). Supported options: arcsin transform `arcsin` or centered log ratio `CLR`. `CLR` requires `compositions` package.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
 #'
-#' @return A `betaGLM` object with the following components:
+#' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
-#' \item{coefficients}{A DFrame with coefficients for each feature, standard errors, z-values, p-values, and FDR for each feature.}
+#' \item{coefficients}{A DFrame with coefficients for each feature}
 #' \item{std_errors}{A DFrame of standard errors for each feature}
 #' \item{p_values}{A DFrame of p-values for each feature}
 #' \item{residuals}{A DFrame of residual vectors for each feature}
@@ -161,10 +161,10 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
     seRD = SummarizedExperiment::rowData(se)
   }
   
-  # Create the betaGLM object
+  # Create the strainspy_fit object
   p_val_idx = ncol(results[[1]]$coefficients)
   
-  GLM <- new("betaGLM",
+  GLM <- new("strainspy_fit",
              row_data = seRD,
              coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
              std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),

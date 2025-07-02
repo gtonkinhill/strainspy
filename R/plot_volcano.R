@@ -5,13 +5,13 @@
 #'
 #' @importFrom viridis viridis
 #' 
-#' @param fit A betaGLM object containing model results.
+#' @param object A strainspy_fit object containing model results.
 #' @param coef Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.
 #' @param alpha Float indicating signficance level. Default is 0.05
 #' @param palette A vector of user defined palette to colour plot. Default is the viridis palette.
 #' @param label Logical, whether to label most signifcant points of the plot with Species name.
 #' @param contig_names Optional character vector to replace long contig names in the plot.
-#' Must match the length and order of `top_hits(fit, coef = coef, alpha = alpha)$Contig_name`.
+#' Must match the length and order of `top_hits(object, coef = coef, alpha = alpha)$Contig_name`.
 #' If NULL (default), shortening will be attempted automatically.
 #' @param plot Logical, whether to return a ggplot object (default: TRUE). If FALSE, returns the processed data.
 #'
@@ -31,23 +31,23 @@
 #' }
 #'
 #' @export
-plot_volcano <- function(fit, coef = 2, alpha = 0.05,
+plot_volcano <- function(object, coef = 2, alpha = 0.05,
                          palette = rev(viridis::viridis(3)),
                          label = FALSE, contig_names = NULL,
                          plot = TRUE) {
   
   # Validate input
-  if(!inherits(fit, 'betaGLM')) {
-    stop('Input must be a betaGLM object.')
+  if(!inherits(object, 'strainspy_fit')) {
+    stop('Input must be a strainspy_fit object.')
   }
   
   # Access p values and effect sizes
-  hits <- top_hits(fit, coef = coef, alpha = 1)
+  hits <- top_hits(object, coef = coef, alpha = 1)
   
   # contig names provided
   if(!is.null(contig_names)){
-    n_contigs = nrow(top_hits(fit, coef = coef, alpha = alpha))  
-    if(length(contig_names) != nrow(top_hits(fit, coef = coef, alpha = alpha))){
+    n_contigs = nrow(top_hits(object, coef = coef, alpha = alpha))  
+    if(length(contig_names) != nrow(top_hits(object, coef = coef, alpha = alpha))){
       stop(sprintf("Provided %d `contig_names`, but there are %d top_hits contigs at alpha = %.3f", 
                    length(contig_names), n_contigs, alpha))
     }
@@ -113,14 +113,19 @@ plot_volcano <- function(fit, coef = 2, alpha = 0.05,
       ggplot2::ylab('-log10(p)')
     
     # If labels are requested, then add.
-    if(label) {
-      plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adjust < alpha,],
-                                              mapping = aes(label = clean_contig_names(Contig_name)),
-                                              colour = 'black',
-                                              size = 5,
-                                              alpha = 0.8,
-                                              max.overlaps = Inf)
+    if(label){
+      if(any(hits$p_adjust < alpha)) {
+        plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adjust < alpha,],
+                                                mapping = aes(label = clean_contig_names(Contig_name)),
+                                                colour = 'black',
+                                                size = 5,
+                                                alpha = 0.8,
+                                                max.overlaps = Inf)
+      } else {
+        warning("No hits with adjusted p-values below alpha; no labels added.")
+      }
     }
+    
   }
   
   

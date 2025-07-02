@@ -17,7 +17,7 @@ update_fit(
 )
 }
 \arguments{
-\item{fit}{Output fit from \code{glmZiBFit()}, \code{glmFit()} or \code{caseControlFit()}}
+\item{fit}{A \code{strainspy_fit} object}
 
 \item{update_idx}{Vector of indices that need to be updated}
 

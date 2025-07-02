@@ -2,12 +2,12 @@
 % Please edit documentation in R/plot_manhattan.R
 \name{plot_manhattan_tree}
 \alias{plot_manhattan_tree}
-\title{Generate a \code{traditional} Manhattan plot for the strain all strains.}
+\title{Generate a \code{conventional} Manhattan plot for the strain all strains.}
 \usage{
 plot_manhattan_tree(object, taxonomy, coef = 2)
 }
 \arguments{
-\item{object}{A \code{betaGLM} object.}
+\item{object}{A \code{strainspy_fit} object.}
 
 \item{taxonomy}{Taxonomy file read using strainspy::read_taxonomy (default=NULL).}
 
@@ -17,5 +17,5 @@ plot_manhattan_tree(object, taxonomy, coef = 2)
 A \code{ggplot} object showing the Manhattan plot combined with the taxonomic tree
 }
 \description{
-Generate a \code{traditional} Manhattan plot for the strain all strains.
+Generate a \code{conventional} Manhattan plot for the strain all strains.
 }

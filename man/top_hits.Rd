@@ -2,12 +2,12 @@
 % Please edit documentation in R/top_hits.R
 \name{top_hits}
 \alias{top_hits}
-\title{Provides the top results of a betaGLM object, sorted by adjusted p-value.}
+\title{Provides the top results of a strainspy_fit object, sorted by adjusted p-value.}
 \usage{
 top_hits(object, coef = 2, method = "holm", alpha = 0.05)
 }
 \arguments{
-\item{object}{A \code{betaGLM} object.}
+\item{object}{A \code{strainspy_fit} object.}
 
 \item{coef}{The coefficient to report and use for p-value adjustment. Defaults to 2.}
 
@@ -21,7 +21,7 @@ and "BH" (Benjamini-Hochberg) and "BY".}
 A tibble with the top hits, sorted by adjusted p-value.
 }
 \description{
-This function performs multiple testing adjustment on the results of a betaGLM object
+This function performs multiple testing adjustment on the results of a strainspy_fit object
 integrating taxonomic information. Various correction methods are available,
 including Harmonic Mean P-value (HMP), Bonferroni and Benjamini-Hochberg (BH).
 }

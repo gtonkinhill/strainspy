@@ -1,6 +1,6 @@
-#' Generate a strain Manhattan plot from a betaGLM object
+#' Generate a strain Manhattan plot from a strainspy_fit object
 #'
-#' This function can generate multiple Manhattan plots from a `betaGLM` object. 
+#' This function can generate multiple Manhattan plots from a `strainspy_fit` object. 
 #' 
 #' The generated plot will be more informative if taxonomic information is 
 #' provided. Two types of plots can be generated with taxonomic information.
@@ -27,7 +27,7 @@
 #' @importFrom tidyr pivot_longer
 #' @importFrom dplyr mutate
 #' 
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param coef The number of the coefficient from which to generate the plot (default=2).
 #' @param taxonomy An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).
 #' @param aggregate_by_taxa Logical. If TRUE, aggregate p-values across `tax_levels` and visualise as a stacked segment plot. Requires `taxonomy`. If NULL (default), the function automatically sets it to TRUE when `taxonomy` is provided.
@@ -46,8 +46,8 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
   
   # sanity checks
   # Validate input
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit object.")
   }
   
   # Handle default for aggregate_by_taxa
@@ -200,7 +200,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
   return(gg)
 }
 
-#' Generate a `traditional` Manhattan plot for the strain all strains. 
+#' Generate a `conventional` Manhattan plot for the strain all strains. 
 #'
 #' @importFrom ggtree ggtree %<+% theme_tree2 geom_tippoint
 #' @importFrom ggplot2 ggplot aes geom_point scale_color_manual geom_hline labs theme element_text element_blank
@@ -209,15 +209,15 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
 #' @importFrom ape as.phylo
 #' @importFrom patchwork plot_layout
 #'
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param taxonomy Taxonomy file read using strainspy::read_taxonomy (default=NULL).
 #' @param coef The number of the coefficient from which to generate the plot (default=2).
 #'
 #' @return A `ggplot` object showing the Manhattan plot combined with the taxonomic tree
 plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
   
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit object.")
   }
   
   # tax_levels and colour_level must be in tax_levels
@@ -282,7 +282,7 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
       Genus = factor(tax_mhp$Genus)
     )
     
-    tree <- ape::as.phylo(~ Phylum/Class/Order/Family/Genus/Genome, data = tax_mhp)
+    tree <- ape::as.phylo.formula(~ Phylum/Class/Order/Family/Genus/Genome, data = tax_mhp)
     
     # Pre-plot to extract tip order
     p_tmp <- ggtree::ggtree(tree)

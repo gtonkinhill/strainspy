@@ -29,9 +29,9 @@ to one 1.}
 will configure an appropriate backend automatically.}
 }
 \value{
-A \code{betaGLM} object with the following components:
+A \code{strainspy_fit} object with the following components:
 \item{row_data}{A DFrame with 6 slots with feature details}
-\item{coefficients}{A DFrame with coefficients for each feature, standard errors, z-values, p-values, and FDR for each feature.}
+\item{coefficients}{A DFrame with coefficients for each feature}
 \item{std_errors}{A DFrame of standard errors for each feature}
 \item{p_values}{A DFrame of p-values for each feature}
 \item{residuals}{A DFrame of residual vectors for each feature}
