@@ -36,8 +36,8 @@ A \code{strainspy_fit} object with the following components:
 \item{p_values}{A DFrame of p-values for each feature}
 \item{residuals}{A DFrame of residual vectors for each feature}
 \item{convergence}{A named logical vector indicating convergence for each feature}
-\item{design}{Formula used in the call to \code{caseControlFit}}
-\item{call}{Call to \code{caseControlFit}}
+\item{design}{Formula used in the call to \code{glmObFit}}
+\item{call}{Call to \code{glmObFit}}
 }
 \description{
 This function fits a ordinalbeta regression model using the \code{glmmTMB} package.

@@ -39,8 +39,8 @@ A \code{strainspy_fit} object with the following components:
 \item{zi_p_values}{A DFrame of zero inflated p-values for each feature}
 \item{residuals}{A DFrame of residual vectors for each feature}
 \item{convergence}{A named logical vector indicating convergence for each feature}
-\item{design}{Formula used in the call to \code{abundanceFit}}
-\item{call}{Call to \code{abundanceFit}}
+\item{design}{Formula used in the call to \code{glmZiBFit}}
+\item{call}{Call to \code{glmZiBFit}}
 }
 \description{
 This function fits a zero-inflated beta regression model using either \code{glmmTMB} or \code{gamlss} packages.
