@@ -60,7 +60,7 @@ se <- filter_by_presence(se)
 design <- as.formula(" ~ Case_status")
 
 fit <- glmZiBFit(se, design, nthreads=1)
-top_hits(fit, alpha=0.5)
+top_hits(fit, alpha=1)
 plot_manhattan(fit)
 
 }

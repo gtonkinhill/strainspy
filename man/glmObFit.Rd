@@ -56,8 +56,8 @@ se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit <- glmFit(se,  design, nthreads=1, family=glmmTMB::ordbeta())
-top_hits(fit, alpha=0.5)
+fit <- glmObFit(se,  design, nthreads=1, family=glmmTMB::ordbeta())
+top_hits(fit, alpha=1)
 plot_manhattan(fit)
 
 }

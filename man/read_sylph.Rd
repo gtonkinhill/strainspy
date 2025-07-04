@@ -8,6 +8,7 @@ read_sylph(
   file_path,
   meta_data = NULL,
   variable = "Adjusted_ANI",
+  min_identity = 95,
   clean_names = TRUE
 )
 }
@@ -18,6 +19,8 @@ read_sylph(
 The \strong{first column must contain sample names} that match exactly with the sample names in the Sylph output.}
 
 \item{variable}{Character. Name of the input variable to import, either \code{Adjusted_ANI} or  \code{Naive_ANI}. Defaults to \code{Adjusted_ANI}.}
+
+\item{min_identity}{Numeric. Minimum identity threshold for filtering ANI values. Defaults to \code{95}.}
 
 \item{clean_names}{Logical. If \code{TRUE}, file paths will be stripped of their directory path and file extension,
 leaving only the base file name. Defaults to \code{TRUE}.}
@@ -33,20 +36,6 @@ This function reads a Sylph output file (either query or profile), parses the da
 Optionally, metadata can be provided, which will be loaded into the \code{colData} of the SummarizedExperiment object.
 }
 \examples{
-\dontrun{
-library(strainspy)
-library(SummarizedExperiment)
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-se <- read_sylph(example_path)
-# View the SummarizedExperiment
-se
-# View the assays (numerical matrix)
-assay(se)
-# View the rowData (metadata for contigs)
-rowData(se)
-# View the colData (metadata for samples)
-colData(se)
-}
 \dontrun{
   # Read a Sylph file (query or profile) with associated metadata into a SummarizedExperiment object
   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
