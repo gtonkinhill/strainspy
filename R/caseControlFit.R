@@ -4,24 +4,30 @@
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula.
 #'
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., `Outcome ~ Value + Covariate + (1|Sample)`.
 #' @param min_identity A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #'
-#' @return A list with the following components:
-#' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-#' \item{fit}{The fitted `glmmTMB` model object.}
-#' \item{call}{The original function call.}
+#' @return A `strainspy_fit` object with the following components:
+#' \item{row_data}{A DFrame with 6 slots with feature details}
+#' \item{coefficients}{A DFrame with coefficients for each feature}
+#' \item{std_errors}{A DFrame of standard errors for each feature}
+#' \item{p_values}{A DFrame of p-values for each feature}
+#' \item{residuals}{A DFrame of residual vectors for each feature}
+#' \item{convergence}{A named logical vector indicating convergence for each feature}
+#' \item{design}{Formula used in the call to `caseControlFit`}
+#' \item{call}{Call to `caseControlFit`} 
 #'
 #' @import SummarizedExperiment
 #' @importFrom glmmTMB glmmTMB
+#' @importFrom stats terms
 #'
 #' @examples
 #' \dontrun{
-#' library(SummarizedExperiment)
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
@@ -33,7 +39,7 @@
 #'
 #' design <- as.formula("Case_status ~ Value + Age_at_collection")
 #'
-#' fit <- caseControlFit(se, design, nthreads=4)
+#' fit <- caseControlFit(se, design, nthreads=parallel::detectCores())
 #' min(fit@p_values[,2], na.rm=TRUE)
 #'
 #' }
@@ -44,6 +50,10 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
   # Validate input
   if (!inherits(se, "SummarizedExperiment")) {
     stop("`se` must be a SummarizedExperiment object.")
+  }
+  
+  if(! "Value" %in% attr(stats::terms(design), "term.labels")) {
+    stop("`design` must contain the term Value on the RHS, e.g. `Outcome ~ Value + Covariate + (1|Sample)`")
   }
 
   # colData (sample metadata)
@@ -68,7 +78,13 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 
   # Define priors
   col_data$Value <- 1 # dummy variable for the response
-  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
+  
+  nbd = nobars_(design)
+  if(is.null(nbd)){
+    stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
+  } 
+  nbeta <- ncol(model.matrix(nbd, col_data))
+  
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", nbeta),
     class = rep("fixef", each=nbeta),
@@ -102,13 +118,13 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
   )
 
   # Flatten the results by removing the first layer of lists
-  results <- do.call(c, results)
+  results <- unname(do.call(c, results))
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
 
-  # Create the betaGLM object
-  ZIBetaGLM <- new("betaGLM",
+  # Create the strainspy_fit object
+  CCGLM <- new("strainspy_fit",
                    row_data = SummarizedExperiment::rowData(se),
                    coefficients = S4Vectors::DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                    std_errors = S4Vectors::DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
@@ -116,13 +132,14 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
                    zi_coefficients = NULL,
                    zi_std_errors = NULL,
                    zi_p_values = NULL,
-                   residuals = NULL, # DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
-                   # design = model.matrix(design, data = as.data.frame(colData(se))),
+                   residuals = NULL,
+                   convergence = purrr::map_lgl(results, ~ .x$convergence),
+                   design = design,
                    # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
   )
 
-  return(ZIBetaGLM)
+  return(CCGLM)
 }
 
 
@@ -131,13 +148,11 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 #' Fits a logistic regression for a single feature in an assay
 #' using `glmmTMB`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
-#' @param combined_formula The formula for the conditional mean model.
+#' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
+#' @param min_identity A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 fit_logit_model <- function(se_subset, col_data, design, fixed_priors, min_identity) {
@@ -149,7 +164,7 @@ fit_logit_model <- function(se_subset, col_data, design, fixed_priors, min_ident
     # Scale to be between 0 and 1. (min-max scaling)
     col_data$Value <- (col_data$Value-min_identity)/(1-min_identity)
 
-    # Run the zero-inflated beta regression
+    # Run the case-control fit model
     fit <- tryCatch({
       glmmTMB::glmmTMB(
         formula = design,
@@ -188,7 +203,7 @@ fit_logit_model <- function(se_subset, col_data, design, fixed_priors, min_ident
       coefficients_zi = NULL,
       residuals = residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
-      convergence = fit$fit$convergence
+      convergence = fit$fit$convergence==0
     ))
   })
 

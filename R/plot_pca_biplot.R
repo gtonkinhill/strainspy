@@ -55,7 +55,7 @@ plot_pca_biplot <- function(se, coef = 2, plot = TRUE) {
     ) +
     ggplot2::geom_point()+
     ggplot2::theme_bw(base_size = 14) +
-    ggplot2::theme_classic()+
+    ggthemes::theme_clean(base_size = 16) +
     ggplot2::labs(x=xLab,y=yLab)
 
   # Add a gradient colour if phenotype is continuous

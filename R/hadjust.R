@@ -4,9 +4,9 @@
 #' integrating taxonomic information. Various correction methods are available,
 #' including Harmonic Mean P-value (HMP), Bonferroni and Benjamini-Hochberg (BH).
 #'
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param coef The coefficient to use for p-value adjustment. Defaults to 2.
-#' @param method The method for p-value adjustment. Options include "bonferroni", "BH", and Harmonic Mean P-value (HMP).
+#' @param method The method for p-value adjustment. Options include "bonferroni" and Harmonic Mean P-value (HMP).
 #' @param taxonomy A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.
 #' @param index_range description
 #' @return A tibble with original and adjusted p-values.
@@ -20,8 +20,8 @@
 #' @export
 hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=FALSE) {
   # Validate input
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit object.")
   }
 
   # Check if taxonomy data is provided
@@ -34,12 +34,13 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   }
 
   # Extract p-values & coefficients
-  if ("caseControlFit" == as.character(object@call)[[1]]) {
+  mdl = as.character(object@call)[[1]]
+  if ("caseControlFit" == mdl) {
     main_model <- "Logistic"
-  } else if ("glmZiBFit" == as.character(object@call)[[1]]) {
+  } else if ("glmZiBFit" == mdl | "glmFit" == mdl) {
     main_model <- "Beta"
   } else {
-    main_model <- "Unknown model"
+    main_model <- "Unknown model" # We need to expand this as we include models
   }
 
   beta_res <- tibble::as_tibble(slot(object, 'row_data')) |>
@@ -86,14 +87,14 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
 
   # Remove rows which did not converge or errored
   hierarchy_df <- hierarchy_df[!is.na(hierarchy_df$coefficient),]
-
+  # Define the grouping columns
+  grouping_cols <- c("Phylum", "Class", "Order", "Family", "Genus", "Species", colnames(hierarchy_df)[[2]])
+  
   if (method == "HMP") {
     L <- nrow(beta_res)
     hierarchy_df$w <- 1/nrow(beta_res)
 
-    # Define the grouping columns
-    grouping_cols <- c("Phylum", "Class", "Order", "Family", "Genus", "Species", colnames(hierarchy_df)[[2]])
-
+   
     adj <- purrr::map_dfr(grouping_cols, ~{
       hierarchy_df |>
         dplyr::group_by(Model, dplyr::across(dplyr::all_of(.x))) |>  # Use all_of to refer to the grouping column

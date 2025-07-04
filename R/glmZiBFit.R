@@ -1,6 +1,6 @@
 #' glmZiBFit
 #'
-#' This function fits a zero-inflated beta regression model using the `glmmTMB` package.
+#' This function fits a zero-inflated beta regression model using either `glmmTMB` or `gamlss` packages.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
 #' and fits a zero-inflated beta regression model on the assay data.
 #'
@@ -8,14 +8,23 @@
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.
 #'
-#' @return A list with the following components:
-#' \item{coefficients}{A data frame with coefficients, standard errors, z-values, p-values, and FDR for each feature.}
-#' \item{fit}{The fitted `glmmTMB` model object.}
-#' \item{call}{The original function call.}
+#' @return A `strainspy_fit` object with the following components:
+#' \item{row_data}{A DFrame with 6 slots with feature details}
+#' \item{coefficients}{A DFrame with coefficients for each feature}
+#' \item{std_errors}{A DFrame of standard errors for each feature}
+#' \item{p_values}{A DFrame of p-values for each feature}
+#' \item{zi_coefficients}{A DFrame of zero inflated coefficients for each feature}
+#' \item{zi_std_errors}{A DFrame of zero inflated standard errors for each feature}
+#' \item{zi_p_values}{A DFrame of zero inflated p-values for each feature}
+#' \item{residuals}{A DFrame of residual vectors for each feature}
+#' \item{convergence}{A named logical vector indicating convergence for each feature}
+#' \item{design}{Formula used in the call to `glmZiBFit`}
+#' \item{call}{Call to `glmZiBFit`}
 #'
 #' @import SummarizedExperiment
 #' @import gamlss
@@ -24,12 +33,10 @@
 #' @importFrom methods new
 #' @importFrom stats as.formula
 #'
+#'
 #' @examples
 #' \dontrun{
-#' library(SummarizedExperiment)
 #' library(strainspy)
-#' library(glmmTMB)
-#' library(gamlss)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
@@ -37,16 +44,11 @@
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
-#' design <- as.formula(" ~ Case_status + Age_at_collection + (1|Sex)")
-#' design <- as.formula(" ~ Case_status + Age_at_collection + gamlss::random(Sex)")
 #' design <- as.formula(" ~ Case_status")
 #'
-#' temp <- readRDS("~/Downloads/temp_spy.RDS")
-#' se <- temp$sylph
-#' design <- temp$design
-#'
-#' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='gamlss')
+#' fit <- glmZiBFit(se, design, nthreads=1)
 #' top_hits(fit, alpha=1)
+#' plot_manhattan(fit)
 #'
 #' }
 #'
@@ -77,6 +79,13 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
+
+  # check if formula is valid
+  nbd = nobars_(design)
+  if(is.null(nbd)){
+    stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
+  }
+
   combined_formula <- as.formula(paste(c("Value", as.character(design)),
                                        collapse = " "))
 
@@ -86,7 +95,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strainspy:::strip_random_effects(design), col_data))
+  nbeta <- ncol(model.matrix(nbd, col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
@@ -130,14 +139,26 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 
 
   # Flatten the results by removing the first layer of lists
-  results <- do.call(c, results)
+  results <- unname(do.call(c, results))
 
   # Clean up
   BiocParallel::bpstop(BPPARAM)
 
-  # Create the betaGLM object
-  ZIBetaGLM <- methods::new("betaGLM",
-                            row_data = rowData(se),
+  # sometimes results can be an empty list, remove those dynamically
+  rmidx = which(sapply(results, length) == 0)
+  # sometimes the loglikelihood is NA when the result failed
+  rmidx = c(rmidx, which(is.na(unlist(lapply(results, function(x) x$log_likelihood)))))
+  rmidx = unique(rmidx)
+  if(length(rmidx) > 0) {
+    seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
+    results[rmidx] <- NULL
+  } else {
+    seRD = SummarizedExperiment::rowData(se)
+  }
+
+  # Create the strainspy_fit object
+  ZIBetaGLM <- methods::new("strainspy_fit",
+                            row_data = seRD,
                             coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                             std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
                             p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
@@ -160,14 +181,11 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 #' Fits a zero-inflated beta regression for a single feature in an assay
 #' using `glmmTMB`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @param design The formula for the zero-inflation model.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 #'
@@ -217,7 +235,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
     return(list(
       coefficients = smry$coefficients$cond,
       coefficients_zi = smry$coefficients$zi,
-      residuals = residuals(fit, type = "response"),
+      residuals = stats::residuals(fit, type = "response"),
       log_likelihood = fit$fit$objective,
       convergence = fit$fit$convergence==0
     ))
@@ -233,14 +251,11 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #' Fits a zero-inflated beta regression for a single feature in an assay
 #' using `gamlss`.
 #'
-#' @param se A `SummarizedExperiment` object containing the assay data.
-#' @param row_index The index of the feature (row) to be processed.
+#' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
 #' @param design The formula for the zero-inflation model.
 #' @param fixed_priors Optional priors for the model.
-#' @param nt Number of threads for parallel computation in model fitting.
-#' @param feature Optional name of the feature for debugging or error messages.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 #'
@@ -300,7 +315,7 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     stdout <- capture.output(smry <- summary(fit, robust=TRUE))
 
     index <- unlist(purrr::map(fit$parameters, ~{
-      rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]))))
+      rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]) )))
     }))
 
     if (length(index) != nrow(smry)) {
@@ -325,8 +340,8 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     return(list(
       coefficients = smry$mu,
       coefficients_zi = smry$nu,
-      residuals = NULL,
-      log_likelihood = NA,
+      residuals = fit$residuals,
+      log_likelihood = as.numeric(logLik(fit)),
       convergence = fit$converged
     ))
   })

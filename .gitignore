@@ -7,3 +7,5 @@
 TEST_DATA
 .DS_Store
 simulations*
+.RDataTmp
+*.html

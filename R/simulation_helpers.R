@@ -1,3 +1,83 @@
+#' Transform ANI Data to Simulate a Treatment Effect
+#'
+#' This function applies a simple linear transformation to simulate a treatment effect.
+#'
+#' @param x a vector of sequence identity values to transform
+#' @param beta simulate a decreased in identiy by factor of beta (default=0.95)
+#' @param zi simulate an increased shift in the proportion of zeros by zi (default=0.1)
+#' @return a vector of transformed values
+#' @examples
+#' \dontrun{
+#' N_group <- 1000
+#'
+#' shape1 <- 2
+#' shape2 <- 10
+#' base_zero <- 0.5
+#'
+#' sim <- rbeta(N_group, shape1, shape2)
+#' sim <- sim*rbinom(length(sim), 1, base_zero)
+#'
+#'
+#' # Simulate a treatment effect.
+#'
+#' beta_difference <- runif(1, 0.5, 0.9)
+#' treat_zero_effect <- 0.2
+#'
+#' treat <- rescale_beta(sim, beta_difference, treat_zero_effect)
+#'
+#' df <- data.frame(cat=rep(c('a','b'), each=N_group),
+#'                  vals=c(sim,treat$rescaled))
+#'
+#' m <- glmmTMB::glmmTMB(vals ~ cat, data=df,
+#'                       family=glmmTMB::beta_family(link="logit"),
+#'                       ziformula = ~cat)
+#'
+#' coefs <- glmmTMB::fixef(m)$cond
+#' zi_coefs <- glmmTMB::fixef(m)$zi
+#'
+#' cat("Simulated log-odds ratio", log(beta_difference), "\n",
+#'     "Inferred log-odds ratio", coefs["catb"])
+#' 
+#' cat("Simulated log-odds ratio", treat$expected_zi, "\n",
+#'    "Inferred log-odds ratio", zi_coefs["catb"])
+#' }
+rescale_beta <- function(x, beta = 0.95, zi=0.1) {
+  
+  # Ensure x is between 0 and 1
+  if (any(x < 0 | x > 1)) stop("Values must be between 0 and 1")
+  # Ensure beta is between 0 and 1
+  if (any(beta < 0 | beta > 1)) stop("beta must be between 0 and 1")
+  
+  # Apply power transformation (Beta regression-style scaling)
+  x_rescaled <- x*beta
+  
+  p1 <- sum(x_rescaled==0)/length(x_rescaled)
+  p2 <- p1 + zi
+  
+  if (p2 > 1) {
+    stop("ZI is too large. The total proportion of
+                   zeros is greater than 1 after adjustment")
+  }
+  
+  if(p2 > p1){ # when zi > 0
+    # We cannot guarantee this won't fail for very small zi values, if that happens, return input
+    sz <- rbinom(1, length(x_rescaled), p2) - sum(x_rescaled==0)
+    nz = which(x_rescaled!=0)
+    if(sz < length(nz) & sz > 0) {
+      selected <- sample(which(x_rescaled!=0), sz, replace=FALSE)
+      x_rescaled[selected] <- 0
+    } 
+  }
+  
+  
+  return(list(
+    rescaled=x_rescaled,
+    expected_beta=log(beta),
+    expected_zi=log(p2/(1-p2)/(p1/(1-p1)))
+  ))
+}
+
+
 #' Add or modify metadata in an `SummarizedExperiment` object
 #'
 #' This function adds or modifies metadata in `SummarizedExperiment` object read using functions such as `read_sylph()` and `read_metaphlan()`.
@@ -51,7 +131,7 @@ modify_metadata <- function(se, meta_data, replace = F) {
 
 #' Update the model fit by calling the specified fit function only a subset of features. Same design will be fitted.
 #'
-#' @param fit Output fit from `glmZiBFit()`, `glmFit()` or `caseControlFit()`
+#' @param fit A `strainspy_fit` object
 #' @param update_idx Vector of indices that need to be updated
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param scale_continous Binary specifying whether to rescale numeric values. Default T
@@ -74,8 +154,8 @@ update_fit <- function(fit, update_idx,
     stop("`se` must be a SummarizedExperiment object.")
   }
   
-  if (!inherits(fit, "betaGLM")) {
-    stop("`fit` must be a betaGLM object.")
+  if (!inherits(fit, "strainspy_fit")) {
+    stop("`fit` must be a strainspy_fit object.")
   }
   
   # what was fitted?
@@ -179,12 +259,17 @@ get_confusion_mx <- function(top_hits, gt_contigs, all_contigs, print_cm = TRUE)
   return(cm)
 }
 
-#' Generate a Manhattan plot from a betaGLM object, with the option to add ground truth 
+#' Generate a Manhattan plot from a strainspy_fit object, with the option to add ground truth 
 #'
 #' This function is copied from plot_manhattan() 
 #'
-#' @param object A `betaGLM` object.
+#' @param object A `strainspy_fit` object.
 #' @param coef The number of the coefficient from which to generate the plot (default=2).
+#' @param taxonomy An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).
+#' @param method Character. Multiple testing correction method for p-values (e.g., "holm"). Defaults to "holm".
+#' @param alpha Numeric. Significance threshold for adjusted p-values. Defaults to 0.05.
+#' @param levels Character vector. Taxonomic levels to include in the plot when `taxonomy` is provided. Defaults to c("Phylum", "Genus", "Species", "Strain").
+#' @param colour_level Character. Taxonomic level used for coloring the plot segments. Defaults to "Phylum".
 #' @param plot If set to false, the function will return a tibble with data used to generate the plot.
 #' @param ground_truth A vector of ground truth contigs
 #' @return A `ggplot` object showing the Manhattan plot.
@@ -196,8 +281,8 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
                               colour_level = "Phylum", plot=TRUE, ground_truth = NULL) {
   
   # Validate input
-  if (!inherits(object, "betaGLM")) {
-    stop("Input must be a betaGLM object.")
+  if (!inherits(object, "strainspy_fit")) {
+    stop("Input must be a strainspy_fit object.")
   }
   
   # Create tidy tibbles for plotting
@@ -325,68 +410,6 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
   
   return(gg)
 }
-
-#' Generate a Violin plot for a subset of contigs for a given categorical phenotype 
-#'
-#' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param phenotype One variable in `colnames(se@colData)`, except `Sample_File`. The selected variable must be categorical
-#' @param contigs A vector of contigs to generate violin plots
-#' @param contig_names A vector of names for the contigs to use in the plot, useful when the original contig names are too long. Must be the same length and order as `contig_names`. Default NULL.
-#' @param drop_ANI_zeros Bool. If TRUE, ANI 0 values will not be included in the violin plot. Default FALSE. A warning will be generated to inform that ANI 0 rows are dropped.
-#' @param plot If set to false, the function will return a tibble with data used to generate the plot.
-plot_violin <- function(se, phenotype, contigs, contig_names = NULL, drop_ANI_zeros = FALSE, plot = TRUE){
-  if(length(phenotype) != 1) {
-    stop("Only one phenotype can be plotted at a time")
-  }
-  
-  if(! (phenotype %in% colnames(se@colData)) ){
-    stop("Phenotype not found in colnames(se@colData)")
-  }
-
-  if( ! is.factor(se@colData[[phenotype]])) {
-    stop("Phenotype must be a factor")
-  }
-  
-  chk_contigs = contigs %in% rownames(se)
-  if( ! all(chk_contigs)  ){
-    cat(paste(contigs[!chk_contigs], '\n', sep = ""))
-    stop("Above contigs are missing from rownames(se)")
-  }
-  
-  tmp = as.data.frame(t(as.matrix(SummarizedExperiment::assay(se[contigs, ]))))
-  tmp = cbind(se@colData[[phenotype]], tmp)
-  
-  if(!is.null(contig_names)){
-    colnames(tmp) = c(phenotype, contig_names)
-  } else {
-    colnames(tmp) = c(phenotype, colnames(tmp)[-1])
-  }
-  
-  df_long <- tidyr::pivot_longer(tmp, cols = -phenotype, names_to = "Contig", values_to = "ANI")
-  
-  if(drop_ANI_zeros){
-    df_long$ANI[df_long$ANI == 0] = NA
-  }
-  
-  phenotype <- rlang::sym(phenotype)
-  
-  if(!plot){
-    return(df_long)
-  } else {
-    ggplot(df_long, aes(x = Contig, y = ANI, fill = !!phenotype)) +
-      geom_violin(trim = FALSE, alpha = 0.6) +
-      theme_minimal() +
-      labs(x = "Contigs", y = "ANI") +
-      scale_fill_brewer(palette = "Set2") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  }
-  
-  
-}
-
-
-
-
 
 
 
