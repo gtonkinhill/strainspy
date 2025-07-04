@@ -10,7 +10,7 @@
 #' @param collapse_method A character string specifying the method to use to collapse the ANI values. Must be one of 'representative', 'mean' or 'max'. (default='representative')
 #'
 #' @return A distance matrix.
-#' 
+#'
 #' @importFrom SummarizedExperiment assays rowData
 #' @importFrom purrr map
 #' @importFrom stats dist
@@ -32,7 +32,7 @@ ani_distance <- function(se, taxonomy=NULL, tax_level="Species", collapse_method
     stop("`se` must be a SummarizedExperiment object.")
   }
 
-  # Collapse at specified taxa level is taxonomy is provided
+  # Collapse at specified taxa level if taxonomy is provided
   if (!is.null(taxonomy)){
     fullm <- as.matrix(SummarizedExperiment::assays(se)[[1]])
     grouping <- tax[[tax_level]][match(SummarizedExperiment::rowData(se)$Genome_file, tax$Genome)]

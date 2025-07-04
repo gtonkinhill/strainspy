@@ -48,6 +48,8 @@ example_meta$Case_status = factor(example_meta$Case_status)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 se <- read_sylph(example_path, example_meta)
 
+plot_ani_dist(se, phenotype = "Case_status", contigs = rownames(se)[1:5])
+
 
 }
 

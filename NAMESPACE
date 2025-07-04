@@ -3,6 +3,7 @@
 export(abundanceFit)
 export(ani_distance)
 export(caseControlFit)
+export(extract_strainspy)
 export(filter_by_presence)
 export(getFDR)
 export(getResiduals)
