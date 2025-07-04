@@ -51,8 +51,11 @@ se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit <- glmFit(se[1:2],  design, nthreads=4, family=glmmTMB::ordbeta())
+fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
 summary(fit)
+
+se <- readRDS("~/Downloads/test_spy.RDS")$se
+design <- readRDS("~/Downloads/test_spy.RDS")$des
 
 }
 

@@ -34,8 +34,11 @@
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit <- glmFit(se[1:2],  design, nthreads=4, family=glmmTMB::ordbeta())
+#' fit <- glmFit(se,  design, nthreads=4, family=glmmTMB::ordbeta())
 #' summary(fit)
+#'
+#' se <- readRDS("~/Downloads/test_spy.RDS")$se
+#' design <- readRDS("~/Downloads/test_spy.RDS")$des
 #'
 #' }
 #'
@@ -61,6 +64,11 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
     }
   }
 
+  #Make sure the design is valid given col_data
+  if (!all(all.vars(design) %in% colnames(col_data))) {
+    stop("The design formula contains variables not present in colData.")
+  }
+
   # Ensure the design is a formula
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
@@ -74,7 +82,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
   }
 
   # Define priors
-  nbeta <- ncol(model.matrix(strip_random_effects(design), col_data))
+  nbeta <- ncol(model.matrix(strainspy:::strip_random_effects(design), col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", nbeta),
     class = rep("fixef", each=nbeta),
@@ -123,7 +131,7 @@ glmFit <- function(se, design, nthreads=1, scale_continous=TRUE, family=glmmTMB:
                    zi_coefficients = NULL,
                    zi_std_errors = NULL,
                    zi_p_values = NULL,
-                   residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
+                   residuals = DataFrame(do.call(rbind, purrr::map(results, ~ .x[[3]]))),
                    convergence = purrr::map_lgl(results, ~ .x$convergence),
                    design = design,
                    # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
@@ -165,9 +173,23 @@ fit_model <- function(se_subset, col_data, combined_formula, fixed_priors, famil
     }, error = function(e) NULL)
 
     # Handle the case where the model could not be fitted
-    if (is.null(fit)) {
+    if (is.null(fit) || (fit$fit$convergence!=0)) {
       warning("Failed to fit the model for species index: ", row_index)
-      return(NULL)
+
+      m <- model.matrix(strainspy:::strip_random_effects(combined_formula), col_data)
+      na_matrix <- matrix(NA,
+                          nrow = ncol(m),
+                          ncol = 4,
+                          dimnames = list(colnames(m),
+                                          c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+
+      return(list(
+        coefficients = na_matrix,
+        coefficients_zi = NULL,
+        residuals = rep(NA, nrow(col_data)),
+        log_likelihood = NA,
+        convergence = FALSE
+      ))
     }
 
     # Extract summary statistics
@@ -185,5 +207,71 @@ fit_model <- function(se_subset, col_data, combined_formula, fixed_priors, famil
 
   return(chunk_results)
 }
+
+
+#' Fit Regression model using GLM for a Single Feature
+#'
+#'
+#' @param se A `SummarizedExperiment` object containing the assay data.
+#' @param row_index The index of the feature (row) to be processed.
+#' @param col_data A data frame containing the design matrix and additional covariates.
+#' @param combined_formula The formula for the conditional mean model.
+#' @param fixed_priors Optional priors for the model.
+#' @param nt Number of threads for parallel computation in model fitting.
+#' @param feature Optional name of the feature for debugging or error messages.
+#' @return A list with model coefficients, zero-inflation coefficients, residuals,
+#'         log-likelihood, and convergence status.
+fit_glm_model <- function(se_subset, col_data, combined_formula, fixed_priors, family) {
+
+  chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
+    # Extract the values for the current feature
+    col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+
+    # Run the zero-inflated beta regression
+    fit <- tryCatch({
+      glmmTMB::glmmTMB(
+        formula = combined_formula,
+        data = col_data,
+        priors = fixed_priors,
+        family = family
+      )
+    }, error = function(e) NULL)
+
+    # Handle the case where the model could not be fitted
+    if (is.null(fit) || (fit$fit$convergence!=0)) {
+      warning("Failed to fit the model for species index: ", row_index)
+
+      m <- model.matrix(strainspy:::strip_random_effects(combined_formula), col_data)
+      na_matrix <- matrix(NA,
+                          nrow = ncol(m),
+                          ncol = 4,
+                          dimnames = list(colnames(m),
+                                          c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
+
+      return(list(
+        coefficients = na_matrix,
+        coefficients_zi = NULL,
+        residuals = rep(NA, nrow(col_data)),
+        log_likelihood = NA,
+        convergence = FALSE
+      ))
+    }
+
+    # Extract summary statistics
+    smry <- summary(fit)
+
+    # Return results as a list
+    return(list(
+      coefficients = smry$coefficients$cond,
+      coefficients_zi = NULL,
+      residuals = residuals(fit, type = "response"),
+      log_likelihood = fit$fit$objective,
+      convergence = fit$fit$convergence==0
+    ))
+  })
+
+  return(chunk_results)
+}
+
 
 

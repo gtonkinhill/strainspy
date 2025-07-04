@@ -41,6 +41,10 @@
 #' design <- as.formula(" ~ Case_status + Age_at_collection + gamlss::random(Sex)")
 #' design <- as.formula(" ~ Case_status")
 #'
+#' temp <- readRDS("~/Downloads/temp_spy.RDS")
+#' se <- temp$sylph
+#' design <- temp$design
+#'
 #' fit <- glmZiBFit(se[1:5,], design, nthreads=1, method='gamlss')
 #' top_hits(fit, alpha=1)
 #'
@@ -140,7 +144,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
                             zi_coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,1])),
                             zi_std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,2])),
                             zi_p_values = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,4])),
-                            residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
+                            residuals = DataFrame(do.call(rbind, purrr::map(results, ~ .x[[3]]))),
                             convergence = purrr::map_lgl(results, ~ .x$convergence),
                             design = design,
                             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
