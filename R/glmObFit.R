@@ -173,8 +173,7 @@ fit_ob_model <- function(se_subset, col_data, combined_formula, fixed_priors, fa
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    # col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
-    col_data$Value <- DoSquash_ZIB(as.vector(se_subset[row_index, ])/100)
+    
     # Run the zero-inflated beta regression
     fit <- tryCatch({
       glmmTMB::glmmTMB(

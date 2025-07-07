@@ -114,6 +114,3 @@ get_colors <- function(n) {
     return(c(base_colors, extra_colors))
   }
 }
-
-
-
