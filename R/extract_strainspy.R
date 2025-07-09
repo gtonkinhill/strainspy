@@ -5,6 +5,7 @@
 #' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param variables One or multiple variables in `colnames(se@colData)`, except `Sample_File`.
 #' @param contigs A vector of contigs to generate violin plots
+#' @param taxonomy An optional taxonomy file read using strainspy::read_taxonomy (default=NULL).
 #' @param drop_zeros Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE.
 #'
 #' @examples

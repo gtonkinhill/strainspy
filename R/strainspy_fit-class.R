@@ -134,3 +134,49 @@ methods::setMethod("summary", "strainspy_fit", function(object) {
     residuals_available = !is.null(object@residuals)
   )
 })
+
+
+#' Get Contig names in a fit object
+#'
+#' Gets the ordered list of fitted contig names in a `strainspy_fit`
+#'
+#' @param object An object of class `strainspy_fit`.
+#' @return A vector of contig names
+#' @export
+methods::setGeneric("getContigNames", function(object) methods::standardGeneric("getContigNames"))
+
+#' @rdname getContigNames
+#' @export
+methods::setMethod("getContigNames", "strainspy_fit", function(object) {
+  object@row_data$Contig_name
+})
+
+#' Get Genomes in a fit object
+#'
+#' Gets the ordered list of fitted genomes in a `strainspy_fit`
+#'
+#' @param object An object of class `strainspy_fit`.
+#' @return A vector of fitted genomes
+#' @export
+methods::setGeneric("getGenomes", function(object) methods::standardGeneric("getGenomes"))
+
+#' @rdname getGenomes
+#' @export
+methods::setMethod("getGenomes", "strainspy_fit", function(object) {
+  object@row_data$Genome_file
+})
+
+#' Get Sample names in a fit object
+#'
+#' Gets the ordered list of samples used in `strainspy_fit`
+#'
+#' @param object An object of class `strainspy_fit`.
+#' @return A vector of fitted sample names 
+#' @export
+methods::setGeneric("getSamples", function(object) methods::standardGeneric("getSamples"))
+
+#' @rdname getSamples
+#' @export
+methods::setMethod("getSamples", "strainspy_fit", function(object) {
+  names(object@residuals)
+})

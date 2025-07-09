@@ -180,7 +180,7 @@ update_fit <- function(fit, update_idx,
          },
          "glmFit" = {
            cat("Updating", length(update_idx), "values by calling glmFit\n")
-           fit_u <- glmFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM, family = family)
+           fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM, family = family)
          },
          "caseControlFit" = {
            cat("Updating", length(update_idx), "values by calling caseControlFit\n")

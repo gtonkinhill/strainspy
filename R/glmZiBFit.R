@@ -24,7 +24,7 @@
 #' \item{residuals}{A DFrame of residual vectors for each feature}
 #' \item{convergence}{A named logical vector indicating convergence for each feature}
 #' \item{design}{Formula used in the call to `glmZiBFit`}
-#' \item{call}{Call to `glmZiBFit`}
+#' \item{call}{Call to `glmZiBFit`} 
 #'
 #' @import SummarizedExperiment
 #' @import gamlss
@@ -32,7 +32,7 @@
 #' @importFrom stats model.matrix
 #' @importFrom methods new
 #' @importFrom stats as.formula
-#'
+#' 
 #'
 #' @examples
 #' \dontrun{
@@ -46,8 +46,8 @@
 #'
 #' design <- as.formula(" ~ Case_status")
 #'
-#' fit <- glmZiBFit(se, design, nthreads=1)
-#' top_hits(fit, alpha=1)
+#' fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
+#' top_hits(fit, alpha=0.5)
 #' plot_manhattan(fit)
 #'
 #' }
@@ -59,12 +59,12 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
   }
-
+  
   # Validate input
   if (!inherits(se, "SummarizedExperiment")) {
     stop("`se` must be a SummarizedExperiment object.")
   }
-
+  
   # colData (sample metadata)
   col_data <- colData(se)
   if (scale_continous==TRUE){
@@ -74,33 +74,33 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
       }
     }
   }
-
+  
   # Ensure the design is a formula
   if (!inherits(design, "formula")) {
     stop("`design` must be a formula (e.g., ~ batch + condition).")
   }
-
+  
   # check if formula is valid
   nbd = nobars_(design)
   if(is.null(nbd)){
     stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
-  }
-
+  } 
+  
   combined_formula <- as.formula(paste(c("Value", as.character(design)),
                                        collapse = " "))
-
+  
   # Ensure that rownames of colData match colnames of the assay
   if (!all(colnames(assays(se)[[1]]) %in% rownames(col_data))) {
     stop("Column names of assay data do not match row names of colData.")
   }
-
+  
   # Define priors
   nbeta <- ncol(model.matrix(nbd, col_data))
   fixed_priors <- data.frame(
     prior = rep("normal(0,5)", 2*nbeta),
     class = rep(c("fixef", "fixef_zi"), each=nbeta),
     coef  = rep(as.character(seq(1,nbeta)), 2))
-
+  
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
     # Check the operating system and set the backend accordingly
@@ -114,13 +114,13 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   } else {
     BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
   }
-
+  
   # Split rows into 50-row chunks
   row_chunks <- split(
     seq_len(nrow(se)),
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
-
+  
   if (method=='glmmTMB'){
     results <- BiocParallel::bplapply(
       row_chunks,
@@ -132,18 +132,18 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
-                                                   col_data, combined_formula, design, fixed_priors),
+                                                          col_data, combined_formula, design, fixed_priors),
       BPPARAM = BPPARAM
     )
   }
-
-
+  
+  
   # Flatten the results by removing the first layer of lists
   results <- unname(do.call(c, results))
-
+  
   # Clean up
   BiocParallel::bpstop(BPPARAM)
-
+  
   # sometimes results can be an empty list, remove those dynamically
   rmidx = which(sapply(results, length) == 0)
   # sometimes the loglikelihood is NA when the result failed
@@ -155,7 +155,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
   } else {
     seRD = SummarizedExperiment::rowData(se)
   }
-
+  
   # Create the strainspy_fit object
   ZIBetaGLM <- methods::new("strainspy_fit",
                             row_data = seRD,
@@ -165,13 +165,13 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
                             zi_coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,1])),
                             zi_std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,2])),
                             zi_p_values = DataFrame(purrr::map_dfr(results, ~ .x[[2]][,4])),
-                            residuals = DataFrame(do.call(rbind, purrr::map(results, ~ .x[[3]]))),
+                            residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
                             convergence = purrr::map_lgl(results, ~ .x$convergence),
                             design = design,
                             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                             call = match.call()  # Store the function call for reproducibility
   )
-
+  
   return(ZIBetaGLM)
 }
 
@@ -191,11 +191,11 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE, BPPARAM=NULL
 #'
 #' @importFrom stats residuals
 fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
-
+  
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
-
+    # col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+    col_data$Value <- DoSquash_ZIB(as.vector(se_subset[row_index, ])/100)
     # Run the zero-inflated beta regression
     fit <- tryCatch({
       glmmTMB::glmmTMB(
@@ -206,18 +206,18 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
         family = glmmTMB::beta_family(link = "logit")
       )
     }, error = function(e) NULL)
-
+    
     # Handle the case where the model could not be fitted
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
-
+      
       m <- model.matrix(design, col_data)
       na_matrix <- matrix(NA,
                           nrow = ncol(m),
                           ncol = 4,
                           dimnames = list(colnames(m),
                                           c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
-
+      
       return(list(
         coefficients = na_matrix,
         coefficients_zi = na_matrix,
@@ -225,12 +225,12 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
         log_likelihood = NA,
         convergence = FALSE
       ))
-
+      
     }
-
+    
     # Extract summary statistics
     smry <- summary(fit)
-
+    
     # Return results as a list
     return(list(
       coefficients = smry$coefficients$cond,
@@ -240,7 +240,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
       convergence = fit$fit$convergence==0
     ))
   })
-
+  
   return(chunk_results)
 }
 
@@ -261,17 +261,17 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #'
 #' @importFrom stats residuals
 fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
-
+  
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
     temp_dat <- col_data[, all.vars(combined_formula)]
-
+    
     # convert characters to factors
     temp_dat[] <- lapply(temp_dat, function(x) {
       if (is.character(x)) factor(x) else x
     })
-
+    
     # Run the zero-inflated beta regression
     fit <- tryCatch({
       gamlss::gamlss(
@@ -289,8 +289,8 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
     }, error = function(e) {
       return(NULL)
     })
-
-
+    
+    
     # Handle the case where the model could not be fitted
     m <- model.matrix(design, temp_dat)
     na_matrix <- matrix(NA,
@@ -298,10 +298,10 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
                         ncol = 4,
                         dimnames = list(colnames(m),
                                         c("Estimate", "Std. Error", "z value", "Pr(>|z|)")))
-
+    
     if (is.null(fit)) {
       warning("Failed to fit the model for species index: ", row_index)
-
+      
       return(list(
         coefficients = na_matrix,
         coefficients_zi = na_matrix,
@@ -310,17 +310,17 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
         convergence = FALSE
       ))
     }
-
+    
     # Extract summary statistics
     stdout <- capture.output(smry <- summary(fit, robust=TRUE))
-
+    
     index <- unlist(purrr::map(fit$parameters, ~{
       rep(.x, sum(!grepl('random', names(fit[[paste0(.x, '.coefficients')]]) )))
     }))
-
+    
     if (length(index) != nrow(smry)) {
       warning("Failed to fit the model for species index: ", row_index)
-
+      
       return(list(
         coefficients = na_matrix,
         coefficients_zi = na_matrix,
@@ -329,13 +329,13 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
         convergence = FALSE
       ))
     }
-
+    
     smry <- purrr::map(fit$parameters, ~{
       smry[.x==index,,drop=FALSE]
     })
-
+    
     names(smry) <- fit$parameters
-
+    
     # Return results as a list
     return(list(
       coefficients = smry$mu,
@@ -345,8 +345,6 @@ fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula,
       convergence = fit$converged
     ))
   })
-
+  
   return(chunk_results)
 }
-
-
