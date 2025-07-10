@@ -114,3 +114,17 @@ get_colors <- function(n) {
     return(c(base_colors, extra_colors))
   }
 }
+
+#' Offset ANI by a fixed value
+#' 
+#' This function reduces all non-zero ANI values by `eps`
+#'
+#' 
+#' @param x Vector of ANI values in (0,1)
+#' @param eps offset value (default 1e-2)
+#'
+#' @return Adjusted ANI vector
+offset_ANI = function(x, eps = 1e-2){
+  x[x>0] <- x[x>0] - eps
+  x
+}

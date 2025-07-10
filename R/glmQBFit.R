@@ -173,8 +173,8 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
 fit_qb_model <- function(se_subset, col_data, combined_formula) {
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
-    # Extract the values for the current feature
-    col_data$Value <- base::pmin(as.vector(se_subset[row_index, ]) / 100, 0.99999)
+    ## Extract the values for the current feature
+    col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)
     
     # Run the zero-inflated beta regression
     fit <- tryCatch({
