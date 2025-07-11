@@ -28,12 +28,17 @@ A SummarizedExperiment object with the following components:
 \item{colData}{DataFrame containing information for each sample (derived from the \code{Sample_file} field).}
 }
 \description{
-Read a \verb{sourmash gather} or \verb{sourmash search} -like output CSV file and create a SummarizedExperiment object.
-Optionally, metadata can be provided, which will be loaded into the \code{colData} of the SummarizedExperiment object.
+This function reads a \verb{sourmash gather} or \verb{sourmash search} -like output CSV file and create a SummarizedExperiment object.
+An optional metadata table can be provided and added directly to \code{colData} via an internal call to \code{modify_metadata()}.
 }
 \note{
 Some of sourmash subcommands like \code{gather} are designed to take exactly one query file.
 To merge and save a CSV file suitable to use with this function, use \code{merge_sourmash_files()}
+#' If metadata is provided, it must meet the input requirements described in
+\code{modify_metadata()}. If appending metadata fails due to pre processing requirements,
+this function will issue a detailed warning and still return the \code{SummarizedExperiment}
+object without metadata. In that case, apply necessary fixes and subsequently
+call \code{modify_metadata()}.
 }
 \examples{
 \dontrun{

@@ -78,56 +78,56 @@ rescale_beta <- function(x, beta = 0.95, zi=0.1) {
 }
 
 
-#' Add or modify metadata in an `SummarizedExperiment` object
-#'
-#' This function adds or modifies metadata in `SummarizedExperiment` object read using functions such as `read_sylph()` and `read_metaphlan()`.
-#'
-#' @param se SummarizedExperiment object generated from `strainspy` read functions.
-#' @param meta_data data.frame. A tibble or data frame containing sample metadata.
-#' @param replace bool. If T, the meta data in se (i.e., `se@coldata`) will be replaced with the provided meta_data file. Default F.
-#' The **first column must contain sample names** that match exactly with the `colnames(se)`.
-#' @return SummmarizedExperiment object `se`, updated with the new meta data.
-modify_metadata <- function(se, meta_data, replace = F) {
-  meta_samples <- unique(meta_data[[1]])
-  if (length(missing_from_meta <- setdiff(se@colData$Sample_file, meta_samples)) > 0) {
-    stop("The following samples from 'se' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
-  }
-  
-  if (length(missing_from_se <- setdiff(meta_samples, se@colData$Sample_file)) > 0) {
-    stop("The following samples from 'meta_data' are not in 'se': ", paste(missing_from_se, collapse = ", "))
-  }
-  
-  # check and reorder as necessary
-  asy = SummarizedExperiment::assay(se)
-  if ( !all(names(asy[1,]) == se@colData@rownames) ) {
-    stop("Mismatch between se rownames and assay order")
-  }
-  
-  if(replace == T){
-    se@colData@listData = list(se@colData@listData$Sample_file)
-  }
-  
-  # we can't have the same colname in se@colData and meta_data
-  test_cols = which(colnames(meta_data) %in% colnames(se@colData))
-  if(length(test_cols) >0) {
-    warning(paste("Columns:", colnames(meta_data)[test_cols], "exist(s) in se@colData and will be dropped without merging. Set replace = T to replace instead" ))
-    meta_data = meta_data[,-test_cols]
-  }
-  
-  if(ncol(meta_data) > 0) {
-    new_metadata <- S4Vectors::DataFrame(base::merge(se@colData, meta_data,
-                                                     by.x = "Sample_file",
-                                                     by.y = names(meta_data)[1],
-                                                     all.x = TRUE,
-                                                     sort = FALSE)) # Keeps all Sample_file entries from se
-    
-    se@colData@listData = as.list(new_metadata)
-  } else {
-    warning("No new metadata to add, returning the same se object.")
-  }
-  
-  return(se)
-}
+# #' Add or modify metadata in an `SummarizedExperiment` object
+# #'
+# #' This function adds or modifies metadata in `SummarizedExperiment` object read using functions such as `read_sylph()` and `read_metaphlan()`.
+# #'
+# #' @param se SummarizedExperiment object generated from `strainspy` read functions.
+# #' @param meta_data data.frame. A tibble or data frame containing sample metadata.
+# #' @param replace bool. If T, the meta data in se (i.e., `se@coldata`) will be replaced with the provided meta_data file. Default F.
+# #' The **first column must contain sample names** that match exactly with the `colnames(se)`.
+# #' @return SummmarizedExperiment object `se`, updated with the new meta data.
+# modify_metadata <- function(se, meta_data, replace = F) {
+#   meta_samples <- unique(meta_data[[1]])
+#   if (length(missing_from_meta <- setdiff(se@colData$Sample_file, meta_samples)) > 0) {
+#     stop("The following samples from 'se' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
+#   }
+#   
+#   if (length(missing_from_se <- setdiff(meta_samples, se@colData$Sample_file)) > 0) {
+#     stop("The following samples from 'meta_data' are not in 'se': ", paste(missing_from_se, collapse = ", "))
+#   }
+#   
+#   # check and reorder as necessary
+#   asy = SummarizedExperiment::assay(se)
+#   if ( !all(names(asy[1,]) == se@colData@rownames) ) {
+#     stop("Mismatch between se rownames and assay order")
+#   }
+#   
+#   if(replace == T){
+#     se@colData@listData = list(se@colData@listData$Sample_file)
+#   }
+#   
+#   # we can't have the same colname in se@colData and meta_data
+#   test_cols = which(colnames(meta_data) %in% colnames(se@colData))
+#   if(length(test_cols) >0) {
+#     warning(paste("Columns:", colnames(meta_data)[test_cols], "exist(s) in se@colData and will be dropped without merging. Set replace = T to replace instead" ))
+#     meta_data = meta_data[,-test_cols]
+#   }
+#   
+#   if(ncol(meta_data) > 0) {
+#     new_metadata <- S4Vectors::DataFrame(base::merge(se@colData, meta_data,
+#                                                      by.x = "Sample_file",
+#                                                      by.y = names(meta_data)[1],
+#                                                      all.x = TRUE,
+#                                                      sort = FALSE)) # Keeps all Sample_file entries from se
+#     
+#     se@colData@listData = as.list(new_metadata)
+#   } else {
+#     warning("No new metadata to add, returning the same se object.")
+#   }
+#   
+#   return(se)
+# }
 
 #' Update the model fit by calling the specified fit function only a subset of features. Same design will be fitted.
 #'

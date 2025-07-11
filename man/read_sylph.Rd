@@ -15,8 +15,7 @@ read_sylph(
 \arguments{
 \item{file_path}{Character. Path to the Sylph query or profile output file (tab-separated format).}
 
-\item{meta_data}{data.frame. A tibble or data frame containing sample metadata.
-The \strong{first column must contain sample names} that match exactly with the sample names in the Sylph output.}
+\item{meta_data}{data.frame. An optional tibble or data frame containing sample metadata. See Details}
 
 \item{variable}{Character. Name of the input variable to import, either \code{Adjusted_ANI} or  \code{Naive_ANI}. Defaults to \code{Adjusted_ANI}.}
 
@@ -33,7 +32,14 @@ A SummarizedExperiment object with the following components:
 }
 \description{
 This function reads a Sylph output file (either query or profile), parses the data, and returns a SummarizedExperiment object.
-Optionally, metadata can be provided, which will be loaded into the \code{colData} of the SummarizedExperiment object.
+An optional metadata table can be provided and added directly to \code{colData} via an internal call to \code{modify_metadata()}.
+}
+\details{
+If metadata is provided, it must meet the input requirements described in
+\code{modify_metadata()}. If appending metadata fails due to pre processing requirements,
+this function will issue a detailed warning and still return the \code{SummarizedExperiment}
+object without metadata. In that case, apply necessary fixes and subsequently
+call \code{modify_metadata()}.
 }
 \examples{
 \dontrun{

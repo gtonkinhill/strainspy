@@ -62,7 +62,7 @@ example_taxonomy_path <- system.file("extdata", "example_taxonomy.tsv.gz", packa
 meta_data <- readr::read_csv(example_meta_path)
 meta_data$Case_status = factor(meta_data$Case_status) # Required for visualising
 # Read in sylph profile
-se <- read_sylph(example_sylph_path, meta_data)
+se <- read_sylph(example_sylph_path, meta_data =  meta_data)
 
 # Filter by presence. This will remove any strains that are not present in at least 30 samples
 se <- filter_by_presence(se, min_nonzero = 30)

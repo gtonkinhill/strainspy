@@ -1,12 +1,18 @@
 #' read_metaphlan
 #' 
-#' Read a merged `MetaPhlAn` profile output and create a SummarizedExperiment object. 
-#' Optionally, metadata can be provided, which will be loaded into the `colData` of the SummarizedExperiment object.
+#' This function reads a merged `MetaPhlAn` profile output and create a SummarizedExperiment object. 
+#' An optional metadata table can be provided and added directly to `colData` via an internal call to `modify_metadata()`.
 #'
 #' @note Since `MetaPhlAn` profiles are usually generated per sample, first use `merge_metaphlan_files()` to merge and generate the input for this function.
 #' 
+#' #' If metadata is provided, it must meet the input requirements described in 
+#' `modify_metadata()`. If appending metadata fails due to pre processing requirements, 
+#' this function will issue a detailed warning and still return the `SummarizedExperiment` 
+#' object without metadata. In that case, apply necessary fixes and subsequently 
+#' call `modify_metadata()`. 
+#' 
 #' @param file_path Character. Path to the merged metaphlan output file.
-#' @param meta_data data.frame. A tibble or data frame containing sample metadata. Metadata requirements are identical to `read_sylph()`.
+#' @param meta_data data.frame. An optional tibble or data frame containing sample metadata. See Details
 #' @param variable Character. Name of the input variable to import. Defaults to `relative_abundance`.
 #' @param clean_names Logical. If `TRUE`, file paths will be stripped of their directory path and file extension,
 #' leaving only the base file name. Defaults to `TRUE`.
@@ -89,35 +95,35 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
   n_cols <- max(metaphlan_data$col_indices)
   
   # Merge metadata if provided
-  if (is.null(meta_data)){
-    # Generate colData
-    col_data <- S4Vectors::DataFrame(unique(metaphlan_data[, .(Sample_file, col_indices)][order(col_indices)]))
-    rownames(col_data) <- col_data[,1]
-    col_data[['col_indices']] <- NULL
-  } else {
-    col_data <- unique(metaphlan_data[, .(Sample_file, col_indices)][order(col_indices)])
-    
-    # Extract unique sample names
-    meta_samples <- unique(meta_data[[1]])
-    
-    # Warn about mismatched samples
-    if (length(missing_from_meta <- setdiff(col_data$Sample_file, meta_samples)) > 0) {
-      stop("The following samples from 'metaphlan_data' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
-    }
-    
-    if (length(missing_from_metaphlan <- setdiff(meta_samples, col_data$Sample_file)) > 0) {
-      stop("The following samples from 'meta_data' are not in 'metaphlan_data': ", paste(missing_from_metaphlan, collapse = ", "))
-    }
-    
-    col_data <- S4Vectors::DataFrame(base::merge(col_data, meta_data,
-                                                 by.x = "Sample_file",
-                                                 by.y = names(meta_data)[1],
-                                                 all.x = TRUE)) # Keeps all Sample_file entries from metaphlan_data
-    
-    
-    rownames(col_data) <- col_data[["Sample_file"]]
-    col_data[['col_indices']] <- NULL
-  }
+  # if (is.null(meta_data)){
+  # Generate colData
+  col_data <- S4Vectors::DataFrame(unique(metaphlan_data[, .(Sample_file, col_indices)][order(col_indices)]))
+  rownames(col_data) <- col_data[,1]
+  col_data[['col_indices']] <- NULL
+  # } else {
+  #   col_data <- unique(metaphlan_data[, .(Sample_file, col_indices)][order(col_indices)])
+  #   
+  #   # Extract unique sample names
+  #   meta_samples <- unique(meta_data[[1]])
+  #   
+  #   # Warn about mismatched samples
+  #   if (length(missing_from_meta <- setdiff(col_data$Sample_file, meta_samples)) > 0) {
+  #     stop("The following samples from 'metaphlan_data' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
+  #   }
+  #   
+  #   if (length(missing_from_metaphlan <- setdiff(meta_samples, col_data$Sample_file)) > 0) {
+  #     stop("The following samples from 'meta_data' are not in 'metaphlan_data': ", paste(missing_from_metaphlan, collapse = ", "))
+  #   }
+  #   
+  #   col_data <- S4Vectors::DataFrame(base::merge(col_data, meta_data,
+  #                                                by.x = "Sample_file",
+  #                                                by.y = names(meta_data)[1],
+  #                                                all.x = TRUE)) # Keeps all Sample_file entries from metaphlan_data
+  #   
+  #   
+  #   rownames(col_data) <- col_data[["Sample_file"]]
+  #   col_data[['col_indices']] <- NULL
+  # }
   
   # Extract row metadata (rowData)
   # Generate row_data using unique combinations and indices
@@ -138,20 +144,30 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
                                                     compression = TRUE)
   }
   
-  # Return the SummarizedExperiment object
-  return(
-    SummarizedExperiment::SummarizedExperiment(
-      assays = list(Matrix::sparseMatrix(
-        i = metaphlan_data[['row_indices']],
-        j = metaphlan_data[['col_indices']],
-        x = metaphlan_data[[variable]],
-        dims = c(n_rows, n_cols),
-        repr = "R" # Specify row-compressed format
-      )),
-      rowData = row_data,
-      colData = col_data
-    )
+  se = SummarizedExperiment::SummarizedExperiment(
+    assays = list(Matrix::sparseMatrix(
+      i = metaphlan_data[['row_indices']],
+      j = metaphlan_data[['col_indices']],
+      x = metaphlan_data[[variable]],
+      dims = c(n_rows, n_cols),
+      repr = "R" # Specify row-compressed format
+    )),
+    rowData = row_data,
+    colData = col_data
   )
+  
+  if(!is.null(meta_data)){ # User has provided meta_data, attempt to automatically append it to se
+    se <- tryCatch({
+      modify_metadata(se, meta_data, replace = TRUE)
+    }, error = function(e) {
+      warning("Automated attachment of metadata failed: ", conditionMessage(e), 
+              "\nReturning SummarizedExperiment without metadata. Use `modify_metadata()` after applying necessary fixes.")
+      se  # return original se
+    })
+  }
+  
+  # Return the SummarizedExperiment object
+  return(se)
   
 }
 

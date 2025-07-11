@@ -5,15 +5,15 @@ meta = read.csv(meta_path)
 # ANI/Abundance data read in
 # sylph
 sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-se <- strainspy::read_sylph(sylph_path, meta)
+se <- strainspy::read_sylph(file_path = sylph_path, meta_data = meta)
 
 # metaphlan
 mp_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
-mp <- strainspy::read_metaphlan(mp_path, meta)
+mp <- strainspy::read_metaphlan(file_path = mp_path, meta_data = meta)
 
 # sourmash
 sm_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
-sm <- strainspy::read_sourmash(sm_path, meta)
+sm <- strainspy::read_sourmash(file_path = sm_path, meta_data = meta)
 
 # taxonomy
 tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", package = "strainspy")

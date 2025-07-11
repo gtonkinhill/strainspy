@@ -79,8 +79,8 @@ top_hits(fit, alpha = 0.5)
 #> # A tibble: 2 × 10
 #>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
 #>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
-#> 1 QAND0100002… GCA_003150…      0.490     0.128  1.32e-4   0.0624         -0.250
-#> 2 NZ_JAJEQM01… GCF_020687…      0.0198    0.0585 7.35e-1   1               1.30 
+#> 1 NZ_JAJEQM01… GCF_020687…     0.00790    0.0386 8.38e-1    1             1.30  
+#> 2 CAJLRM01000… GCA_905209…     0.288      0.0850 7.11e-4    0.336        -0.0175
 #> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
 
 # Create Volcano plot
@@ -118,14 +118,14 @@ taxonomy <- read_taxonomy(example_taxonomy_path)
 hier_p <- hadjust(fit, taxonomy = taxonomy)
 head(hier_p)
 #> # A tibble: 6 × 6
-#>   Level   Model Name               strain_count mean_coefficient p_adjust
-#>   <chr>   <chr> <chr>                     <int>            <dbl>    <dbl>
-#> 1 Phylum  Beta  Bacillota_A                 342           0.0261   0.0543
-#> 2 Class   Beta  Clostridia                  342           0.0261   0.0543
-#> 3 Order   Beta  Christensenellales           38           0.0925   0.0963
-#> 4 Family  Beta  QAND01                        4           0.129    0.124 
-#> 5 Genus   Beta  QAND01                        1           0.490    0.124 
-#> 6 Species Beta  QAND01 sp003150225            1           0.490    0.124
+#>   Level  Model         Name        strain_count mean_coefficient p_adjust
+#>   <chr>  <chr>         <chr>              <int>            <dbl>    <dbl>
+#> 1 Phylum Zero-Inflated Bacillota_A          342          0.00457    0.147
+#> 2 Class  Zero-Inflated Clostridia           342          0.00457    0.147
+#> 3 Phylum Beta          Bacillota_A          342          0.0158     0.168
+#> 4 Class  Beta          Clostridia           342          0.0158     0.168
+#> 5 Order  Zero-Inflated UBA1381                1          1.30       0.313
+#> 6 Family Zero-Inflated UBA1381                1          1.30       0.313
 ```
 
 ### Create taxonomy informed Manhattan plot with adjusted p-values
