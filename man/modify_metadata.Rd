@@ -14,14 +14,20 @@ modify_metadata(se, meta_data, replace = FALSE, convert = TRUE)
 \item{replace}{Logical. If TRUE, replaces existing colData. Default FALSE.}
 
 \item{convert}{Logical. If TRUE, attempts to auto-convert types as suited for
-model fitting (int to numeric, char to factor). Disable if meta_data is already
-suitable for model fitting. Default TRUE.}
+model fitting (int to numeric, char to factor). Disable if meta_data is fully
+configured for model fitting. Default TRUE. See Details.}
 }
 \value{
 Updated SummarizedExperiment object.
 }
 \description{
-Add or modify metadata in a \code{SummarizedExperiment} object
+This function adds or modifies metadata in a \code{SummarizedExperiment} object.
+}
+\details{
+If \code{convert = TRUE}, character columns with less than 5 unique (non-NA) values will be automatically
+converted to factors, with levels ordered alphabetically. For meaningful association testing,
+however, factor levels should reflect the intended reference level. It is recommended to
+manually convert such variables to factors with explicitly set levels \emph{before} calling \code{modify_metadata()}.
 }
 \examples{
 \dontrun{

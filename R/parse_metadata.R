@@ -1,11 +1,19 @@
 #' Add or modify metadata in a `SummarizedExperiment` object
 #'
+#' This function adds or modifies metadata in a `SummarizedExperiment` object.
+#' 
+#' If `convert = TRUE`, character columns with less than 5 unique (non-NA) values will be automatically
+#' converted to factors, with levels ordered alphabetically. For meaningful association testing,
+#' however, factor levels should reflect the intended reference level. It is recommended to
+#' manually convert such variables to factors with explicitly set levels *before* calling `modify_metadata()`.
+#' 
 #' @param se A SummarizedExperiment object.
 #' @param meta_data A data.frame with sample metadata. **The first column must contain all samples returned by** `colnames(se)`.
 #' @param replace Logical. If TRUE, replaces existing colData. Default FALSE.
 #' @param convert Logical. If TRUE, attempts to auto-convert types as suited for
-#' model fitting (int to numeric, char to factor). Disable if meta_data is already 
-#' suitable for model fitting. Default TRUE.
+#' model fitting (int to numeric, char to factor). Disable if meta_data is fully 
+#' configured for model fitting. Default TRUE. See Details.
+#'
 #'
 #' @return Updated SummarizedExperiment object.
 #' 
@@ -112,14 +120,14 @@ modify_metadata <- function(se, meta_data, replace = FALSE, convert = TRUE) {
 #'
 #' @keywords internal
 #' 
-#' @importFrom dplyr mutate across
+#' @importFrom dplyr mutate across where
 #' @importFrom S4Vectors na.omit
 #' @importFrom magrittr %>%
 auto_coerce_metadata_types <- function(md, factor_threshold = 5) {
   md <- md %>%
     dplyr::mutate(
-      across(where(is.integer), as.numeric),
-      across(where(is.character), ~ {
+      across(dplyr::where(is.integer), as.numeric),
+      across(dplyr::where(is.character), ~ {
         non_na_vals <- .[!is.na(.)]
         suppressWarnings(num_version <- as.numeric(non_na_vals))
         is_numeric_like <- all(!is.na(num_version))
