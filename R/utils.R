@@ -128,3 +128,38 @@ offset_ANI = function(x, eps = 1e-2){
   x[x>0] <- x[x>0] - eps
   x
 }
+
+#' Resolve and construct priors for model fitting
+#'
+#' Ensures `MAP_prior` is interpreted correctly and returns a valid
+#' `strainspy_priors` object or NULL (for MLE).
+#'
+#' @param MAP_prior One of: NULL, a character string ("preset_weak", "preset_strong"),
+#'                  a prior `data.frame`, or a `strainspy_priors` object.
+#' @param se A \code{SummarizedExperiment} object.
+#' @param design A fixed-effects-only formula.
+#'
+#' @return A `strainspy_priors` object or NULL.
+resolve_priors <- function(MAP_prior, se, design) {
+  if (is.null(MAP_prior)) {
+    return(NULL)  # MLE case
+  }
+  
+  if (inherits(MAP_prior, "strainspy_priors")) {
+    return(MAP_prior) # it's already a strainspy_priors object
+  }
+  
+  # We can construct it if it matches
+  if (is.character(MAP_prior)) {
+    if (MAP_prior %in% c("preset_weak", "preset_strong")) {
+      return(define_priors(se, design, method = MAP_prior))
+    } else {
+      stop("Character MAP_prior must be one of: 'preset_weak', 'preset_strong'.")
+    }
+  }
+  
+  if (is.data.frame(MAP_prior)) {
+    define_priors(se = se, design = design, method = "manual", priors_df = MAP_prior)
+  }
+}
+

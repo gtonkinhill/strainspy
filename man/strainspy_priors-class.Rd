@@ -6,7 +6,7 @@
 \title{strainspy_priors: A Class for storing model fitting priors}
 \description{
 The \code{strainspy_priors} class is designed to store MAP priors used for ordinal
-and zero-inflated beta model fitting using \code{GLMMTMB}.
+and zero-inflated beta model fitting using \code{glmmTMB}.
 }
 \section{Slots}{
 
@@ -14,5 +14,13 @@ and zero-inflated beta model fitting using \code{GLMMTMB}.
 \item{\code{method}}{Character. Prior estimation method used ("preset_weak", "preset_strong", "empirical", "manual").}
 
 \item{\code{priors_df}}{Data frame. Data frame containing prior parameters.}
+
+\item{\code{boot_fixef}}{Numeric matrix. Bootstrap SD values for fixed effect priors}
+
+\item{\code{boot_fixef_ZI}}{Numeric matrix. Bootstrap SD values for zero inflated fixed effect priors}
+
+\item{\code{design}}{The formula with with effect terms used}
+
+\item{\code{call}}{The matched call of the model.}
 }}
 

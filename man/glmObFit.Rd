@@ -9,6 +9,7 @@ glmObFit(
   design,
   nthreads = 1L,
   scale_continous = TRUE,
+  MAP_prior = "preset_weak",
   family = glmmTMB::ordbeta(),
   BPPARAM = NULL
 )
@@ -21,7 +22,11 @@ glmObFit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)}
+are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+
+\item{MAP_prior}{One of \code{strainspy_priors} object, character string (\verb{"preset_weak", "preset_strong"}),
+a \code{data.frame} of priors, or \code{NULL}. Default \code{"preset_weak"}. See Details.}
 
 \item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.}
 
@@ -42,7 +47,18 @@ A \code{strainspy_fit} object with the following components:
 \description{
 This function fits a ordinalbeta regression model using the \code{glmmTMB} package.
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
-and fits a zero-inflated beta regression model on the assay data.
+and fits an ordinal beta regression model on the assay data.
+}
+\details{
+For robust model fitting, it is recommended to use maximum a posteriori (MAP)
+estimation. Emprical Bayes MAP priors can be computed using \code{strainspy::compute_eb_priors()}.
+They can also be manually defined using \code{strainspy::define_priors()}. The resulting
+\code{strainspy_priors} object can be passed to the \code{MAP_prior} argument.
+
+Alternatively, a character string (\code{"preset_weak"} or \code{"preset_strong"}) or a
+valid prior \code{data.frame} (see \code{?glmmTMB::priors}) can be provided instead.
+This will result in a call to \code{strainspy::define_priors()} to generate priors.
+To disable MAP estimation and perform standard REML fitting, set \code{MAP_prior = NULL}.
 }
 \examples{
 \dontrun{

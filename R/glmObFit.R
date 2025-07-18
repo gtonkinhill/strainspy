@@ -2,16 +2,29 @@
 #'
 #' This function fits a ordinalbeta regression model using the `glmmTMB` package.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
-#' and fits a zero-inflated beta regression model on the assay data.
+#' and fits an ordinal beta regression model on the assay data.
+#' 
+#' For robust model fitting, it is recommended to use maximum a posteriori (MAP) 
+#' estimation. Emprical Bayes MAP priors can be computed using `strainspy::compute_eb_priors()`.
+#' They can also be manually defined using `strainspy::define_priors()`. The resulting 
+#' `strainspy_priors` object can be passed to the `MAP_prior` argument.
 #'
+#' Alternatively, a character string (`"preset_weak"` or `"preset_strong"`) or a 
+#' valid prior `data.frame` (see `?glmmTMB::priors`) can be provided instead. 
+#' This will result in a call to `strainspy::define_priors()` to generate priors. 
+#' To disable MAP estimation and perform standard REML fitting, set `MAP_prior = NULL`.
+#' 
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
-#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
+#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` 
+#' are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
+#' @param MAP_prior One of `strainspy_priors` object, character string (`"preset_weak", "preset_strong"`),
+#' a `data.frame` of priors, or `NULL`. Default `"preset_weak"`. See Details. 
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
-#'        will configure an appropriate backend automatically.
+#'        will configure an appropriate backend automatically. 
 #'
 #' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
@@ -35,7 +48,7 @@
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
-#'
+#' 
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
 #' fit <- glmFit(se,  design, nthreads=parallel::detectCores(), family=glmmTMB::ordbeta())
@@ -45,7 +58,7 @@
 #' }
 #'
 #' @export
-glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 'preset_weak', family=glmmTMB::ordbeta(), BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -86,12 +99,14 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, family=glmmT
   }
   
   # Define priors
-  nbeta <- ncol(model.matrix(nbd, col_data))
-  fixed_priors <- data.frame(
-    prior = rep("normal(0,5)", nbeta),
-    class = rep("fixef", each=nbeta),
-    coef  = as.character(seq(1,nbeta)))
+  # nbeta <- ncol(model.matrix(nbd, col_data))
+  # fixed_priors <- data.frame(
+  #   prior = rep("normal(0,5)", nbeta),
+  #   class = rep("fixef", each=nbeta),
+  #   coef  = as.character(seq(1,nbeta)))
   
+  fixed_priors = extract_fixef_priors(resolve_priors(MAP_prior, se, nbd)) # drop ZI priors
+
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
     # Check the operating system and set the backend accordingly
@@ -173,7 +188,7 @@ fit_ob_model <- function(se_subset, col_data, combined_formula, fixed_priors, fa
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)
+    col_data$Value <- strainspy:::offset_ANI(as.vector(se_subset[row_index, ])/100)
     
     # Run the zero-inflated beta regression
     fit <- tryCatch({
