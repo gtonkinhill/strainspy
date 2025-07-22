@@ -140,7 +140,6 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min
   # 
   # rownames(col_data) <- col_data[["Sample_file"]]
   # col_data[['col_indices']] <- NULL
-  # modify_metadata()
   # }
   
   # Extract row metadata (rowData)

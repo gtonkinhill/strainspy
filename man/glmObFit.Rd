@@ -28,7 +28,8 @@ are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
 \item{MAP_prior}{One of \code{strainspy_priors} object, character string (\verb{"preset_weak", "preset_strong"}),
 a \code{data.frame} of priors, or \code{NULL}. Default \code{"preset_weak"}. See Details.}
 
-\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.}
+\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.
+For general use, leave this at default Advanced users can experiment with others families in \code{?glmmTMB::family_glmmTMB}}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}

@@ -260,29 +260,31 @@ getEst <- function(rx, idx){
 
 make_prior_df <- function(term_names, 
                           sd_fixef = rep(5, length(term_names)), 
-                          sd_fixef_zi = rep(5, length(term_names))) {
+                          sd_fixef_zi = rep(5, length(term_names)),
+                          low_cutoff = 0.5,
+                          high_cutoff = 10) {
   
   stopifnot(length(term_names) == length(sd_fixef), 
             length(term_names) == length(sd_fixef_zi))
   
   clamp_sd <- function(sd_vec, label) {
     original <- sd_vec
-    low_idx <- which(is.na(sd_vec) | is.nan(sd_vec) | sd_vec < 0.01)
-    high_idx <- which(sd_vec > 10)
+    low_idx <- which(is.na(sd_vec) | is.nan(sd_vec) | sd_vec < low_cutoff)
+    high_idx <- which(sd_vec > high_cutoff)
     
-    sd_vec[low_idx] <- 0.01
-    sd_vec[high_idx] <- 10
+    sd_vec[low_idx] <- low_cutoff
+    sd_vec[high_idx] <- high_cutoff
     
     if (length(low_idx) > 0) {
       warning(sprintf(
-        "Corrected %d %s SD value(s) < 0.01 or invalid (NA/NaN) to 0.01 at indices: %s",
-        length(low_idx), label, paste(low_idx, collapse = ", ")
+        "Corrected %d small SD value(s) to %s",
+        length(low_idx), low_cutoff
       ))
     }
     if (length(high_idx) > 0) {
       warning(sprintf(
-        "Capped %d %s SD value(s) > 10 to 10 at indices: %s",
-        length(high_idx), label, paste(high_idx, collapse = ", ")
+        "Corrected %d large SD value(s) to %s",
+        length(high_idx), high_cutoff
       ))
     }
     

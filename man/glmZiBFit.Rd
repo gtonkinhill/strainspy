@@ -9,6 +9,7 @@ glmZiBFit(
   design,
   nthreads = 1,
   scale_continous = TRUE,
+  MAP_prior = "preset_weak",
   BPPARAM = NULL,
   method = "glmmTMB"
 )
@@ -22,6 +23,9 @@ glmZiBFit(
 to one 1.}
 
 \item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+
+\item{MAP_prior}{One of \code{strainspy_priors} object, character string (\verb{"preset_weak", "preset_strong"}),
+a \code{data.frame} of priors, or \code{NULL}. Default \code{"preset_weak"}. See Details.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}

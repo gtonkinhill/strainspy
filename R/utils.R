@@ -159,7 +159,9 @@ resolve_priors <- function(MAP_prior, se, design) {
   }
   
   if (is.data.frame(MAP_prior)) {
-    define_priors(se = se, design = design, method = "manual", priors_df = MAP_prior)
+    return(define_priors(se = se, design = design, method = "manual", priors_df = MAP_prior))
   }
+  
+  return(NULL) # worst case scenario - we don't know what to return, fit it REML
 }
 

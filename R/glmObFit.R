@@ -22,7 +22,8 @@
 #' are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param MAP_prior One of `strainspy_priors` object, character string (`"preset_weak", "preset_strong"`),
 #' a `data.frame` of priors, or `NULL`. Default `"preset_weak"`. See Details. 
-#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
+#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`. 
+#' For general use, leave this at default Advanced users can experiment with others families in `?glmmTMB::family_glmmTMB`
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically. 
 #'
@@ -58,7 +59,8 @@
 #' }
 #'
 #' @export
-glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 'preset_weak', family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 'preset_weak', 
+                     family=glmmTMB::ordbeta(), BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -104,8 +106,8 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
   #   prior = rep("normal(0,5)", nbeta),
   #   class = rep("fixef", each=nbeta),
   #   coef  = as.character(seq(1,nbeta)))
-  
-  fixed_priors = extract_fixef_priors(resolve_priors(MAP_prior, se, nbd)) # drop ZI priors
+  prior_obj = resolve_priors(MAP_prior, se, nbd)
+  fixed_priors = extract_fixef_priors(prior_obj) # drop ZI priors
 
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
@@ -154,6 +156,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
   # Create the strainspy_fit object
   ObetaGLM <- new("strainspy_fit",
                   row_data = seRD,
+                  priors = prior_obj,
                   coefficients = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,1])),
                   std_errors = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,2])),
                   p_values = DataFrame(purrr::map_dfr(results, ~ .x[[1]][,4])),
@@ -188,7 +191,7 @@ fit_ob_model <- function(se_subset, col_data, combined_formula, fixed_priors, fa
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- strainspy:::offset_ANI(as.vector(se_subset[row_index, ])/100)
+    col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)
     
     # Run the zero-inflated beta regression
     fit <- tryCatch({
