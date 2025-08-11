@@ -75,7 +75,7 @@ se <- filter_by_presence(se, min_nonzero = 30)
 # Create design matrix
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-# Fit a Zero-inflated beta model
+# Fit a Zero-inflated beta model using the default preset_weak MAP prior
 fit <- glmZiBFit(se,  design, nthreads=parallel::detectCores())
 ```
 
@@ -83,37 +83,31 @@ fit <- glmZiBFit(se,  design, nthreads=parallel::detectCores())
 
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 # Get top hits
-top_hits(fit, alpha = 0.05, coef = 2)
+top_hits(fit, coef = 2)
 
 # Create Volcano plot
-plot_volcano(fit, label = T, alpha = 0.05)
+plot_volcano(fit, label = T)
 ```
 
 ## Visualise the distribution of top hits with Case_status
 
-### Including zeros
+### *Coprobacillus cateniformis* shows difference in presence
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
-plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.05)$Contig_name, show_points = T)
+plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name[1], show_points = T)
 ```
 
-### Excluding zeros
+### *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
-plot_ani_dist(se, 'Case_status', top_hits(fit, alpha = 0.05)$Contig_name, show_points = T, drop_zeros = T)
+plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name[2:3], show_points = T, drop_zeros = T, plot_type = "box")
 ```
 
 ## Incorporate taxonomy
 
+### Generate taxonomy informed Manhattan plot with adjusted p-values
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 # Read in taxonomy
 taxonomy <- read_taxonomy(example_taxonomy_path)
 
-# Perform hierarchical multiple testing adjustment of p-values
-hier_p <- hadjust(fit, taxonomy=taxonomy)
-head(hier_p)
-```
-
-### Create taxonomy informed Manhattan plot with adjusted p-values
-```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 

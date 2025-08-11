@@ -4,7 +4,14 @@
 \alias{compute_eb_priors}
 \title{Constructor for strainspy_priors using empirical Bayes estimation}
 \usage{
-compute_eb_priors(se, design, nthreads = 1L, BPPARAM = NULL)
+compute_eb_priors(
+  se,
+  design,
+  nthreads = 1L,
+  BPPARAM = NULL,
+  low_cutoff = 0.1,
+  high_cutoff = 10
+)
 }
 \arguments{
 \item{se}{A \code{SummarizedExperiment} object with count matrix and colData.}
@@ -16,6 +23,10 @@ to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
+
+\item{low_cutoff}{Ceiling for small SD estimates. Default 0.1}
+
+\item{high_cutoff}{Floor for large SD estimates. Default 10}
 }
 \value{
 An object of class \code{strainspy_priors}.

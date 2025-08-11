@@ -8,7 +8,7 @@
 #' @param coef The coefficient to use for p-value adjustment. Defaults to 2.
 #' @param method The method for p-value adjustment. Options include "bonferroni" and Harmonic Mean P-value (HMP).
 #' @param taxonomy A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.
-#' @param index_range description
+#' @param index_range This option is only used to generate Manhattan plot segments for higher taxonomic levels
 #' @return A tibble with original and adjusted p-values.
 #'
 #' @importFrom tibble add_column as_tibble
@@ -23,7 +23,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   if (!inherits(object, "strainspy_fit")) {
     stop("Input must be a strainspy_fit object.")
   }
-
+  
   # Check if taxonomy data is provided
   if (is.null(taxonomy)) {
     stop("No taxonomy data provided.")
@@ -32,7 +32,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   } else {
     tax <- taxonomy
   }
-
+  
   # Extract p-values & coefficients
   mdl = as.character(object@call)[[1]]
   if ("caseControlFit" == mdl) {
@@ -42,13 +42,13 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   } else {
     main_model <- "Unknown model" # We need to expand this as we include models
   }
-
+  
   beta_res <- tibble::as_tibble(slot(object, 'row_data')) |>
     tibble::add_column(coefficient=slot(object, 'coefficients')[[coef]]) |>
     tibble::add_column(std_error=slot(object, 'std_errors')[[coef]]) |>
     tibble::add_column(p_value=slot(object, 'p_values')[[coef]]) |>
     tibble::add_column(Model=main_model, .before=1)
-
+  
   if (!is.null(slot(object, 'zi_coefficients'))) {
     zi_res  <- tibble::as_tibble(slot(object, 'row_data')) |>
       tibble::add_column(coefficient=slot(object, 'zi_coefficients')[[coef]]) |>
@@ -56,7 +56,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
       tibble::add_column(p_value=slot(object, 'zi_p_values')[[coef]]) |>
       tibble::add_column(Model="Zero-Inflated", .before=1)
   }
-
+  
   # Check which column in row_data is corresponds to the taxonomic data
   tax_col <- NULL
   for (i in 1:ncol(slot(object, 'row_data'))) {
@@ -69,12 +69,12 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
     stop("Taxon names do not match any column found in row data.
          Taxonomy will be ignored and p-values will only be adjusted at the strain/sequence level.")
   }
-
+  
   hierarchy_df <- beta_res |>
     dplyr::left_join(tax, by = setNames("Genome", names(slot(object, 'row_data'))[tax_col])) |>
     dplyr::arrange(Domain, Phylum, Class, Order, Family, Genus, Species, index) |>
     dplyr::mutate(index=1:nrow(beta_res))
-
+  
   if (!is.null(slot(object, 'zi_coefficients'))){
     hierarchy_df <- rbind(
       hierarchy_df,
@@ -82,19 +82,30 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
         dplyr::left_join(tax, by = setNames("Genome", names(slot(object, 'row_data'))[tax_col]))  |>
         dplyr::arrange(Domain, Phylum, Class, Order, Family, Genus, Species, index) |>
         dplyr::mutate(index=1:nrow(zi_res))
-      )
+    )
   }
-
+  
   # Remove rows which did not converge or errored
   hierarchy_df <- hierarchy_df[!is.na(hierarchy_df$coefficient),]
+  
+  if(!is.null(tax_col)){ 
+    # Now reorder by global taxonomic tree
+    ordered_genomes <- colour_by_tax(unique(hierarchy_df$Genome_file), taxonomy)
+    
+    hierarchy_df <- hierarchy_df %>%
+      dplyr::arrange(Model, match(Genome_file, ordered_genomes)) %>%
+      dplyr::group_by(Model) %>%
+      dplyr::mutate(index = dplyr::dense_rank(match(Genome_file, ordered_genomes))) %>%
+      dplyr::ungroup()
+  }
   # Define the grouping columns
-  grouping_cols <- c("Phylum", "Class", "Order", "Family", "Genus", "Species", colnames(hierarchy_df)[[2]])
+  grouping_cols <- c("Phylum", "Class", "Order", "Family", "Genus", "Species", colnames(hierarchy_df)[[3]])
   
   if (method == "HMP") {
     L <- nrow(beta_res)
     hierarchy_df$w <- 1/nrow(beta_res)
-
-   
+    
+    
     adj <- purrr::map_dfr(grouping_cols, ~{
       hierarchy_df |>
         dplyr::group_by(Model, dplyr::across(dplyr::all_of(.x))) |>  # Use all_of to refer to the grouping column
@@ -115,7 +126,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
       dplyr::group_by(Model) |>
       dplyr::mutate(padj = p.adjust(p_value, method = "bonferroni")) |>
       dplyr::ungroup()
-
+    
     adj <- purrr::map_dfr(grouping_cols, ~{
       hierarchy_df |>
         dplyr::group_by(Model, dplyr::across(dplyr::all_of(.x))) |>  # Use all_of to refer to the grouping column
@@ -132,11 +143,11 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
     }) |>
       dplyr::arrange(p_adjust)
   }
-
+  
   if(!index_range) {
     adj$index_min <- NULL
     adj$index_max <- NULL
   }
-
+  
   return(adj)
 }

@@ -81,7 +81,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
                          method = method, index_range = TRUE)[, c('Level', 'Model', 'Name', 'p_adjust', 'index_min', 'index_max')]
     
     
-    plot_data$Level[!plot_data$Level %in% tax_levels_] <- "Strain"
+    plot_data$Level[!plot_data$Level %in% tax_levels_] <- "Strain" # Rename contig_names to strain
     plot_data$Level <- factor(plot_data$Level, tax_levels_)
     
     ### issue a warning if the chosen colour has many categories
@@ -136,15 +136,19 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
     
     plot_data <- plot_data |> dplyr::filter(Level %in% tax_levels)
     
+    
+    
     # Return data if requested
     if (!plot){
       return(plot_data)
     }
     
-    custom_colors = get_colors(n_levels)
+    custom_colors = colour_by_tax(genomes = plot_data$Name[which(plot_data$Level == "Strain")], taxonomy = taxonomy,
+                                  tax_levels = tax_levels)
     plot_data[[col_tax_level]] <- factor(
       plot_data[[col_tax_level]],
-      levels =  unique(plot_data[[col_tax_level]][order(plot_data$index_max)]) # ordering colours in the plot from left to right
+      levels = names(custom_colors)
+      # levels =  unique(plot_data[[col_tax_level]][order(plot_data$index_max)]) # ordering colours in the plot from left to right
     )
     
     
@@ -222,10 +226,10 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
   
   # tax_levels and colour_level must be in tax_levels
   tax_levels_ <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Strain")
-  tax_levels = c("Phylum", "Genus", "Species", "Strain")
-  # do some sanity checks
-  tax_levels <- intersect(tax_levels_, tax_levels) # drop and reorder
-  col_tax_level = tax_levels[1] # choose top level for colouring
+  # tax_levels = c("Domain", "Phylum", "Genus", "Species", "Strain")
+  # # do some sanity checks
+  # tax_levels <- intersect(tax_levels_, tax_levels) # drop and reorder
+  # col_tax_level = tax_levels[1] # choose top level for colouring
   
   # Create tidy tibbles for plotting
   # Add taxonomic informed adjusted p-values
@@ -241,7 +245,7 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
   for(m in models){
     plot_data = plot_data_[which(plot_data_$Model == m), ]
     
-    plot_data$Level[!plot_data$Level %in% tax_levels_] <- "Strain"
+    plot_data$Level[!plot_data$Level %in% tax_levels_] <- "Strain" # Rename contig_names to strain
     plot_data$Level <- factor(plot_data$Level, tax_levels_)
     
     if ("Strain" %in% plot_data$Level) {
@@ -253,7 +257,7 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
       var <- "Contig_name"
     }
     
-    idx_ord <- match(plot_data$Name[plot_data$Level == var], object@row_data@rownames)
+    idx_ord <- match(plot_data$Name[plot_data$Level == var], object@row_data@listData$Genome_file)
     if(m == "Zero-Inflated"){
       p_vals_orig <- object@zi_p_values@listData[[coef]][idx_ord]
     } else {
@@ -271,10 +275,11 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
     dat_mhp = dat_mhp[order(dat_mhp$Genome),]; rownames(dat_mhp) = NULL
     
     tax_mhp <- taxonomy[match(dat_mhp$Genome, taxonomy$Genome), ]
-    tax_mhp <- tax_mhp[order(tax_mhp$Phylum), ]
+    tax_mhp <- tax_mhp[order(tax_mhp$Domain), ]
     
     tax_mhp <- data.frame(
       Genome = factor(tax_mhp$Genome),
+      Domain = factor(tax_mhp$Domain),
       Phylum = factor(tax_mhp$Phylum),
       Class = factor(tax_mhp$Class),
       Order = factor(tax_mhp$Order),
@@ -282,7 +287,7 @@ plot_manhattan_tree <- function(object, taxonomy, coef = 2) {
       Genus = factor(tax_mhp$Genus)
     )
     
-    tree <- ape::as.phylo.formula(~ Phylum/Class/Order/Family/Genus/Genome, data = tax_mhp)
+    tree <- ape::as.phylo.formula(~ Domain/Phylum/Class/Order/Family/Genus/Genome, data = tax_mhp)
     
     # Pre-plot to extract tip order
     p_tmp <- ggtree::ggtree(tree)

@@ -32,6 +32,9 @@ filter_by_presence <- function(se, min_nonzero = 10) {
     stop("`min_zero` must be an integer.")
   }
 
+  if(min_nonzero > dim(se)[2]){
+    stop(paste("Ensure `min_nonzero` <= number of samples in `se`:", dim(se)[2]))
+  }
   # Count the number of non-zero entries in each row of the assay
   nonzero_counts <- Matrix::rowSums(SummarizedExperiment::assays(se)[[1]] != 0)
   
@@ -44,6 +47,43 @@ filter_by_presence <- function(se, min_nonzero = 10) {
   
   # Return the filtered SummarizedExperiment
   return(filtered_se)
+}
+
+#' Filter strains based on subject and time aware manner - useful for longitudinal datasets
+#'
+#' FThis function filters a SummarizedExperiment object to keep only rows (features/strains)
+#' present in at least `min_subjects` individuals and at least `min_timepoints` timepoints 
+#' per subject.
+#'
+#' @param se A `SummarizedExperiment` object.
+#' @param min_subjects Integer. Minimum number of subjects that must have the strain.
+#' @param min_timepoints Integer. Minimum number of non-zero timepoints per subject.Default is 3.
+#' @param subject_col Character. Column name in \code{colData(se)} corresponding to subject IDs. Default is 2.
+#' @param time_col Character. Column name in \code{colData(se)} corresponding to timepoints.
+#'
+#' @return A filtered `SummarizedExperiment` object with only the rows that meet the criteria.
+filter_by_presence_longitudinal <- function(se, min_subjects = 3, min_timepoints = 2, subject_col = "subject", time_col = "time") {
+  stopifnot(inherits(se, "SummarizedExperiment"))
+  
+  assay_mat <- SummarizedExperiment::assays(se)[[1]]
+  coldata <- SummarizedExperiment::colData(se)
+  
+  if (!(subject_col %in% colnames(coldata)) || !(time_col %in% colnames(coldata))) {
+    stop("subject_col and/or time_col not found in colData.")
+  }
+  
+  subject_list <- split(seq_len(ncol(assay_mat)), coldata[[subject_col]])
+  
+  keep_rows <- vapply(seq_len(nrow(assay_mat)), function(i) {
+    strain_row <- assay_mat[i, ]
+    subjects_with_enough <- sum(vapply(subject_list, function(cols) {
+      sum(strain_row[cols] != 0) >= min_timepoints
+    }, logical(1)))
+    subjects_with_enough >= min_subjects
+  }, logical(1))
+  
+  message("Retained ", sum(keep_rows), " rows after subject-aware filtering")
+  se[keep_rows, ]
 }
 
 

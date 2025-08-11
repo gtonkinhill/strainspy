@@ -50,9 +50,10 @@ example_taxonomy_path <- system.file("extdata", "example_taxonomy.tsv.gz", packa
 ``` r
 # Read in metadata
 meta_data <- readr::read_csv(example_meta_path)
+
 meta_data$Case_status = factor(meta_data$Case_status)  # Required for visualising
 # Read in sylph profile
-se <- read_sylph(example_sylph_path, meta_data)
+se <- read_sylph(example_sylph_path, meta_data = meta_data)
 
 # Filter by presence. This will remove any strains that are not present in at
 # least 30 samples
@@ -66,7 +67,7 @@ se <- filter_by_presence(se, min_nonzero = 30)
 # Create design matrix
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-# Fit a Zero-inflated beta model
+# Fit a Zero-inflated beta model using the default preset_weak MAP prior
 fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 #>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%
 ```
@@ -75,66 +76,52 @@ fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 
 ``` r
 # Get top hits
-top_hits(fit, alpha = 0.5)
-#> # A tibble: 2 × 10
+top_hits(fit, coef = 2)
+#> # A tibble: 3 × 10
 #>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
 #>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
-#> 1 NZ_JAJEQM01… GCF_020687…     0.00790    0.0386 8.38e-1    1             1.30  
-#> 2 CAJLRM01000… GCA_905209…     0.288      0.0850 7.11e-4    0.336        -0.0175
+#> 1 NZ_WSNW0100… GCF_009767…       0.168    0.124  1.75e-1   1              -1.80 
+#> 2 UREB0100000… GCA_900546…       0.248    0.0638 9.86e-5   0.0466         -0.349
+#> 3 DVOB0100001… GCA_018713…       0.232    0.0598 1.05e-4   0.0497         -0.663
 #> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
 
 # Create Volcano plot
-plot_volcano(fit, label = T, alpha = 0.5)
+plot_volcano(fit, label = T)
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
 
 ## Visualise the distribution of top hits with Case_status
 
-### Including zeros
+### *Coprobacillus cateniformis* shows difference in presence
 
 ``` r
-plot_ani_dist(se, "Case_status", top_hits(fit, alpha = 0.5)$Contig_name, show_points = T)
+plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name[1], show_points = T)
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />
 
-### Excluding zeros
+### *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity
 
 ``` r
-plot_ani_dist(se, "Case_status", top_hits(fit, alpha = 0.5)$Contig_name, show_points = T,
-    drop_zeros = T)
+plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name[2:3], show_points = T,
+    drop_zeros = T, plot_type = "box")
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
 
 ## Incorporate taxonomy
 
+### Generate taxonomy informed Manhattan plot with adjusted p-values
+
 ``` r
 # Read in taxonomy
 taxonomy <- read_taxonomy(example_taxonomy_path)
 
-# Perform hierarchical multiple testing adjustment of p-values
-hier_p <- hadjust(fit, taxonomy = taxonomy)
-head(hier_p)
-#> # A tibble: 6 × 6
-#>   Level  Model         Name        strain_count mean_coefficient p_adjust
-#>   <chr>  <chr>         <chr>              <int>            <dbl>    <dbl>
-#> 1 Phylum Zero-Inflated Bacillota_A          342          0.00457    0.147
-#> 2 Class  Zero-Inflated Clostridia           342          0.00457    0.147
-#> 3 Phylum Beta          Bacillota_A          342          0.0158     0.168
-#> 4 Class  Beta          Clostridia           342          0.0158     0.168
-#> 5 Order  Zero-Inflated UBA1381                1          1.30       0.313
-#> 6 Family Zero-Inflated UBA1381                1          1.30       0.313
-```
-
-### Create taxonomy informed Manhattan plot with adjusted p-values
-
-``` r
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-11-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
 
 ### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
@@ -142,7 +129,7 @@ plot_manhattan(fit, taxonomy = taxonomy)
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-12-1.png)<!-- -->
+![](inst/vignette-supp/unnamed-chunk-11-1.png)<!-- -->
 
 ## Example using Sourmash output
 

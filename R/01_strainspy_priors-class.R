@@ -150,7 +150,8 @@ methods::setMethod("plot_prior_bootstrap", signature(object = "strainspy_priors"
                          ggplot2::theme_minimal(base_size = 14)
                      }
                      
-                     if (!(prior %in% rownames(object@boot_fixef)) || !(prior %in% rownames(object@boot_fixef_ZI))) {
+                     if (!(prior %in% object@priors_df$coef[object@priors_df$class == "fixef"]) || 
+                         !(prior %in% object@priors_df$coef[object@priors_df$class == "fixef_zi"])) {
                        stop("Prior not found in boot_fixef or boot_fixef_ZI")
                      }
                      

@@ -15,7 +15,7 @@ hadjust(object, coef = 2, method = "HMP", taxonomy = NULL, index_range = FALSE)
 
 \item{taxonomy}{A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.}
 
-\item{index_range}{description}
+\item{index_range}{This option is only used to generate Manhattan plot segments for higher taxonomic levels}
 }
 \value{
 A tibble with original and adjusted p-values.

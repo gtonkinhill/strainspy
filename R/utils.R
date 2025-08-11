@@ -165,3 +165,62 @@ resolve_priors <- function(MAP_prior, se, design) {
   return(NULL) # worst case scenario - we don't know what to return, fit it REML
 }
 
+build_tax_tree = function(tax_mhp){
+  tax_levels_ <- c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species", "Genome")
+  tax_levels_ <- intersect(tax_levels_, colnames(tax_mhp))
+  
+  tax_levels <- tax_levels_[
+    vapply(tax_levels_, function(col) any(!is.na(tax_mhp[[col]]) & tax_mhp[[col]] != ""), logical(1))
+  ]
+  # strain is called genome here
+  if(! ("Genome" %in% tax_levels) ){
+    if("Strain" %in% tax_levels){
+      tax_levels[which(tax_levels == "Strain")] = "Genome"
+    } else {
+      tax_levels = c(tax_levels, "Genome")
+    }
+  }
+  
+  tax_mhp[, tax_levels] <- lapply(tax_levels, function(col) as.factor(tax_mhp[[col]]))
+  fml <- as.formula(paste("~", paste(tax_levels, collapse = "/")))
+  
+  tree <- ape::as.phylo.formula(fml, data = tax_mhp)
+  return(list(tree = tree, tax_mhp = tax_mhp))
+}
+
+colour_by_tax = function(genomes, taxonomy, tax_levels = NULL){
+  # This function generates a global taxonomic color palette 
+  # If provided, we assume tax_levels is ordered
+  tax_mhp <- taxonomy[match(genomes, taxonomy$Genome), ]
+  
+  # build tree for tax_mhp and update
+  btt = build_tax_tree(tax_mhp)
+  tree = btt$tree
+  tax_mhp = btt$tax_mhp
+  
+  # Pre-plot to extract tip order
+  p_tmp <- ggtree::ggtree(tree)
+  tip_order <- p_tmp$data |>
+    dplyr::filter(isTip) |>
+    dplyr::arrange(y) |>
+    dplyr::pull(label)
+  
+  if(is.null(tax_levels)){
+    return(tip_order)
+  }
+  
+  # reorder the taxonomy
+  tax_mhp <- tax_mhp[match(tip_order, tax_mhp$Genome), ]; rownames(tax_mhp) <- NULL
+  
+  # get the phyla in order
+  order_ <- unique(tax_mhp[[tax_levels[1]]])
+
+  tax_mhp[[tax_levels[1]]] <- factor(tax_mhp[[tax_levels[1]]], levels = order_)
+  
+  color_palette <- setNames(
+    get_colors(length(order_)),
+    order_
+  )
+  
+  return(color_palette)
+}

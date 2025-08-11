@@ -9,12 +9,15 @@
 #'        to one 1.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
+#' @param low_cutoff Ceiling for small SD estimates. Default 0.1
+#' @param high_cutoff Floor for large SD estimates. Default 10
 #' @return An object of class \code{strainspy_priors}.
 #' 
 #' @importFrom stats sd median
 #' 
 #' @export
-compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL) {
+compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL, 
+                              low_cutoff = 0.1, high_cutoff = 10) {
   # # code to read in a se with metadata
   # se <- read_sylph("../strainspy-manuscript/data/wallen/wallen_sylph_query_gtdb_220_id99.tsv.gz")
   # se <- filter_by_presence(se, min_nonzero = 72)
@@ -111,11 +114,16 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL) {
   # # merge multi-levels into 1 by taking max
   # fixef_idx = match_to_max_index(design, colnames(rx_beta), fixef_med)
   # fixef_med = fixef_med[fixef_idx]
-  # fixef_boot = fixef_boot[fixef_idx, ]; rownames(fixef_boot) = names(fixef_idx)
+  # fixef_boot = fixef_boot[fixef_idx, ]; 
+  
   
   # This is a last resort check that is probably unncessary
   if( all(colnames(rx_beta) == colnames(rx_ZI))){
-    prior_df <- make_prior_df(colnames(rx_beta), fixef_med, fixef_zi_med)
+    rownames(fixef_zi_boot) = colnames(rx_beta)
+    rownames(fixef_boot) = colnames(rx_beta)
+    prior_df <- make_prior_df(term_names = colnames(rx_beta), sd_fixef = fixef_med, 
+                              sd_fixef_zi = fixef_zi_med, low_cutoff = low_cutoff,
+                              high_cutoff = high_cutoff)
   } else {
     stop("Mismatch is colnames between beta and bionomial fit outputs")
   }

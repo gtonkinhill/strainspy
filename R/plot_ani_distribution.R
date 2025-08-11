@@ -33,7 +33,8 @@
 #' }
 #'
 #' @export
-plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zeros = FALSE, show_points = FALSE, plot = TRUE, plot_type = 'violin'){
+plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zeros = FALSE, 
+                          show_points = FALSE, plot = TRUE, plot_type = 'violin'){
   if(length(phenotype) != 1) {
     stop("Only one phenotype can be plotted at a time")
   }
@@ -84,12 +85,14 @@ plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zero
     df_long$Contig = factor(df_long$Contig)
     phenotype_ <- rlang::sym(phenotype)
 
-    p <- ggplot2::ggplot(df_long, ggplot2::aes(x = Contig, y = ANI, fill = !!phenotype_))
+    p <- ggplot2::ggplot(df_long, ggplot2::aes(x = Contig, y = ANI, group = interaction(Contig, !!phenotype_)))
 
     if(plot_type == 'violin'){
-      p <- p + ggplot2::geom_violin(trim = T, alpha = 0.2, drop = FALSE)
+      p <- p + ggplot2::geom_violin(ggplot2::aes(fill = !!phenotype_),
+                                    trim = T, alpha = 0.2, drop = FALSE)
     } else {
-      p <- p + ggplot2::geom_boxplot(outlier.shape = NA, alpha = 0.5)  # semi-transparent boxplot
+      p <- p + ggplot2::geom_boxplot(ggplot2::aes(fill = !!phenotype_),
+                                     outlier.shape = NA, alpha = 0.5)  # semi-transparent boxplot
     }
 
 
