@@ -38,43 +38,43 @@ plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zero
   if(length(phenotype) != 1) {
     stop("Only one phenotype can be plotted at a time")
   }
-
+  
   if(! (phenotype %in% colnames(SummarizedExperiment::colData(se))) ){
     stop("Phenotype not found in colnames(se@colData)")
   }
-
+  
   if( ! is.factor(se@colData[[phenotype]])) {
     stop("Phenotype must be a factor")
   }
-
+  
   chk_contigs = contigs %in% rownames(se)
   if( ! all(chk_contigs)  ){
     cat(paste(contigs[!chk_contigs], '\n', sep = ""))
     stop("Above contigs are missing from rownames(se)")
   }
-
+  
   if (!is.null(contig_names) && length(contig_names) != length(contigs)) {
     stop("`contig_names` must be the same length as `contigs`")
   }
-
+  
   if (!plot_type %in% c('violin', 'box')) {
     plot_type = 'violin'
   }
-
+  
   tmp = as.data.frame(t(as.matrix(SummarizedExperiment::assay(se[contigs, ]))))
   tmp = cbind(se@colData[[phenotype]], tmp)
-
+  
   if(!is.null(contig_names)){
     colnames(tmp) = c(phenotype, contig_names)
   } else {
     contig_names = clean_contig_names(colnames(tmp)[-1])
     colnames(tmp) = c(phenotype, contig_names)
   }
-
+  
   tmp <- tibble::rownames_to_column(tmp, var = "sample")
   df_long <- tidyr::pivot_longer(tmp, cols = -c(sample, phenotype), names_to = "Contig", values_to = "ANI")
   df_long$Contig = factor(df_long$Contig, levels = contig_names)
-
+  
   if(!plot){
     # just return the data.frame
     return(df_long)
@@ -84,9 +84,9 @@ plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zero
     }
     df_long$Contig = factor(df_long$Contig)
     phenotype_ <- rlang::sym(phenotype)
-
+    
     p <- ggplot2::ggplot(df_long, ggplot2::aes(x = Contig, y = ANI, group = interaction(Contig, !!phenotype_)))
-
+    
     if(plot_type == 'violin'){
       p <- p + ggplot2::geom_violin(ggplot2::aes(fill = !!phenotype_),
                                     trim = T, alpha = 0.2, drop = FALSE)
@@ -94,15 +94,15 @@ plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zero
       p <- p + ggplot2::geom_boxplot(ggplot2::aes(fill = !!phenotype_),
                                      outlier.shape = NA, alpha = 0.5)  # semi-transparent boxplot
     }
-
-
+    
+    
     p <- p +
       ggplot2::labs(x = "Contigs", y = "ANI") +
       ggplot2::scale_fill_brewer(palette = "Set2") +
       ggplot2::scale_color_brewer(palette = "Set2") +
       ggplot2::theme_minimal(base_size = 16) +
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust = 1))
-
+    
     if (show_points) {
       p <- p + ggforce::geom_sina(
         ggplot2::aes(color = !!phenotype_),
@@ -110,8 +110,67 @@ plot_ani_dist <- function(se, phenotype, contigs, contig_names = NULL, drop_zero
       )
     }
     print(p)
-
+    
   }
+  
+  
+}
 
-
+quick_histo <- function(se, phenotype, contig, drop_zeros = F) {
+  stopifnot(is(se, "SummarizedExperiment"))
+  stopifnot(is.character(phenotype), length(phenotype) == 1)
+  
+  dat <- colData(se) |> as.data.frame()
+  
+  idx = which(rownames(se) == contig)
+  if (length(idx) != 1) {
+    stop(sprintf("Contig '%s' not found (or found multiple times) in rowNames(se).", contig))
+  }
+  
+  dat$Value_orig <- assay(se)[idx, ]
+  
+  
+  if (drop_zeros) {
+    dat <- dplyr::filter(dat, Value_orig != 0)
+  }
+  
+  summ <- dat |>
+    dplyr::group_by(.data[[phenotype]]) |>
+    dplyr::summarise(
+      Min    = min(Value_orig),
+      Q1     = quantile(Value_orig, 0.25),
+      Median = median(Value_orig),
+      Mean   = mean(Value_orig),
+      Q3     = quantile(Value_orig, 0.75),
+      Max    = max(Value_orig),
+      .groups = "drop"
+    ) |>
+    tidyr::pivot_longer(
+      -dplyr::all_of(phenotype),
+      names_to = "stat",
+      values_to = "value"
+    )
+  
+  p <- ggplot2::ggplot(dat,
+                       ggplot2::aes(x = Value_orig, fill = .data[[phenotype]])) +
+    ggplot2::geom_histogram(position = "identity", alpha = 0.4, bins = 250) +
+    ggplot2::geom_vline(data = summ,
+                        ggplot2::aes(xintercept = value, color = stat),
+                        linetype = "dashed", size = 0.6, show.legend = TRUE) +
+    ggplot2::facet_wrap(stats::as.formula(paste("~", phenotype)), ncol = 1) +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(x = "Value_orig", y = "Count", color = "Statistic") +
+    ggplot2::ggtitle(clean_contig_names(contig)) +
+    ggplot2::scale_color_manual(values = c(
+      Min    = "black",
+      Q1     = "blue",
+      Median = "red",
+      Mean   = "darkgreen",
+      Q3     = "blue",
+      Max    = "black"
+    )) +
+    ggplot2::theme(text = ggplot2::element_text(size = 16))
+  
+  attr(p, "summary_table") <- summ
+  return(p)
 }

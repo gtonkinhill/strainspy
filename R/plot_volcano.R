@@ -8,6 +8,7 @@
 #' @param object A strainspy_fit object containing model results.
 #' @param coef Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.
 #' @param alpha Float indicating signficance level. Default is 0.05
+#' @param method The method for p-value adjustment. For available options, see `?top_hits()`. Default `holm`.
 #' @param palette A vector of user defined palette to colour plot. Default is the viridis palette.
 #' @param label Logical, whether to label most signifcant points of the plot with Species name.
 #' @param contig_names Optional character vector to replace long contig names in the plot.
@@ -31,7 +32,7 @@
 #' }
 #'
 #' @export
-plot_volcano <- function(object, coef = 2, alpha = 0.05,
+plot_volcano <- function(object, coef = 2, alpha = 0.05, method = "holm",
                          palette = rev(viridis::viridis(3)),
                          label = FALSE, contig_names = NULL,
                          plot = TRUE) {
@@ -42,7 +43,7 @@ plot_volcano <- function(object, coef = 2, alpha = 0.05,
   }
   
   # Access p values and effect sizes
-  hits <- top_hits(object, coef = coef, alpha = 1)
+  hits <- top_hits(object, coef = coef, alpha = 1, method = method)
   
   # contig names provided
   if(!is.null(contig_names)){
@@ -89,12 +90,17 @@ plot_volcano <- function(object, coef = 2, alpha = 0.05,
       ggplot2::ylab('-log10(p)')
     
     if(label) {
-      plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adj < alpha,],
-                                              mapping = ggplot2::aes(label = clean_contig_names(Contig_name)),
-                                              colour = 'black',
-                                              size = 2.5,
-                                              alpha = 0.8,
-                                              max.overlaps = Inf)
+      lab_dat = hits[hits$p_adj < alpha,]
+      if(nrow(lab_dat) > 0){
+        plot <- plot + ggrepel::geom_text_repel(data = lab_dat,
+                                                mapping = ggplot2::aes(label = clean_contig_names(Contig_name)),
+                                                colour = 'black',
+                                                size = 2.5,
+                                                alpha = 0.8,
+                                                max.overlaps = Inf)
+      } else {
+        warning("Labels cannot be added. There are no hits at chosen significance level.")
+      }
     }
   } else { # Plot one-model volcano plot
     hits <- hits |>

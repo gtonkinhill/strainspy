@@ -56,8 +56,29 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
     if (is.numeric(cd[[col]])) cd[[col]] <- scale(cd[[col]])
   }
   
+  # Annoyingly, if a term in design in not in cd, stats::model.matrix says: object is not a matrix, instead of pointing this out.
+  eq_terms = attr(terms(design), "term.labels")
+  if(!all(eq_terms %in% colnames(cd))) {
+    stop("These terms in `design` are not found in `colData(se)`:\n",
+         paste(eq_terms[which(!eq_terms %in% colnames(cd))], collapse = ", "), "\n"
+    )
+  }
+  
   mx_pred <- stats::model.matrix(design, cd)
   mx_outcome <- SummarizedExperiment::assay(se)
+  
+  # Having invariant columns in mx_pred (except intercept) will crash beta fit
+  if(dim(mx_pred)[2] > 2){  # we need at least two columns besides intercept
+    invariant_cols = names(which(apply(mx_pred[,-1], 2, function(col) length(unique(col)) == 1)))
+    if(length(invariant_cols) > 0){
+      stop(
+        paste(
+          "Priors cannot be computed because the following metadata have no variation:\n",
+          paste(invariant_cols, collapse = "\n")
+        )
+      )
+    }
+  }
   
   # Drop unmatched samples
   dropped <- setdiff(colnames(mx_outcome), rownames(mx_pred))
@@ -90,6 +111,8 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
   # Parallel model fitting
   cat("Computing fixef_zi priors...\n")
   
+  
+  
   # BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))  # or SnowParam on Windows
   rx_ZI <- BiocParallel::bplapply(chunk_list, glmBin_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
   rx_ZI <- do.call(rbind, unlist(rx_ZI, recursive = FALSE))
@@ -97,10 +120,6 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
   fixef_zi_med <- vapply(fixef_zi, function(x) x$med, numeric(1))
   fixef_zi_boot <- do.call(rbind, lapply(fixef_zi, function(x) x$boot))
   
-  # # merge multi-levels into 1 by taking max
-  # fixef_zi_idx = match_to_max_index(design, colnames(rx_ZI), fixef_zi_med)
-  # fixef_zi_med = fixef_zi_med[fixef_zi_idx]
-  # fixef_zi_boot = fixef_zi_boot[fixef_zi_idx, ]; rownames(fixef_zi_boot) = names(fixef_zi_idx)
   
   cat("Computing fixef priors...\n")
   rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
@@ -117,7 +136,7 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
   # fixef_boot = fixef_boot[fixef_idx, ]; 
   
   
-  # This is a last resort check that is probably unncessary
+  # This is a last resort check that is probably unnecessary
   if( all(colnames(rx_beta) == colnames(rx_ZI))){
     rownames(fixef_zi_boot) = colnames(rx_beta)
     rownames(fixef_boot) = colnames(rx_beta)

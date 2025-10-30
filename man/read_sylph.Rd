@@ -17,7 +17,7 @@ read_sylph(
 
 \item{meta_data}{data.frame. An optional tibble or data frame containing sample metadata. See Details}
 
-\item{variable}{Character. Name of the input variable to import, either \code{Adjusted_ANI} or  \code{Naive_ANI}. Defaults to \code{Adjusted_ANI}.}
+\item{variable}{Character. Name of the input variable to import. Defaults to \code{Adjusted_ANI}, other options can include \code{Naive_ANI}, \code{Taxonomic_abundance} and \code{Sequence_abundance}.}
 
 \item{min_identity}{Numeric. Minimum identity threshold for filtering ANI values. Defaults to \code{95}.}
 

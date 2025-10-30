@@ -65,6 +65,9 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
   
   # do some sanity checks
   tax_levels <- intersect(tax_levels_, tax_levels) # drop and reorder
+  
+  if(!"Strain" %in% tax_levels) tax_levels = c(tax_levels, "Strain")
+  
   col_tax_level = tax_levels[1] # choose top level for colouring
   
   
@@ -143,7 +146,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
       return(plot_data)
     }
     
-    custom_colors = colour_by_tax(genomes = plot_data$Name[which(plot_data$Level == "Strain")], taxonomy = taxonomy,
+    custom_colors = strainspy:::colour_by_tax(genomes = plot_data$Name[which(plot_data$Level == "Strain")], taxonomy = taxonomy,
                                   tax_levels = tax_levels)
     plot_data[[col_tax_level]] <- factor(
       plot_data[[col_tax_level]],
@@ -164,7 +167,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
         axis.ticks.x = ggplot2::element_blank(),
         strip.text = ggplot2::element_text(face = "bold"),
         panel.spacing = unit(1.5, "lines"),
-        panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)
+        panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 0.5)
       ) +
       ggplot2::ylab("-log10(p-value)") +
       ggplot2::xlab("Strain")

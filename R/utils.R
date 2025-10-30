@@ -224,3 +224,43 @@ colour_by_tax = function(genomes, taxonomy, tax_levels = NULL){
   
   return(color_palette)
 }
+
+add_tax2tophits <- function(top_hits, taxonomy, columns = c("Species")) {
+  stopifnot(is.data.frame(top_hits), is.data.frame(taxonomy))
+  stopifnot(is.character(columns), length(columns) >= 1)
+  
+  # required column for mapping
+  if (!"Genome_file" %in% names(top_hits)) {
+    stop("Column 'Genome_file' not found in 'top_hits'.")
+  }
+  if (!"Genome" %in% names(taxonomy)) {
+    stop("Column 'Genome' not found in 'taxonomy'.")
+  }
+  
+  # check requested columns exist in taxonomy
+  missing_cols <- setdiff(columns, names(taxonomy))
+  if (length(missing_cols) > 0) {
+    stop(sprintf(
+      "Column(s) %s not found in 'taxonomy'.",
+      paste(missing_cols, collapse = ", ")
+    ))
+  }
+  
+  # for each requested column, map values
+  for (col in columns) {
+    mapped <- taxonomy[[col]][match(top_hits$Genome_file, taxonomy$Genome)]
+    
+    # warn if any unmatched
+    if (any(is.na(mapped))) {
+      bad <- unique(top_hits$Genome_file[is.na(mapped)])
+      warning(sprintf(
+        "Column '%s': unmatched genome(s) %d (examples: %s)",
+        col, length(bad), paste(utils::head(bad, 5), collapse = ", ")
+      ), call. = FALSE)
+    }
+    
+    top_hits[[col]] <- mapped
+  }
+  
+  return(top_hits)
+}

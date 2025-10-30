@@ -6,6 +6,6 @@
 \alias{strainspy-package}
 \title{strainspy: Strain Level Microbiome Wide Association Studies}
 \description{
-More about what it does (maybe more than one line) Use four spaces when indenting paragraphs within the Description.
+Strainspy fits statistical models to detect microbial strains associated with a phenotype. For small sample sizes, models can be fitted using empirical Bayes maximum a posteriori (MAP) priors to improve detection power. Supports various experimental design scenarios, including repeated measures.
 }
 \keyword{internal}

@@ -11,7 +11,7 @@
 #'
 #' @param file_path Character. Path to the Sylph query or profile output file (tab-separated format).
 #' @param meta_data data.frame. An optional tibble or data frame containing sample metadata. See Details
-#' @param variable Character. Name of the input variable to import, either `Adjusted_ANI` or  `Naive_ANI`. Defaults to `Adjusted_ANI`.
+#' @param variable Character. Name of the input variable to import. Defaults to `Adjusted_ANI`, other options can include `Naive_ANI`, `Taxonomic_abundance` and `Sequence_abundance`.
 #' @param min_identity Numeric. Minimum identity threshold for filtering ANI values. Defaults to `95`.
 #' @param clean_names Logical. If `TRUE`, file paths will be stripped of their directory path and file extension,
 #' leaving only the base file name. Defaults to `TRUE`.

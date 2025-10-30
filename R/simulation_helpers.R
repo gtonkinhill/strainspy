@@ -41,7 +41,7 @@
 #' cat("Simulated log-odds ratio", treat$expected_zi, "\n",
 #'    "Inferred log-odds ratio", zi_coefs["catb"])
 #' }
-rescale_beta <- function(x, beta = 0.95, zi=0.1) {
+rescale_beta <- function(x, beta = 0.98, zi=0.1) {
   
   # Ensure x is between 0 and 1
   if (any(x < 0 | x > 1)) stop("Values must be between 0 and 1")
@@ -160,14 +160,13 @@ update_fit <- function(fit, update_idx,
   
   # what was fitted?
   fit_type = "Unknown"
-  fits = c("glmZiBFit", "glmFit", "caseControlFit")
+  fits = c("glmZiBFit", "glmObFit", "caseControlFit")
   mtch = which(fits %in% as.character(fit@call[[1]]))
   if(length(mtch) != 0) fit_type = fits[mtch]
   
   if(fit_type == "Unknown") {
-    stop("`fit` type must be one of glmZiBFit, glmFit or caseControlFit")
+    stop("`fit` type must be one of glmZiBFit, glmObFit or caseControlFit")
   }
-  
   
   # modify data to subset update_idx
   se_subset = se[update_idx,]
@@ -178,8 +177,8 @@ update_fit <- function(fit, update_idx,
            cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
            fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM)
          },
-         "glmFit" = {
-           cat("Updating", length(update_idx), "values by calling glmFit\n")
+         "glmObFit" = {
+           cat("Updating", length(update_idx), "values by calling glmObFit\n")
            fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM, family = family)
          },
          "caseControlFit" = {

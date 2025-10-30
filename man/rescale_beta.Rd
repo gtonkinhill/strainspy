@@ -4,7 +4,7 @@
 \alias{rescale_beta}
 \title{Transform ANI Data to Simulate a Treatment Effect}
 \usage{
-rescale_beta(x, beta = 0.95, zi = 0.1)
+rescale_beta(x, beta = 0.98, zi = 0.1)
 }
 \arguments{
 \item{x}{a vector of sequence identity values to transform}

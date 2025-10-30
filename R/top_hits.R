@@ -23,7 +23,7 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
 
   # Check method is one of the available options
   if (!method %in% c("bonferroni", "BH", "BY", "holm")) {
-    stop("Method must be one of 'bonferroni', 'BH', 'holm', 'BY', or 'holm'.")
+    stop("Method must be one of 'bonferroni', 'BH', 'BY', or 'holm'.")
   }
 
   # check if taxonomy is a string
@@ -63,5 +63,8 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
     res <- res |> dplyr::filter(p_adjust <= alpha)
   }
 
+  if(nrow(res) == 0) {
+    warning(sprintf("Multiple testing correction using `%s`: No significant associations detected for coef = %d at alpha = %f", method, coef, alpha))
+  }
   return(res)
 }
