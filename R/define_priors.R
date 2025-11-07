@@ -57,7 +57,10 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
   }
   
   # Annoyingly, if a term in design in not in cd, stats::model.matrix says: object is not a matrix, instead of pointing this out.
-  eq_terms = attr(terms(design), "term.labels")
+  eq_terms = attr(terms(design), "term.labels") 
+  # This can contain interactions :
+  eq_terms = unique(unlist(strsplit(eq_terms, ":")))
+  
   if(!all(eq_terms %in% colnames(cd))) {
     stop("These terms in `design` are not found in `colData(se)`:\n",
          paste(eq_terms[which(!eq_terms %in% colnames(cd))], collapse = ", "), "\n"

@@ -8,30 +8,33 @@ plot_ani_dist(
   se,
   phenotype,
   contigs,
+  facet_phenotype = NULL,
   contig_names = NULL,
-  drop_zeros = FALSE,
-  show_points = FALSE,
+  show_zero_plot = TRUE,
+  show_points = TRUE,
   plot = TRUE,
-  plot_type = "violin"
+  plot_type = "box"
 )
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
-\item{phenotype}{One variable in \code{colnames(se@colData)}, except \code{Sample_File}. The selected variable must be categorical}
+\item{phenotype}{Any factor variable in \code{colnames(se@colData)}.}
 
-\item{contigs}{A vector of contigs to generate violin plots}
+\item{contigs}{A vector of contigs to generate distribution plots}
+
+\item{facet_phenotype}{Any factor variable in \code{colnames(se@colData)}, except \code{phenotype}. If provided, this will be used to facet the plot. See \code{?ggplot2::facet_wrap()}. Default NULL.}
 
 \item{contig_names}{Optional character vector to replace long contig names in the plot.
 Must match the length and order of \code{contigs}. If NULL (default), shortening will be attempted automatically.}
 
-\item{drop_zeros}{Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE.}
+\item{show_zero_plot}{Bool. If TRUE, distribution of the proportion of zeros will also be plotted. Default TRUE}
 
-\item{show_points}{Bool. If TRUE, points will be overlaid with jitter using ggforce::geom_sina(). Default FALSE.}
+\item{show_points}{Bool. If TRUE, points will be overlaid with jitter using ggforce::geom_sina(). Default TRUE}
 
 \item{plot}{If set to false, the function will return a tibble with data used to generate the plot.}
 
-\item{plot_type}{Specify whether \code{violin} or \code{box} plot is required. Default \code{violin}.}
+\item{plot_type}{Specify whether \code{box} or \code{violin} plot is required. Default \code{box}.}
 }
 \description{
 Generate a violin or box plot for a subset of contigs for a categorical phenotype.
@@ -49,8 +52,6 @@ example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package =
 se <- read_sylph(example_path, example_meta)
 
 plot_ani_dist(se, phenotype = "Case_status", contigs = rownames(se)[1:5])
-
-
 }
 
 }

@@ -93,22 +93,14 @@ plot_volcano(fit, label = T)
 
 ## Visualise the distribution of top hits with Case_status
 
-### *Coprobacillus cateniformis* shows difference in presence
-
 ``` r
-plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name[1], show_points = T)
+plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />
-
-### *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity
-
-``` r
-plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name[2:3], show_points = T,
-    drop_zeros = T, plot_type = "box")
-```
-
-<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
+*Coprobacillus cateniformis* shows difference in presence.
+*Clostridiales bacterium* and *Candidatus Copromorpha
+excrementipullorum* shows difference in identity.
 
 ## Incorporate taxonomy
 
@@ -121,7 +113,7 @@ taxonomy <- read_taxonomy(example_taxonomy_path)
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
 
 ### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
@@ -129,7 +121,7 @@ plot_manhattan(fit, taxonomy = taxonomy)
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-11-1.png)<!-- -->
+![](inst/vignette-supp/unnamed-chunk-10-1.png)<!-- -->
 
 ## Example using Sourmash output
 

@@ -91,15 +91,10 @@ plot_volcano(fit, label = T)
 
 ## Visualise the distribution of top hits with Case_status
 
-### *Coprobacillus cateniformis* shows difference in presence
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
-plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name[1], show_points = T)
+plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name)
 ```
-
-### *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity
-```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
-plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name[2:3], show_points = T, drop_zeros = T, plot_type = "box")
-```
+*Coprobacillus cateniformis* shows difference in presence. *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity.
 
 ## Incorporate taxonomy
 
@@ -135,8 +130,6 @@ All remaining functions are compatible with this output.
 
 **Note:** `strainspy` provides a function to merge `MetaPhlAn` profiles and generate the taxonomy file. See help for details.
 
-
 ## Citation
 
 To cite strainspy please use
-
