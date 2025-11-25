@@ -6,7 +6,7 @@
 #' and generates a PCA biplot colored by a specified phenotype.
 #'
 #' @param se A `SummarizedExperiment` object containing expression data.
-#' @param coef A character string or integer specifying the column in the meta data by which the plot is coloured
+#' @param phenotype A character string specifying the name of a phenotype or an integer specifying the column number in colData(se)
 #' @param plot A logical value indicating whether to return the PCA plot (`TRUE`) or PCA data (`FALSE`). Default is `TRUE`.
 #'
 #' @return If `plot = TRUE`, returns a `ggplot2` PCA plot. If `plot = FALSE`, returns a tibble with PCA results.
@@ -21,8 +21,32 @@
 #' }
 #'
 #' @export
-plot_pca_biplot <- function(se, coef = 2, plot = TRUE) {
+plot_pca_biplot <- function(se, phenotype, plot = TRUE) {
 
+  pheno_df = SummarizedExperiment::colData(se)
+  
+  if (is.numeric(phenotype)) {
+    if(phenotype == 1){
+      stop("Phenotype cannot be a the sample name column")
+    }
+    
+    if (phenotype < 0 || phenotype > ncol(pheno_df)) {
+      stop("`phenotype` index out of bounds")
+    }
+    
+    phenotype_name <- colnames(pheno_df)[phenotype]
+    
+  } else if (is.character(coef)) {
+    if (!coef %in% colnames(col_data)) {
+      stop("`coef` not found in colData")
+    }
+    phenotype_name <- coef
+  } else {
+    stop("`coef` must be a numeric index or column name")
+  }
+  
+  
+  
   asy<-SummarizedExperiment::assay(se)
 
   # PCA

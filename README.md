@@ -9,6 +9,11 @@
 
 # Strainspy
 
+## Project Status: Active Development
+
+StrainSpy is currently under active development. APIs and functionality
+may change without notice, including backward-incompatible updates.
+
 ## Installation
 
 `strainspy` is currently available on github. It can be installed with
@@ -77,6 +82,7 @@ fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 ``` r
 # Get top hits
 top_hits(fit, coef = 2)
+#> Getting tophits for Case_statusPD
 #> # A tibble: 3 × 10
 #>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
 #>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
@@ -87,6 +93,7 @@ top_hits(fit, coef = 2)
 
 # Create Volcano plot
 plot_volcano(fit, label = T)
+#> Getting tophits for Case_statusPD
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
@@ -95,6 +102,7 @@ plot_volcano(fit, label = T)
 
 ``` r
 plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
+#> Getting tophits for Case_statusPD
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />

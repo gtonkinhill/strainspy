@@ -20,25 +20,22 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
   if (!inherits(object, "strainspy_fit")) {
     stop("Input must be a strainspy_fit")
   }
-
+  
   # Check method is one of the available options
   if (!method %in% c("bonferroni", "BH", "BY", "holm")) {
     stop("Method must be one of 'bonferroni', 'BH', 'BY', or 'holm'.")
   }
-
-  # check if taxonomy is a string
-  # if (!is.null(taxonomy) && is.character(taxonomy)) {
-  #   tax <- read_taxonomy(taxonomy)
-  # }
-
+  
+  cat(paste("Getting tophits for", names(object@coefficients)[2], "\n"))
+  
   # Extract p-values & coefficients
   res <- tibble::as_tibble(object@row_data) |>
     tibble::add_column(coefficient=object@coefficients[[coef]]) |>
     tibble::add_column(std_error=object@std_errors[[coef]]) |>
     tibble::add_column(p_value=object@p_values[[coef]]) |>
     tibble::add_column(p_adjust=p.adjust(object@p_values[[coef]], method = method)) # |>
-    # dplyr::arrange(p_adjust)
-
+  # dplyr::arrange(p_adjust)
+  
   # Add zero-inflated coefficients if available
   if (!is.null(object@zi_coefficients)){
     res <- res |>
@@ -46,7 +43,7 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
       tibble::add_column(zi_std_error=object@zi_std_errors[[coef]]) |>
       tibble::add_column(zi_p_value=object@zi_p_values[[coef]]) |>
       tibble::add_column(zi_p_adjust=p.adjust(object@zi_p_values[[coef]], method = method))  #|>
-      # dplyr::arrange(pmin(p_adjust, zi_p_adjust))
+    # dplyr::arrange(pmin(p_adjust, zi_p_adjust))
   }
   
   ## Arrange by adjusted p_value
@@ -55,14 +52,14 @@ top_hits <- function(object, coef=2, method = "holm", alpha=0.05) {
   } else {
     res <- res |> dplyr::arrange(p_adjust)
   }
-
+  
   # Filter on provided alpha
   if (!is.null(object@zi_coefficients)){
     res <- res |> dplyr::filter(pmin(p_adjust, zi_p_adjust) <= alpha)
   } else {
     res <- res |> dplyr::filter(p_adjust <= alpha)
   }
-
+  
   if(nrow(res) == 0) {
     warning(sprintf("Multiple testing correction using `%s`: No significant associations detected for coef = %d at alpha = %f", method, coef, alpha))
   }
