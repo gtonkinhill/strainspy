@@ -4,12 +4,12 @@
 \alias{plot_pca_biplot}
 \title{plot_pca_biplot}
 \usage{
-plot_pca_biplot(se, coef = 2, plot = TRUE)
+plot_pca_biplot(se, phenotype, plot = TRUE)
 }
 \arguments{
 \item{se}{A \code{SummarizedExperiment} object containing expression data.}
 
-\item{coef}{A character string or integer specifying the column in the meta data by which the plot is coloured}
+\item{phenotype}{A character string specifying the name of a phenotype or an integer specifying the column number in colData(se)}
 
 \item{plot}{A logical value indicating whether to return the PCA plot (\code{TRUE}) or PCA data (\code{FALSE}). Default is \code{TRUE}.}
 }

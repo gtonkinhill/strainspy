@@ -171,7 +171,7 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
 #' #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 fit_qb_model <- function(se_subset, col_data, combined_formula) {
-  
+  cat("Fitting model... \n")
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     ## Extract the values for the current feature
     col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)

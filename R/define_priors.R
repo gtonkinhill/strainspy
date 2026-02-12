@@ -143,8 +143,19 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
   if( all(colnames(rx_beta) == colnames(rx_ZI))){
     rownames(fixef_zi_boot) = colnames(rx_beta)
     rownames(fixef_boot) = colnames(rx_beta)
-    prior_df <- make_prior_df(term_names = colnames(rx_beta), sd_fixef = fixef_med, 
-                              sd_fixef_zi = fixef_zi_med, low_cutoff = low_cutoff,
+    
+    term_names = colnames(rx_beta)
+    
+    intercept_idx = grep("(Intercept)", term_names)
+    if(length(intercept_idx) == 1){
+      warning("No MAP prior will be set to intercept")
+      term_names = term_names[-intercept_idx]
+      sd_fixef = fixef_med[-intercept_idx]
+      sd_fixef_zi = fixef_zi_med[-intercept_idx]
+    }
+    
+    prior_df <- make_prior_df(term_names, sd_fixef, 
+                              sd_fixef_zi, low_cutoff = low_cutoff,
                               high_cutoff = high_cutoff)
   } else {
     stop("Mismatch is colnames between beta and bionomial fit outputs")
@@ -184,6 +195,12 @@ define_priors = function(se, design, method = 'preset_weak', priors_df = NULL){
   term_names <- colnames(mx_pred)
   
   if (method %in% c("preset_weak", "preset_strong")) {
+    intercept_idx = grep("(Intercept)", term_names)
+    if(length(intercept_idx) == 1){
+      warning("No MAP prior will be set to intercept")
+      term_names = term_names[-intercept_idx]
+    }
+    
     priors_df <- get_preset_priors(term_names, method)
   } else if(method == "manual") {
     if (is.null(priors_df)) stop("You must supply a priors_df data.frame when method = 'manual'")
@@ -211,19 +228,19 @@ define_priors = function(se, design, method = 'preset_weak', priors_df = NULL){
   
 }
 
-
+# Not useful
 # multi-level effect SDs need to be merged - we'll take the SD with the max level
-match_to_max_index = function(design, cnms, sds){
-  t2idx = sapply(attr(terms(design), "term.labels"), function(term) {
-    grep(paste0("^", term), cnms)
-  }, simplify = FALSE)
-  
-  vapply(t2idx, function(idxs) {
-    if (length(idxs) == 0) NA_integer_
-    else idxs[which.max(sds[idxs])]
-  }, integer(1))
-  
-}
+# match_to_max_index = function(design, cnms, sds){
+#   t2idx = sapply(attr(terms(design), "term.labels"), function(term) {
+#     grep(paste0("^", term), cnms)
+#   }, simplify = FALSE)
+#   
+#   vapply(t2idx, function(idxs) {
+#     if (length(idxs) == 0) NA_integer_
+#     else idxs[which.max(sds[idxs])]
+#   }, integer(1))
+#   
+# }
 
 
 glmBin_chunk <- function(chunk, mx_pred) {

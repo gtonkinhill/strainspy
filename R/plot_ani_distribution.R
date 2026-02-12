@@ -5,7 +5,7 @@
 #' @importFrom ggplot2 ggplot aes geom_violin theme_minimal labs scale_fill_brewer theme element_text
 #' @importFrom ggforce geom_sina
 #' @importFrom patchwork plot_layout
-#' 
+#' @importFrom S4Vectors complete.cases
 #' 
 #' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param phenotype Any factor variable in `colnames(se@colData)`.
@@ -250,6 +250,7 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' @importFrom rlang sym
 #' @importFrom ggplot2 ggplot aes geom_violin theme_minimal labs scale_fill_brewer theme element_text
 #' @importFrom ggforce geom_sina
+#' @importFrom methods is
 #'
 #' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param phenotype One variable in `colnames(se@colData)`, except `Sample_File`. The selected variable must be categorical

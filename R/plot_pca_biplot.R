@@ -27,7 +27,7 @@ plot_pca_biplot <- function(se, phenotype, plot = TRUE) {
   
   if (is.numeric(phenotype)) {
     if(phenotype == 1){
-      stop("Phenotype cannot be a the sample name column")
+      stop("Phenotype cannot be the sample name column")
     }
     
     if (phenotype < 0 || phenotype > ncol(pheno_df)) {
@@ -36,16 +36,14 @@ plot_pca_biplot <- function(se, phenotype, plot = TRUE) {
     
     phenotype_name <- colnames(pheno_df)[phenotype]
     
-  } else if (is.character(coef)) {
-    if (!coef %in% colnames(col_data)) {
-      stop("`coef` not found in colData")
+  } else if (is.character(phenotype)) {
+    if (!phenotype %in% colnames(pheno_df)) {
+      stop("`phenotype` not found in colData")
     }
-    phenotype_name <- coef
+    phenotype_name <- phenotype
   } else {
-    stop("`coef` must be a numeric index or column name")
+    stop("`phenotype` must be a numeric index or the name of a column")
   }
-  
-  
   
   asy<-SummarizedExperiment::assay(se)
 
@@ -64,7 +62,7 @@ plot_pca_biplot <- function(se, phenotype, plot = TRUE) {
   dat <- tibble::as_tibble(PC$x)
 
   # Access the phenotype by which the plot is coloured
-  col <- SummarizedExperiment::colData(se)[, coef]
+  col <- SummarizedExperiment::colData(se)[[phenotype]]
   dat$pred <- col
 
   # Return plot data if requested

@@ -46,7 +46,8 @@ Suggests:
     fastglm,
     future,
     R.utils,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    emmeans
 RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3

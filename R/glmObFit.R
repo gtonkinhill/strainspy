@@ -61,6 +61,8 @@
 #' @export
 glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 'preset_weak', 
                      family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+  # add message
+  cat("Fitting model... \n")
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
