@@ -21,20 +21,20 @@ utils::globalVariables(c(
 # meta$RvsP[which(meta$BOR == "PD" | meta$BOR == "cPD")] = "NR"
 # meta$RvsP = factor(meta$RvsP, levels = c("NR", "R"))
 # 
-# sy = read_sylph("../strainspy-manuscript/data/ash_pancancer/combined_q_99.tsv.gz")
-# colnames(sy) <- gsub("_1", "", colnames(sy))
-# SummarizedExperiment::colData(sy)$Sample_file <- gsub("_1", "", basename(SummarizedExperiment::colData(sy)$Sample_file))
+# se = read_sylph("../strainspy-manuscript/data/ash_pancancer/combined_q_99.tsv.gz")
+# colnames(se) <- gsub("_1", "", colnames(se))
+# SummarizedExperiment::colData(se)$Sample_file <- gsub("_1", "", basename(SummarizedExperiment::colData(se)$Sample_file))
 # 
-# meta = meta[match(colnames(sy), meta$run_accession), ]
+# meta = meta[match(colnames(se), meta$run_accession), ]
 # rmidx = which(meta$BOR == "SD")
 # if(length(rmidx) > 0){
 #   meta = meta[-rmidx, ]
-#   sy = sy[, -rmidx]
+#   se = se[, -rmidx]
 # }
 # 
-# sy <- filter_by_presence(sy, min_nonzero = 8)
-# all(colnames(sy) %in% meta$run_accession)
-# all(meta$run_accession %in% colnames(sy))
+# se <- filter_by_presence(se, min_nonzero = 8)
+# all(colnames(se) %in% meta$run_accession)
+# all(meta$run_accession %in% colnames(se))
 # 
-# sy = modify_metadata(sy, meta)
-# design <- as.formula("~ RvsP + histology_cohort.x") # age + sex + BMI + ECOG_baseline + chemo_use + antibiotic_use + PPI_use +  + NLR + PLAT + ALB + LDH")
+# se = modify_metadata(se, meta)
+# design <- as.formula("~ RvsP + histology_cohort.x + age + sex + BMI") # age + sex + BMI + ECOG_baseline + chemo_use + antibiotic_use + PPI_use +  + NLR + PLAT + ALB + LDH")

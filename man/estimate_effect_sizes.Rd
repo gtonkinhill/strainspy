@@ -11,7 +11,7 @@ estimate_effect_sizes(
   th = NULL,
   phenotype_of_interest = NULL,
   top_hit_contigs = NULL,
-  beta_min_nz = 0.05,
+  beta_min_nz = 0.1,
   beta_min_ani_diff = 0.01,
   nthreads = 1L,
   scale_continuous = TRUE,
@@ -36,7 +36,7 @@ Required if \code{th = NULL}. Default \code{NULL}}
 \item{beta_min_nz}{Minimum non-zero proportion per phenotype group required
 to consider a beta hit is well supported. Hits driven by a proportion
 of non zero values below this threshold at least in one phenotype group are
-flagged \verb{too few nonzero}. Default 0.05.}
+flagged \verb{too few nonzero}. Default 0.1.}
 
 \item{beta_min_ani_diff}{Minimum absolute mean ANI difference required  for
 a beta hit to be considered meaningful. Effect sizes small than this are
@@ -50,8 +50,8 @@ Default \code{TRUE}}
 \item{BPPARAM}{Optional BiocParallelParam object.}
 }
 \value{
-A reordered \code{top_hits} tibble with additional columns:
-\code{Contrast}, \code{Min_NonZero_Ratio}, \code{ANI_Difference},
+A data.frame with columns:
+\code{Contig_name}, \code{Contrast}, \code{Min_NonZero_Ratio}, \code{ANI_Difference},
 \code{Significant_Component}, and \code{Comment}.
 }
 \description{

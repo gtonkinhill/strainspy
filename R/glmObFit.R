@@ -154,7 +154,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
   } else {
     seRD = SummarizedExperiment::rowData(se)
   }
-  
+  cat("Fitting model... \n")
   # Create the strainspy_fit object
   ObetaGLM <- new("strainspy_fit",
                   row_data = seRD,

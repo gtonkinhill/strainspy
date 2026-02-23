@@ -4,10 +4,10 @@
 \alias{top_hits}
 \title{Provides the top results of a strainspy_fit object, sorted by adjusted p-value.}
 \usage{
-top_hits(object, coef = 2, method = "holm", alpha = 0.05)
+top_hits(fit, coef = 2, method = "holm", alpha = 0.05)
 }
 \arguments{
-\item{object}{A \code{strainspy_fit} object.}
+\item{fit}{A \code{strainspy_fit} object.}
 
 \item{coef}{The coefficient to report and use for p-value adjustment. Defaults to 2.}
 

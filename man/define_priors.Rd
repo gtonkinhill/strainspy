@@ -4,7 +4,13 @@
 \alias{define_priors}
 \title{Constructor for strainspy_priors using preset or user defined priors}
 \usage{
-define_priors(se, design, method = "preset_weak", priors_df = NULL)
+define_priors(
+  se,
+  design,
+  method = "preset_weak",
+  add_dispersion_prior = F,
+  priors_df = NULL
+)
 }
 \arguments{
 \item{se}{A \code{SummarizedExperiment} object with count matrix and colData.}
@@ -13,6 +19,8 @@ define_priors(se, design, method = "preset_weak", priors_df = NULL)
 
 \item{method}{Prior type ("preset_weak", "preset_strong", "manual"). To compute
 empirical priors, use \code{compute_eb_priors()}. Default \code{preset_weak}.}
+
+\item{add_dispersion_prior}{Add a prior of normal(0,1) to the dispersion parameter. Default False}
 
 \item{priors_df}{NULL if \code{method == 'preset_weak' | 'preset_strong'}, else a
 data.frame of priors suitable for glmmTMB model fitting. See \code{?glmmTMB::priors}

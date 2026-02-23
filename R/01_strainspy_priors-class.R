@@ -7,6 +7,7 @@
 #' @slot priors_df Data frame. Data frame containing prior parameters.
 #' @slot boot_fixef Numeric matrix. Bootstrap SD values for fixed effect priors
 #' @slot boot_fixef_ZI Numeric matrix. Bootstrap SD values for zero inflated fixed effect priors
+#' @slot boot_disp Numeric matrix. Bootstrap mean and SD values for the dispersion term of beta component.
 #' @slot design The formula with with effect terms used
 #' @slot call The matched call of the model.
 #'
@@ -17,6 +18,7 @@ methods::setClass("strainspy_priors",
                     priors_df = "data.frame",
                     boot_fixef = "matrix",
                     boot_fixef_ZI = "matrix",
+                    boot_disp="matrix",
                     design = "formula",
                     call = "call"
                   )
@@ -93,75 +95,61 @@ methods::setMethod("show", "strainspy_priors", function(object) {
   invisible(object)
 })
 
-#' Plot bootstrap prior SDs (fixef + fixef_zi) for a coefficient
-#' 
-#' @importFrom stats quantile
-#'
-#' @param object A \code{strainspy_priors} object.
-#' @param prior Character. Coefficient name (must exist in both prior matrices).
-#' @return A patchwork side-by-side ggplot object.
-#' @rdname plot_prior_bootstrap
 #' @export
 methods::setGeneric("plot_prior_bootstrap", function(object, prior) standardGeneric("plot_prior_bootstrap"))
 
-#' @rdname plot_prior_bootstrap
+#' @export
 methods::setMethod("plot_prior_bootstrap", signature(object = "strainspy_priors"),
                    function(object, prior) {
                      
-                     if(object@method != "empirical"){
-                       stop("Bootstrap priors are only available for empirical bayes priors")
+                     if (object@method != "empirical") {
+                       stop("Bootstrap plots are only available for 'empirical' method objects.")
                      }
                      
-                     if(length(object@boot_fixef) == 0 | length(object@boot_fixef_ZI) == 0){
-                       stop("Bootstrap variables are empty")
+                     if (!requireNamespace("ggplot2", quietly = TRUE) || !requireNamespace("patchwork", quietly = TRUE)) {
+                       stop("Please install 'ggplot2' and 'patchwork' to use this plotting function.")
                      }
                      
-                     if(!all.equal(dim(object@boot_fixef_ZI), dim(object@boot_fixef))){
-                       stop("Bootstrap variables have different dimensions")
-                     }
-                     
-                     requireNamespace("ggplot2")
-                     requireNamespace("patchwork")
-                     
-                     get_plot <- function(boot_sd, title) {
-                       boot_sd <- as.numeric(boot_sd)
-                       ci <- stats::quantile(boot_sd, c(0.025, 0.975))
-                       mean_val <- mean(boot_sd)
-                       median_val <- median(boot_sd)
-                       
-                       if (median_val < 1)
-                         warning(sprintf("Estimated prior SD for %s (%s) is %.2f: this may be too strong and reduce sensitivity.",
-                                         prior, title, median_val), call. = FALSE)
-                       if (median_val > 5)
-                         warning(sprintf("Estimated prior SD for %s (%s) is %.2f: this may be too weak and reduce specificity.",
-                                         prior, title, median_val), call. = FALSE)
-                       
-                       df <- data.frame(sd = boot_sd)
+                     # Internal plotting logic to keep code DRY
+                     internal_plot <- function(vec, title) {
+                       df <- data.frame(sd = as.numeric(vec))
+                       med_val <- stats::median(df$sd)
                        
                        ggplot2::ggplot(df, ggplot2::aes(x = sd)) +
-                         ggplot2::geom_histogram(bins = 50, fill = "grey80", color = "white") +
-                         ggplot2::geom_vline(xintercept = mean_val, color = "blue", linetype = "dashed") +
-                         ggplot2::geom_vline(xintercept = median_val, color = "red", linetype = "dashed") +
-                         ggplot2::geom_vline(xintercept = ci, color = "darkgreen", linetype = "dotted") +
-                         ggplot2::labs(
-                           title = paste(title, "-", prior),
-                           x = "Bootstrap SD values", y = "Frequency"
-                         ) +
-                         ggplot2::theme_minimal(base_size = 14)
+                         ggplot2::geom_histogram(bins = 30, fill = "steelblue", color = "white", alpha = 0.8) +
+                         ggplot2::geom_vline(xintercept = med_val, color = "red", linetype = "dashed") +
+                         ggplot2::labs(title = title, subtitle = paste("Median SD:", round(med_val, 3)),
+                                       x = "Bootstrap SD", y = "Count") +
+                         ggplot2::theme_minimal()
                      }
                      
-                     if (!(prior %in% object@priors_df$coef[object@priors_df$class == "fixef"]) || 
-                         !(prior %in% object@priors_df$coef[object@priors_df$class == "fixef_zi"])) {
-                       stop("Prior not found in boot_fixef or boot_fixef_ZI")
+                     plots <- list()
+                     
+                     # Check fixef
+                     if (prior %in% rownames(object@boot_fixef)) {
+                       plots$p1 <- internal_plot(object@boot_fixef[prior, ], paste("Fixef:", prior))
                      }
                      
-                     p1 <- get_plot(object@boot_fixef[prior, ], "fixef")
-                     p2 <- get_plot(object@boot_fixef_ZI[prior, ], "fixef_ZI")
+                     # Check ZI
+                     if (prior %in% rownames(object@boot_fixef_ZI)) {
+                       plots$p2 <- internal_plot(object@boot_fixef_ZI[prior, ], paste("Fixef_ZI:", prior))
+                     }
                      
-                     p1 + p2 + patchwork::plot_layout(guides = "collect")
-                   })
-
-
+                     # Check Dispersion
+                     if (prior == "dispersion" && length(object@boot_disp) > 0) {
+                       plots$p1 <- internal_plot(object@boot_disp[1, ], "Dispersion (Term 1)")
+                       if (nrow(object@boot_disp) > 1) {
+                         plots$p2 <- internal_plot(object@boot_disp[2, ], "Dispersion (Term 2)")
+                       }
+                     }
+                     
+                     if (length(plots) == 0) stop(paste("Coefficient", prior, "not found in bootstrap matrices."))
+                     
+                     # Combine using patchwork
+                     combined <- patchwork::wrap_plots(plots) + patchwork::plot_layout(guides = "collect")
+                     return(combined)
+                   }
+)
 #' Access fixef priors needed for ordinal beta regression
 #'
 #' @param object A \code{strainspy_priors} object.

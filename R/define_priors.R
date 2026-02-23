@@ -11,165 +11,357 @@
 #'        will configure an appropriate backend automatically.
 #' @param low_cutoff Ceiling for small SD estimates. Default 0.1
 #' @param high_cutoff Floor for large SD estimates. Default 10
+#' @param est_disperion_prior Estimate a prior for disperion (default = F)
 #' @return An object of class \code{strainspy_priors}.
 #' 
 #' @importFrom stats sd median
 #' 
 #' @export
-compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL, 
-                              low_cutoff = 0.1, high_cutoff = 10) {
-  # # code to read in a se with metadata
-  # se <- read_sylph("../strainspy-manuscript/data/wallen/wallen_sylph_query_gtdb_220_id99.tsv.gz")
-  # se <- filter_by_presence(se, min_nonzero = 72)
-  # colnames(se) <- gsub("_1", "", colnames(se))
-  # se = se[,which(colnames(se) != "SRR19064765" )]
-  # meta <- readr::read_csv("../strainspy-manuscript/data/wallen/wallen_metadata.csv")
-  # se = strainspy::modify_metadata(se, meta)
-  # design = as.formula('~ Case_status + Race + Age_at_collection + Thyroid_med + Do_you_drink_alcohol')
+compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
+                              low_cutoff = 0.1, high_cutoff = 10,
+                              est_disperion_prior = FALSE) {
   
-  # Check for required pakcages
   required_pkgs <- c("fastglm", "betareg")
-  missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
-  
-  if (length(missing_pkgs) > 0) {
-    stop(
-      "The following packages are required for empirical Bayes estimation but not installed: ",
-      paste(missing_pkgs, collapse = ", "), ".\n",
-      "Please install them with install.packages(c(", 
-      paste0('"', missing_pkgs, '"', collapse = ", "), "))."
-    )
-  }
+  missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace,
+                                        logical(1), quietly = TRUE)]
+  if (length(missing_pkgs) > 0)
+    stop("Missing packages: ", paste(missing_pkgs, collapse = ", "))
   
   stopifnot(inherits(se, "SummarizedExperiment"))
   stopifnot(inherits(design, "formula"))
+  if (!nobars_(design) == design)
+    stop("Random effects not supported.")
   
-  ## Check if formula has random effects
-  if(!nobars_(design) == design) stop("Formula contains random effects, which are currently not supported.")
-  
-  
-  chunk_size = 500 # This probably can be better tuned
+  chunk_size <- 500
   
   cd <- as.data.frame(SummarizedExperiment::colData(se))
-  
-  # Scale all numeric predictors
-  for (col in names(cd)) {
-    if (is.numeric(cd[[col]])) cd[[col]] <- scale(cd[[col]])
-  }
-  
-  # Annoyingly, if a term in design in not in cd, stats::model.matrix says: object is not a matrix, instead of pointing this out.
-  eq_terms = attr(terms(design), "term.labels") 
-  # This can contain interactions :
-  eq_terms = unique(unlist(strsplit(eq_terms, ":")))
-  
-  if(!all(eq_terms %in% colnames(cd))) {
-    stop("These terms in `design` are not found in `colData(se)`:\n",
-         paste(eq_terms[which(!eq_terms %in% colnames(cd))], collapse = ", "), "\n"
-    )
-  }
+  for (col in names(cd))
+    if (is.numeric(cd[[col]]))
+      cd[[col]] <- scale(cd[[col]])
   
   mx_pred <- stats::model.matrix(design, cd)
   mx_outcome <- SummarizedExperiment::assay(se)
   
-  # Having invariant columns in mx_pred (except intercept) will crash beta fit
-  if(dim(mx_pred)[2] > 2){  # we need at least two columns besides intercept
-    invariant_cols = names(which(apply(mx_pred[,-1], 2, function(col) length(unique(col)) == 1)))
-    if(length(invariant_cols) > 0){
-      stop(
-        paste(
-          "Priors cannot be computed because the following metadata have no variation:\n",
-          paste(invariant_cols, collapse = "\n")
-        )
-      )
-    }
-  }
+  # drop unmatched
+  mx_outcome <- mx_outcome[, rownames(mx_pred), drop = FALSE]
   
-  # Drop unmatched samples
-  dropped <- setdiff(colnames(mx_outcome), rownames(mx_pred))
-  if (length(dropped) > 0) {
-    warn_msg <- if (length(dropped) <= 10) {
-      paste("Dropped samples:", paste(dropped, collapse = ", "))
-    } else {
-      sprintf("%d samples dropped. First 10: %s", length(dropped), paste(head(dropped, 10), collapse = ", "))
-    }
-    warning(warn_msg)
-    mx_outcome <- mx_outcome[, rownames(mx_pred), drop = FALSE]
-  }
-  
-  # Chunk the rows
+  # chunk rows
   n_strains <- nrow(mx_outcome)
-  chunk_indices <- split(seq_len(n_strains), ceiling(seq_len(n_strains) / chunk_size))
-  chunk_list <- lapply(chunk_indices, function(idxs) mx_outcome[idxs, , drop = FALSE])
+  chunk_indices <- split(seq_len(n_strains),
+                         ceiling(seq_len(n_strains) / chunk_size))
+  chunk_list <- lapply(chunk_indices,
+                       function(idxs) mx_outcome[idxs, , drop = FALSE])
   
-  # setup backend
-  # Set up parallel infrastructure
+  # parallel backend
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
-    # Check the operating system and set the backend accordingly
-    if (is.null(BPPARAM)) {
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
-    }
+    if (is.null(BPPARAM))
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads,
+                                         progressbar = TRUE)
   } else {
     BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
   }
   
-  # Parallel model fitting
+  ## --------------------
+  ## ZI priors
+  ## --------------------
+  
   cat("Computing fixef_zi priors...\n")
   
+  rx_ZI <- BiocParallel::bplapply(chunk_list,
+                                  glmBin_chunk,
+                                  mx_pred = mx_pred,
+                                  BPPARAM = BPPARAM)
   
-  
-  # BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))  # or SnowParam on Windows
-  rx_ZI <- BiocParallel::bplapply(chunk_list, glmBin_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
   rx_ZI <- do.call(rbind, unlist(rx_ZI, recursive = FALSE))
-  fixef_zi <- BiocParallel::bplapply(seq_len(ncol(rx_ZI)), function(i) getEst(rx_ZI, i), BPPARAM = BPPARAM)
-  fixef_zi_med <- vapply(fixef_zi, function(x) x$med, numeric(1))
-  fixef_zi_boot <- do.call(rbind, lapply(fixef_zi, function(x) x$boot))
   
+  fixef_zi <- BiocParallel::bplapply(seq_len(ncol(rx_ZI)),
+                                     function(i) getEst(rx_ZI, i),
+                                     BPPARAM = BPPARAM)
+  
+  fixef_zi_med <- vapply(fixef_zi, function(x) x$med, numeric(1))
+  fixef_zi_boot <- do.call(rbind,
+                           lapply(fixef_zi, function(x) x$boot))
+  
+  ## --------------------
+  ## Beta priors
+  ## --------------------
   
   cat("Computing fixef priors...\n")
-  rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
-  rx_beta <- do.call(rbind, unlist(rx_beta, recursive = FALSE))
-  fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta)), function(i) getEst(rx_beta, i), BPPARAM = BPPARAM)
+  
+  rx_beta <- BiocParallel::bplapply(chunk_list,
+                                    beta_chunk,
+                                    mx_pred = mx_pred,
+                                    est_disp = est_disperion_prior,
+                                    BPPARAM = BPPARAM)
+  
+  coef_list <- unlist(lapply(rx_beta, `[[`, "coefs"), recursive = FALSE)
+  
+  rx_beta_mat <- do.call(rbind, coef_list)
+  
+  fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta_mat)),
+                                  function(i) getEst(rx_beta_mat, i),
+                                  BPPARAM = BPPARAM)
+  
   fixef_med <- vapply(fixef, function(x) x$med, numeric(1))
-  fixef_boot <- do.call(rbind, lapply(fixef, function(x) x$boot))
+  fixef_boot <- do.call(rbind,
+                        lapply(fixef, function(x) x$boot))
   
-  # BiocParallel::bpstop(BPPARAM)
+  rownames(fixef_boot) <- colnames(rx_beta_mat)
+  rownames(fixef_zi_boot) <- colnames(rx_ZI)
   
-  # # merge multi-levels into 1 by taking max
-  # fixef_idx = match_to_max_index(design, colnames(rx_beta), fixef_med)
-  # fixef_med = fixef_med[fixef_idx]
-  # fixef_boot = fixef_boot[fixef_idx, ]; 
+  ## --------------------
+  ## Dispersion prior
+  ## --------------------
   
+  boot_disp <- matrix(numeric(0), nrow = 0, ncol = 0)
+  disp_prior <- NULL
   
-  # This is a last resort check that is probably unnecessary
-  if( all(colnames(rx_beta) == colnames(rx_ZI))){
-    rownames(fixef_zi_boot) = colnames(rx_beta)
-    rownames(fixef_boot) = colnames(rx_beta)
+  if (isTRUE(est_disperion_prior)) {
     
-    term_names = colnames(rx_beta)
+    log_phi_vec <- unlist(lapply(rx_beta, `[[`, "log_phi"))
+    log_phi_vec <- log_phi_vec[is.finite(log_phi_vec)]
     
-    intercept_idx = grep("(Intercept)", term_names)
-    if(length(intercept_idx) == 1){
-      warning("No MAP prior will be set to intercept")
-      term_names = term_names[-intercept_idx]
-      sd_fixef = fixef_med[-intercept_idx]
-      sd_fixef_zi = fixef_zi_med[-intercept_idx]
+    if (length(log_phi_vec) > 5) {
+      
+      B <- 1000
+      boot_sd <- numeric(B)
+      boot_mean <- numeric(B)
+      
+      for (b in seq_len(B)) {
+        samp <- sample(log_phi_vec, replace = TRUE)
+        boot_sd[b] <- sd(samp)
+        boot_mean[b] <- mean(samp)
+      }
+      
+      # This is likely more stable than estimating values from log_phi
+      disp_sd <- median(boot_sd)
+      disp_median <- median(boot_mean) 
+      
+      disp_prior <- data.frame(
+        prior  = paste("normal(",round(disp_median, 2) , ",", round(disp_sd,2)  ,")", sep = ""),
+        class    = "fixef_disp",
+        coef = 1,
+        stringsAsFactors = FALSE
+      )
+      
+      boot_disp <- matrix(c(boot_mean, boot_sd), nrow = 2, byrow = T)
+      rownames(boot_disp) <- c("log_phi_mean", "log_phi_sd")
+    } else {
+      warning('Dispersion cannot be estimated, not enough strains in sample (<=5)')
     }
-    
-    prior_df <- make_prior_df(term_names, sd_fixef, 
-                              sd_fixef_zi, low_cutoff = low_cutoff,
-                              high_cutoff = high_cutoff)
-  } else {
-    stop("Mismatch is colnames between beta and bionomial fit outputs")
   }
   
-  # Create object
-  methods::new("strainspy_priors", 
-               method = "empirical", 
+  ## --------------------
+  ## Build prior_df
+  ## --------------------
+  
+  term_names <- colnames(rx_beta_mat)
+  intercept_idx <- grep("(Intercept)", term_names)
+  
+  if (length(intercept_idx) == 1) {
+    term_names <- term_names[-intercept_idx]
+    sd_fixef <- fixef_med[-intercept_idx]
+    sd_fixef_zi <- fixef_zi_med[-intercept_idx]
+  } else {
+    sd_fixef <- fixef_med
+    sd_fixef_zi <- fixef_zi_med
+  }
+  
+  prior_df <- make_prior_df(term_names,
+                            sd_fixef,
+                            sd_fixef_zi,
+                            low_cutoff = low_cutoff,
+                            high_cutoff = high_cutoff)
+  
+  if (!is.null(disp_prior))
+    prior_df <- rbind(prior_df, disp_prior)
+  
+  ## --------------------
+  ## Return object
+  ## --------------------
+  
+  methods::new("strainspy_priors",
+               method = "empirical",
                priors_df = prior_df,
                boot_fixef = fixef_boot,
                boot_fixef_ZI = fixef_zi_boot,
+               boot_disp = boot_disp,
                design = design,
                call = match.call())
 }
+# compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL, 
+#                               low_cutoff = 0.1, high_cutoff = 10, est_disperion_prior = F) {
+#   # # code to read in a se with metadata
+#   # se <- read_sylph("../strainspy-manuscript/data/wallen/wallen_sylph_query_gtdb_220_id99.tsv.gz")
+#   # se <- filter_by_presence(se, min_nonzero = 72)
+#   # colnames(se) <- gsub("_1", "", colnames(se))
+#   # se = se[,which(colnames(se) != "SRR19064765" )]
+#   # meta <- readr::read_csv("../strainspy-manuscript/data/wallen/wallen_metadata.csv")
+#   # se = strainspy::modify_metadata(se, meta)
+#   # design = as.formula('~ Case_status + Race + Age_at_collection + Thyroid_med + Do_you_drink_alcohol')
+#   
+#   # Check for required pakcages
+#   required_pkgs <- c("fastglm", "betareg")
+#   missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
+#   
+#   if (length(missing_pkgs) > 0) {
+#     stop(
+#       "The following packages are required for empirical Bayes estimation but not installed: ",
+#       paste(missing_pkgs, collapse = ", "), ".\n",
+#       "Please install them with install.packages(c(", 
+#       paste0('"', missing_pkgs, '"', collapse = ", "), "))."
+#     )
+#   }
+#   
+#   stopifnot(inherits(se, "SummarizedExperiment"))
+#   stopifnot(inherits(design, "formula"))
+#   
+#   ## Check if formula has random effects
+#   if(!nobars_(design) == design) stop("Formula contains random effects, which are currently not supported.")
+#   
+#   
+#   chunk_size = 500 # This probably can be better tuned
+#   
+#   cd <- as.data.frame(SummarizedExperiment::colData(se))
+#   
+#   # Scale all numeric predictors
+#   for (col in names(cd)) {
+#     if (is.numeric(cd[[col]])) cd[[col]] <- scale(cd[[col]])
+#   }
+#   
+#   # Annoyingly, if a term in design in not in cd, stats::model.matrix says: object is not a matrix, instead of pointing this out.
+#   eq_terms = attr(terms(design), "term.labels") 
+#   # This can contain interactions :
+#   eq_terms = unique(unlist(strsplit(eq_terms, ":")))
+#   
+#   if(!all(eq_terms %in% colnames(cd))) {
+#     stop("These terms in `design` are not found in `colData(se)`:\n",
+#          paste(eq_terms[which(!eq_terms %in% colnames(cd))], collapse = ", "), "\n"
+#     )
+#   }
+#   
+#   mx_pred <- stats::model.matrix(design, cd)
+#   mx_outcome <- SummarizedExperiment::assay(se)
+#   
+#   # Having invariant columns in mx_pred (except intercept) will crash beta fit
+#   if(dim(mx_pred)[2] > 2){  # we need at least two columns besides intercept
+#     invariant_cols = names(which(apply(mx_pred[,-1], 2, function(col) length(unique(col)) == 1)))
+#     if(length(invariant_cols) > 0){
+#       stop(
+#         paste(
+#           "Priors cannot be computed because the following metadata have no variation:\n",
+#           paste(invariant_cols, collapse = "\n")
+#         )
+#       )
+#     }
+#   }
+#   
+#   # Drop unmatched samples
+#   dropped <- setdiff(colnames(mx_outcome), rownames(mx_pred))
+#   if (length(dropped) > 0) {
+#     warn_msg <- if (length(dropped) <= 10) {
+#       paste("Dropped samples:", paste(dropped, collapse = ", "))
+#     } else {
+#       sprintf("%d samples dropped. First 10: %s", length(dropped), paste(head(dropped, 10), collapse = ", "))
+#     }
+#     warning(warn_msg)
+#     mx_outcome <- mx_outcome[, rownames(mx_pred), drop = FALSE]
+#   }
+#   
+#   # Chunk the rows
+#   n_strains <- nrow(mx_outcome)
+#   chunk_indices <- split(seq_len(n_strains), ceiling(seq_len(n_strains) / chunk_size))
+#   chunk_list <- lapply(chunk_indices, function(idxs) mx_outcome[idxs, , drop = FALSE])
+#   
+#   # setup backend
+#   # Set up parallel infrastructure
+#   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
+#     # Check the operating system and set the backend accordingly
+#     if (is.null(BPPARAM)) {
+#       BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
+#     }
+#   } else {
+#     BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+#   }
+#   
+#   # Parallel model fitting
+#   cat("Computing fixef_zi priors...\n")
+#   
+#   
+#   
+#   # BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))  # or SnowParam on Windows
+#   rx_ZI <- BiocParallel::bplapply(chunk_list, glmBin_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
+#   rx_ZI <- do.call(rbind, unlist(rx_ZI, recursive = FALSE))
+#   fixef_zi <- BiocParallel::bplapply(seq_len(ncol(rx_ZI)), function(i) getEst(rx_ZI, i), BPPARAM = BPPARAM)
+#   fixef_zi_med <- vapply(fixef_zi, function(x) x$med, numeric(1))
+#   fixef_zi_boot <- do.call(rbind, lapply(fixef_zi, function(x) x$boot))
+#   
+#   
+#   cat("Computing fixef priors...\n")
+#   
+#   rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk,
+#                                     mx_pred = mx_pred,
+#                                     est_disp = est_disperion_prior,
+#                                     BPPARAM = BPPARAM)
+#   
+#   coef_list <- unlist(lapply(rx_beta, `[[`, "coefs"), recursive = FALSE)
+#   rx_beta_mat <- do.call(rbind, coef_list)
+#   fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta_mat)), function(i) getEst(rx_beta_mat, i), BPPARAM = BPPARAM)
+#   fixef_med <- vapply(fixef, function(x) x$med, numeric(1))
+#   fixef_boot <- do.call(rbind, lapply(fixef, function(x) x$boot))
+#   
+#   
+#   if (!is.null(rx_beta[[1]]$log_phi)) {
+#     log_phi_vec <- unlist(lapply(rx_beta, `[[`, "log_phi"))
+#     disp_prior = getDispEst(log_phi_vec)
+#   }
+#   
+#   # rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM, est_disp = F)
+#   # rx_beta <- do.call(rbind, unlist(rx_beta, recursive = FALSE))
+#   # fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta)), function(i) getEst(rx_beta, i), BPPARAM = BPPARAM)
+#   # fixef_med <- vapply(fixef, function(x) x$med, numeric(1))
+#   # fixef_boot <- do.call(rbind, lapply(fixef, function(x) x$boot))
+#   
+#   
+#   # BiocParallel::bpstop(BPPARAM)
+#   
+#   # # merge multi-levels into 1 by taking max
+#   # fixef_idx = match_to_max_index(design, colnames(rx_beta), fixef_med)
+#   # fixef_med = fixef_med[fixef_idx]
+#   # fixef_boot = fixef_boot[fixef_idx, ]; 
+#   
+#   
+#   # This is a last resort check that is probably unnecessary
+#   if( all(colnames(rx_beta) == colnames(rx_ZI))){
+#     rownames(fixef_zi_boot) = colnames(rx_beta)
+#     rownames(fixef_boot) = colnames(rx_beta)
+#     
+#     term_names = colnames(rx_beta)
+#     
+#     intercept_idx = grep("(Intercept)", term_names)
+#     if(length(intercept_idx) == 1){
+#       warning("No MAP prior will be set to intercept")
+#       term_names = term_names[-intercept_idx]
+#       sd_fixef = fixef_med[-intercept_idx]
+#       sd_fixef_zi = fixef_zi_med[-intercept_idx]
+#     }
+#     
+#     prior_df <- make_prior_df(term_names, sd_fixef, 
+#                               sd_fixef_zi, low_cutoff = low_cutoff,
+#                               high_cutoff = high_cutoff)
+#   } else {
+#     stop("Mismatch is colnames between beta and bionomial fit outputs")
+#   }
+#   
+#   # Create object
+#   methods::new("strainspy_priors", 
+#                method = "empirical", 
+#                priors_df = prior_df,
+#                boot_fixef = fixef_boot,
+#                boot_fixef_ZI = fixef_zi_boot,
+#                design = design,
+#                call = match.call())
+# }
 
 #' Constructor for strainspy_priors using preset or user defined priors
 #' 
@@ -177,13 +369,14 @@ compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL,
 #' @param design A fixed-effects-only formula (e.g., ~ group + age + sex).
 #' @param method Prior type ("preset_weak", "preset_strong", "manual"). To compute 
 #' empirical priors, use `compute_eb_priors()`. Default `preset_weak`.
+#' @param add_dispersion_prior Add a prior of normal(0,1) to the dispersion parameter. Default False
 #' @param priors_df NULL if `method == 'preset_weak' | 'preset_strong'`, else a 
 #' data.frame of priors suitable for glmmTMB model fitting. See `?glmmTMB::priors`
 #' for more details. Default NULL.
 #' @return An object of class \code{strainspy_priors}.
 #' 
 #' @export
-define_priors = function(se, design, method = 'preset_weak', priors_df = NULL){
+define_priors = function(se, design, method = 'preset_weak', add_dispersion_prior = F, priors_df = NULL){
   stopifnot(inherits(se, "SummarizedExperiment"))
   stopifnot(inherits(design, "formula"))
   ## Check if formula has random effects
@@ -202,6 +395,9 @@ define_priors = function(se, design, method = 'preset_weak', priors_df = NULL){
     }
     
     priors_df <- get_preset_priors(term_names, method)
+    
+    if(add_dispersion_prior)
+      priors_df <- rbind(priors_df, get_dispersion_prior())
   } else if(method == "manual") {
     if (is.null(priors_df)) stop("You must supply a priors_df data.frame when method = 'manual'")
     
@@ -228,20 +424,6 @@ define_priors = function(se, design, method = 'preset_weak', priors_df = NULL){
   
 }
 
-# Not useful
-# multi-level effect SDs need to be merged - we'll take the SD with the max level
-# match_to_max_index = function(design, cnms, sds){
-#   t2idx = sapply(attr(terms(design), "term.labels"), function(term) {
-#     grep(paste0("^", term), cnms)
-#   }, simplify = FALSE)
-#   
-#   vapply(t2idx, function(idxs) {
-#     if (length(idxs) == 0) NA_integer_
-#     else idxs[which.max(sds[idxs])]
-#   }, integer(1))
-#   
-# }
-
 
 glmBin_chunk <- function(chunk, mx_pred) {
   coef_list <- vector("list", nrow(chunk))
@@ -264,35 +446,124 @@ glmBin_chunk <- function(chunk, mx_pred) {
   coef_list[keep]  # return only successful fits
 }
 
-beta_chunk <- function(chunk, mx_pred) {
-  coef_list <- vector("list", nrow(chunk))
-  keep <- logical(nrow(chunk))
+beta_chunk <- function(chunk, mx_pred, est_disp = FALSE) {
   
-  for (i in seq_len(nrow(chunk))) {
+  n <- nrow(chunk)
+  
+  coef_list   <- vector("list", n)
+  log_phi_vec <- if (est_disp) numeric(n) else NULL
+  keep        <- logical(n)
+  
+  for (i in seq_len(n)) {
+    
     y <- chunk[i, ]
-    idx = which(y != 0)
+    idx <- which(y != 0)
     
-    if (length(idx) < 0.1*nrow(mx_pred)) next
+    if (length(idx) < 0.1 * length(y)) next
     
-    y = offset_ANI(y[idx]/100)
-    
-    X = mx_pred[idx, ]
+    y_sub <- strainspy:::offset_ANI(y[idx] / 100)
+    X_sub <- mx_pred[idx, , drop = FALSE]
     
     fit <- tryCatch(
-      betareg::betareg.fit(X, y),
+      betareg::betareg.fit(X_sub, y_sub),
       error = function(e) NULL
     )
     
     if (!is.null(fit)) {
       coef_list[[i]] <- fit$coefficients$mean
+      
+      if (est_disp)
+        log_phi_vec[i] <- fit$coefficients$precision
+      
       keep[i] <- TRUE
     }
   }
   
-  coef_list[keep]  # return only successful fits
+  out <- list(
+    coefs   = coef_list[keep],
+    log_phi = if (est_disp) log_phi_vec[keep] else NULL
+  )
+  
+  return(out)
 }
 
+# beta_chunk <- function(chunk, mx_pred, est_disp = F) {
+#   coef_list <- vector("list", nrow(chunk))
+#   if(est_disp) log_phi_list <- vector("list", nrow(chunk))
+#   keep <- logical(nrow(chunk))
+#   
+#   for (i in seq_len(nrow(chunk))) {
+#     y <- chunk[i, ]
+#     idx = which(y != 0)
+#     
+#     if (length(idx) < 0.1*nrow(mx_pred)) next
+#     
+#     y = strainspy:::offset_ANI(y[idx]/100)
+#     
+#     X = mx_pred[idx, ]
+#     
+#     fit <- tryCatch(
+#       betareg::betareg.fit(X, y),
+#       error = function(e) NULL
+#     )
+#     
+#     if (!is.null(fit)) {
+#       coef_list[[i]] <- fit$coefficients$mean
+#       
+#       if(est_disp){
+#         log_phi_list[[i]] <- fit$coefficients$precision
+#       }
+#       
+#       keep[i] <- TRUE
+#     }
+#   }
+#   # return only successful fits
+#   if(est_disp){
+#     return(list(coefs = coef_list[keep],
+#                 log_phi = log_phi_list[keep]))
+#     
+#   } else {
+#     return(coef_list[keep]) 
+#   }
+#   
+# }
 
+getDispEst <- function(log_phi_vec, B = 2000, trim = 0.02, seed = NULL) {
+  
+  if (!is.null(seed)) set.seed(seed)
+  
+  x <- log_phi_vec[is.finite(log_phi_vec)]
+  
+  # optional trimming
+  if (!is.null(trim) && trim > 0) {
+    lo <- quantile(x, trim)
+    hi <- quantile(x, 1 - trim)
+    x <- x[x > lo & x < hi]
+  }
+  
+  # point estimates
+  mu_hat <- mean(x)
+  sd_hat <- sd(x)
+  
+  # bootstrap
+  boot_mu <- numeric(B)
+  boot_sd <- numeric(B)
+  
+  for (b in seq_len(B)) {
+    samp <- sample(x, replace = TRUE)
+    boot_mu[b] <- mean(samp)
+    boot_sd[b] <- sd(samp)
+  }
+  
+  list(
+    mu      = mu_hat,
+    sd      = sd_hat,
+    mu_ci   = quantile(boot_mu, c(0.025, 0.975)),
+    sd_ci   = quantile(boot_sd, c(0.025, 0.975)),
+    boot_mu = boot_mu,
+    boot_sd = boot_sd
+  )
+}
 
 getEst <- function(rx, idx){
   estV = rx[,idx] 
@@ -365,6 +636,16 @@ get_preset_priors = function(term_names, type = c("preset_weak", "preset_strong"
     class = rep(c("fixef", "fixef_zi"), each = length(term_names)),
     coef  = rep(term_names, 2),
     stringsAsFactors = FALSE
+  )
+}
+
+get_dispersion_prior = function(sd){
+  warning("Mean of dispersion prior is forced to 0. This is not recommended! 
+          ... If you want to estimate it, use compute_eb_priors() instead")
+  data.frame(
+    prior = c(paste("normal(0,",sd,")", sep = "")),
+    class = c("fixef_disp"),
+    coef = c(1)
   )
 }
 

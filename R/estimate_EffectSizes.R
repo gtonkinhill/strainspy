@@ -231,7 +231,7 @@ annotate_effect <- function(top_hit_contigs = NULL,
                             th = NULL) {
   
   if (is.null(th)) {
-    th <- top_hits(object = ZB_fit, 
+    th <- top_hits(fit = ZB_fit, 
                    coef = phenotype_coef, 
                    alpha = 1, 
                    method = "BH") %>%

@@ -10,7 +10,8 @@ compute_eb_priors(
   nthreads = 1L,
   BPPARAM = NULL,
   low_cutoff = 0.1,
-  high_cutoff = 10
+  high_cutoff = 10,
+  est_disperion_prior = FALSE
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ will configure an appropriate backend automatically.}
 \item{low_cutoff}{Ceiling for small SD estimates. Default 0.1}
 
 \item{high_cutoff}{Floor for large SD estimates. Default 10}
+
+\item{est_disperion_prior}{Estimate a prior for disperion (default = F)}
 }
 \value{
 An object of class \code{strainspy_priors}.

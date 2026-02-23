@@ -96,13 +96,6 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE,
     stop("Column names of assay data do not match row names of colData.")
   }
   
-  # Define priors
-  # nbeta <- ncol(model.matrix(nbd, col_data))
-  # fixed_priors <- data.frame(
-  #   prior = rep("normal(0,5)", 2*nbeta),
-  #   class = rep(c("fixef", "fixef_zi"), each=nbeta),
-  #   coef  = rep(as.character(seq(1,nbeta)), 2))
-  
   prior_obj = resolve_priors(MAP_prior, se, nbd)
   fixed_priors = prior_obj@priors_df
   
@@ -160,7 +153,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE,
   } else {
     seRD = SummarizedExperiment::rowData(se)
   }
-  
+  cat("Fitting model... \n")
   # Create the strainspy_fit object
   ZIBetaGLM <- methods::new("strainspy_fit",
                             row_data = seRD,
@@ -197,7 +190,6 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continous=TRUE,
 #'
 #' @importFrom stats residuals
 fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
-  cat("Fitting model... \n")
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)

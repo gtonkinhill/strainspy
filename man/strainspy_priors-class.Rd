@@ -19,6 +19,8 @@ and zero-inflated beta model fitting using \code{glmmTMB}.
 
 \item{\code{boot_fixef_ZI}}{Numeric matrix. Bootstrap SD values for zero inflated fixed effect priors}
 
+\item{\code{boot_disp}}{Numeric matrix. Bootstrap mean and SD values for the dispersion term of beta component.}
+
 \item{\code{design}}{The formula with with effect terms used}
 
 \item{\code{call}}{The matched call of the model.}
