@@ -8,7 +8,7 @@
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults to one 1.
-#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `TRUE`.
+#' @param scale_continuous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `TRUE`.
 #' @param transform If data is already transformed, set to `NULL` (default). Supported options: arcsin transform `arcsin` or centered log ratio `CLR`. `CLR` requires `compositions` package.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
 #'
@@ -46,7 +46,7 @@
 #' }
 #'
 #' @export
-abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform=NULL, BPPARAM=NULL) {
+abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transform=NULL, BPPARAM=NULL) {
   # Check if glmmTMB is installed
   if (!requireNamespace("lmerTest", quietly = TRUE)) {
     stop("The 'lmerTest' package is required but is not installed. Please install it with install.packages('lmerTest').")
@@ -59,7 +59,7 @@ abundanceFit <- function(se, design, nthreads=1, scale_continous=TRUE, transform
   
   # colData (sample metadata)
   col_data <- as.data.frame(SummarizedExperiment::colData(se))
-  if (scale_continous==TRUE){
+  if (scale_continuous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
         col_data[[col]] <- as.numeric(scale(col_data[[col]]))  # Scale numeric columnsa + convert from matrix to vector (we are guaranteed to go col by col)

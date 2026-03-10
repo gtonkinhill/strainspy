@@ -14,17 +14,23 @@ The \code{strainspy_fit} class is designed to store the results of strainspy
 
 \item{\code{priors}}{A \code{strainspy_priors} object or \code{NULL} for REML.}
 
+\item{\code{scale_continuous}}{A logical indicating whether all numeric columns were z-score standardized}
+
 \item{\code{coefficients}}{A \code{DataFrame} containing model coefficients.}
 
 \item{\code{std_errors}}{A \code{DataFrame} containing standard errors of the coefficients.}
 
 \item{\code{p_values}}{A \code{DataFrame} containing p-values for the coefficients.}
 
+\item{\code{vcov}}{A \code{DataFrame} containing the variance-covariance matrix.}
+
 \item{\code{zi_coefficients}}{A \code{DataFrame} containing zero-inflation coefficients.}
 
 \item{\code{zi_std_errors}}{A \code{DataFrame} containing zero-inflation standard errors.}
 
 \item{\code{zi_p_values}}{A \code{DataFrame} containing zero-inflation p-values.}
+
+\item{\code{zi_vcov}}{A \code{DataFrame} containing the zero-inflated variance-covariance matrix.}
 
 \item{\code{residuals}}{A \code{DataFrame} containing residuals from the model.}
 
@@ -35,5 +41,7 @@ The \code{strainspy_fit} class is designed to store the results of strainspy
 \item{\code{assay}}{A matrix containing the assay data used for fitting the model.}
 
 \item{\code{call}}{The matched call of the model.}
+
+\item{\code{family}}{The family of the fit.}
 }}
 

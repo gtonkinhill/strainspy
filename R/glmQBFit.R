@@ -1,6 +1,8 @@
 #' glmQB
-#'
+#' TODO: Implement return of vcov info. Patched for compatibility (returns NULL)
+#' 
 #' This function fits a quasibinomial regression model using `stats::glm()`.
+#'
 #'  
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined 
 #' formula containing only fixed effect parameters, and fits a quasibinomial 
@@ -116,6 +118,8 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
+  cat("Fitting model... \n")
+  
   results <- BiocParallel::bplapply(
     row_chunks,
     function(row_indices) fit_qb_model(SummarizedExperiment::assay(se)[row_indices,],
@@ -138,7 +142,6 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
   } else {
     seRD = SummarizedExperiment::rowData(se)
   }
-  cat("Fitting model... \n")
   # Create the strainspy_fit object
   QBGLM <- new("strainspy_fit",
                row_data = seRD,

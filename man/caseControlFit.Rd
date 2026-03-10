@@ -9,7 +9,7 @@ caseControlFit(
   design,
   min_identity = 0.98,
   nthreads = 1,
-  scale_continous = TRUE,
+  scale_continuous = TRUE,
   BPPARAM = NULL
 )
 }
@@ -23,7 +23,7 @@ caseControlFit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+\item{scale_continuous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}

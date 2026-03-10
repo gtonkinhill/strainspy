@@ -8,7 +8,7 @@ abundanceFit(
   se,
   design,
   nthreads = 1,
-  scale_continous = TRUE,
+  scale_continuous = TRUE,
   transform = NULL,
   BPPARAM = NULL
 )
@@ -20,7 +20,7 @@ abundanceFit(
 
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{TRUE}.}
+\item{scale_continuous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{TRUE}.}
 
 \item{transform}{If data is already transformed, set to \code{NULL} (default). Supported options: arcsin transform \code{arcsin} or centered log ratio \code{CLR}. \code{CLR} requires \code{compositions} package.}
 

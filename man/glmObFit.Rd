@@ -8,7 +8,7 @@ glmObFit(
   se,
   design,
   nthreads = 1L,
-  scale_continous = TRUE,
+  scale_continuous = TRUE,
   MAP_prior = "preset_weak",
   family = glmmTMB::ordbeta(),
   BPPARAM = NULL
@@ -22,7 +22,7 @@ glmObFit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)}
+\item{scale_continuous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)}
 are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
 
 \item{MAP_prior}{One of \code{strainspy_priors} object, character string (\verb{"preset_weak", "preset_strong"}),
@@ -46,11 +46,13 @@ A \code{strainspy_fit} object with the following components:
 \item{call}{Call to \code{glmObFit}}
 }
 \description{
+TODO: Implement return of vcov info. Patched for compatibility (returns NULL)
+}
+\details{
 This function fits a ordinalbeta regression model using the \code{glmmTMB} package.
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula,
 and fits an ordinal beta regression model on the assay data.
-}
-\details{
+
 For robust model fitting, it is recommended to use maximum a posteriori (MAP)
 estimation. Emprical Bayes MAP priors can be computed using \code{strainspy::compute_eb_priors()}.
 They can also be manually defined using \code{strainspy::define_priors()}. The resulting

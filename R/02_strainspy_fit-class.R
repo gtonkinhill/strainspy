@@ -1,47 +1,57 @@
-#' @importFrom S4Vectors DataFrame
+#' @importFrom S4Vectors DataFrame List
 
 setClassUnion("DataFrameOrNULL", c("DataFrame", "NULL"))
 setClassUnion("strainspyPriorsOrNULL", c("strainspy_priors", "NULL"))
+setClassUnion("ListOrNULL", c("List", "NULL"))
 
 #' strainspy_fit: A Class for storing fit data from all strainspy models
 #'
 #' The `strainspy_fit` class is designed to store the results of strainspy
 #' 
-#' @importClassesFrom S4Vectors DataFrame
+#' @importClassesFrom S4Vectors DataFrame List
 #' @importMethodsFrom S4Vectors show
 #'
 #'
 #' @slot row_data A `DataFrame` containing row data.
 #' @slot priors A `strainspy_priors` object or `NULL` for REML.
+#' @slot scale_continuous A logical indicating whether all numeric columns were z-score standardized
 #' @slot coefficients A `DataFrame` containing model coefficients.
 #' @slot std_errors A `DataFrame` containing standard errors of the coefficients.
 #' @slot p_values A `DataFrame` containing p-values for the coefficients.
+#' @slot vcov A `DataFrame` containing the variance-covariance matrix.
 #' @slot zi_coefficients A `DataFrame` containing zero-inflation coefficients.
 #' @slot zi_std_errors A `DataFrame` containing zero-inflation standard errors.
 #' @slot zi_p_values A `DataFrame` containing zero-inflation p-values.
+#' @slot zi_vcov A `DataFrame` containing the zero-inflated variance-covariance matrix.
 #' @slot residuals A `DataFrame` containing residuals from the model.
 #' @slot convergence A logical indicating whether model fitting converged.
 #' @slot design A matrix representing the design matrix of the model.
 #' @slot assay A matrix containing the assay data used for fitting the model.
 #' @slot call The matched call of the model.
+#' @slot family The family of the fit. 
 #'
 #' @export
 methods::setClass("strainspy_fit",
                   slots = list(
                     row_data = "DataFrame",
                     priors = "strainspyPriorsOrNULL",
+                    scale_continuous = "logical",
                     coefficients = "DataFrame",
                     std_errors = "DataFrame",
                     p_values = "DataFrame",
+                    vcov = "ListOrNULL",
                     zi_coefficients = "DataFrameOrNULL",
                     zi_std_errors = "DataFrameOrNULL",
                     zi_p_values = "DataFrameOrNULL",
+                    zi_vcov = "ListOrNULL",
                     residuals = "DataFrameOrNULL",
                     convergence = "logical",
                     design = "formula",
                     assay = "matrix",
-                    call = "call"
-                  ))
+                    call = "call",
+                    family = "ANY" # We should make this mandatory
+                  )
+)
 
 #' Show Method for strainspy_fit
 #'
@@ -56,7 +66,7 @@ methods::setMethod("show", "strainspy_fit", function(object) {
   
   cat("Design formula: ")
   print(object@design)
-
+  
   cat(rep("-", 30), "\n", sep = "")
   cat("Converged=", length(which(object@convergence==T)) , ", Failed=", length(which(object@convergence==F)), "\n", sep = '')
   

@@ -3,6 +3,8 @@
 #' Fits fast binomial and beta models to estimate MAP prior SDs for use in 
 #' zero-inflated and ordinal beta models fitted using `GLMMTMB`. 
 #' 
+#' @importFrom stats quantile
+#' 
 #' @param se A \code{SummarizedExperiment} object with count matrix and colData.
 #' @param design A fixed-effects-only formula (e.g., ~ group + age + sex).
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
@@ -189,179 +191,7 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
                design = design,
                call = match.call())
 }
-# compute_eb_priors <- function(se, design, nthreads=1L, BPPARAM=NULL, 
-#                               low_cutoff = 0.1, high_cutoff = 10, est_disperion_prior = F) {
-#   # # code to read in a se with metadata
-#   # se <- read_sylph("../strainspy-manuscript/data/wallen/wallen_sylph_query_gtdb_220_id99.tsv.gz")
-#   # se <- filter_by_presence(se, min_nonzero = 72)
-#   # colnames(se) <- gsub("_1", "", colnames(se))
-#   # se = se[,which(colnames(se) != "SRR19064765" )]
-#   # meta <- readr::read_csv("../strainspy-manuscript/data/wallen/wallen_metadata.csv")
-#   # se = strainspy::modify_metadata(se, meta)
-#   # design = as.formula('~ Case_status + Race + Age_at_collection + Thyroid_med + Do_you_drink_alcohol')
-#   
-#   # Check for required pakcages
-#   required_pkgs <- c("fastglm", "betareg")
-#   missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
-#   
-#   if (length(missing_pkgs) > 0) {
-#     stop(
-#       "The following packages are required for empirical Bayes estimation but not installed: ",
-#       paste(missing_pkgs, collapse = ", "), ".\n",
-#       "Please install them with install.packages(c(", 
-#       paste0('"', missing_pkgs, '"', collapse = ", "), "))."
-#     )
-#   }
-#   
-#   stopifnot(inherits(se, "SummarizedExperiment"))
-#   stopifnot(inherits(design, "formula"))
-#   
-#   ## Check if formula has random effects
-#   if(!nobars_(design) == design) stop("Formula contains random effects, which are currently not supported.")
-#   
-#   
-#   chunk_size = 500 # This probably can be better tuned
-#   
-#   cd <- as.data.frame(SummarizedExperiment::colData(se))
-#   
-#   # Scale all numeric predictors
-#   for (col in names(cd)) {
-#     if (is.numeric(cd[[col]])) cd[[col]] <- scale(cd[[col]])
-#   }
-#   
-#   # Annoyingly, if a term in design in not in cd, stats::model.matrix says: object is not a matrix, instead of pointing this out.
-#   eq_terms = attr(terms(design), "term.labels") 
-#   # This can contain interactions :
-#   eq_terms = unique(unlist(strsplit(eq_terms, ":")))
-#   
-#   if(!all(eq_terms %in% colnames(cd))) {
-#     stop("These terms in `design` are not found in `colData(se)`:\n",
-#          paste(eq_terms[which(!eq_terms %in% colnames(cd))], collapse = ", "), "\n"
-#     )
-#   }
-#   
-#   mx_pred <- stats::model.matrix(design, cd)
-#   mx_outcome <- SummarizedExperiment::assay(se)
-#   
-#   # Having invariant columns in mx_pred (except intercept) will crash beta fit
-#   if(dim(mx_pred)[2] > 2){  # we need at least two columns besides intercept
-#     invariant_cols = names(which(apply(mx_pred[,-1], 2, function(col) length(unique(col)) == 1)))
-#     if(length(invariant_cols) > 0){
-#       stop(
-#         paste(
-#           "Priors cannot be computed because the following metadata have no variation:\n",
-#           paste(invariant_cols, collapse = "\n")
-#         )
-#       )
-#     }
-#   }
-#   
-#   # Drop unmatched samples
-#   dropped <- setdiff(colnames(mx_outcome), rownames(mx_pred))
-#   if (length(dropped) > 0) {
-#     warn_msg <- if (length(dropped) <= 10) {
-#       paste("Dropped samples:", paste(dropped, collapse = ", "))
-#     } else {
-#       sprintf("%d samples dropped. First 10: %s", length(dropped), paste(head(dropped, 10), collapse = ", "))
-#     }
-#     warning(warn_msg)
-#     mx_outcome <- mx_outcome[, rownames(mx_pred), drop = FALSE]
-#   }
-#   
-#   # Chunk the rows
-#   n_strains <- nrow(mx_outcome)
-#   chunk_indices <- split(seq_len(n_strains), ceiling(seq_len(n_strains) / chunk_size))
-#   chunk_list <- lapply(chunk_indices, function(idxs) mx_outcome[idxs, , drop = FALSE])
-#   
-#   # setup backend
-#   # Set up parallel infrastructure
-#   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
-#     # Check the operating system and set the backend accordingly
-#     if (is.null(BPPARAM)) {
-#       BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
-#     }
-#   } else {
-#     BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
-#   }
-#   
-#   # Parallel model fitting
-#   cat("Computing fixef_zi priors...\n")
-#   
-#   
-#   
-#   # BiocParallel::register(BiocParallel::MulticoreParam(workers = 10))  # or SnowParam on Windows
-#   rx_ZI <- BiocParallel::bplapply(chunk_list, glmBin_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM)
-#   rx_ZI <- do.call(rbind, unlist(rx_ZI, recursive = FALSE))
-#   fixef_zi <- BiocParallel::bplapply(seq_len(ncol(rx_ZI)), function(i) getEst(rx_ZI, i), BPPARAM = BPPARAM)
-#   fixef_zi_med <- vapply(fixef_zi, function(x) x$med, numeric(1))
-#   fixef_zi_boot <- do.call(rbind, lapply(fixef_zi, function(x) x$boot))
-#   
-#   
-#   cat("Computing fixef priors...\n")
-#   
-#   rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk,
-#                                     mx_pred = mx_pred,
-#                                     est_disp = est_disperion_prior,
-#                                     BPPARAM = BPPARAM)
-#   
-#   coef_list <- unlist(lapply(rx_beta, `[[`, "coefs"), recursive = FALSE)
-#   rx_beta_mat <- do.call(rbind, coef_list)
-#   fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta_mat)), function(i) getEst(rx_beta_mat, i), BPPARAM = BPPARAM)
-#   fixef_med <- vapply(fixef, function(x) x$med, numeric(1))
-#   fixef_boot <- do.call(rbind, lapply(fixef, function(x) x$boot))
-#   
-#   
-#   if (!is.null(rx_beta[[1]]$log_phi)) {
-#     log_phi_vec <- unlist(lapply(rx_beta, `[[`, "log_phi"))
-#     disp_prior = getDispEst(log_phi_vec)
-#   }
-#   
-#   # rx_beta <- BiocParallel::bplapply(chunk_list, beta_chunk, mx_pred = mx_pred, BPPARAM = BPPARAM, est_disp = F)
-#   # rx_beta <- do.call(rbind, unlist(rx_beta, recursive = FALSE))
-#   # fixef <- BiocParallel::bplapply(seq_len(ncol(rx_beta)), function(i) getEst(rx_beta, i), BPPARAM = BPPARAM)
-#   # fixef_med <- vapply(fixef, function(x) x$med, numeric(1))
-#   # fixef_boot <- do.call(rbind, lapply(fixef, function(x) x$boot))
-#   
-#   
-#   # BiocParallel::bpstop(BPPARAM)
-#   
-#   # # merge multi-levels into 1 by taking max
-#   # fixef_idx = match_to_max_index(design, colnames(rx_beta), fixef_med)
-#   # fixef_med = fixef_med[fixef_idx]
-#   # fixef_boot = fixef_boot[fixef_idx, ]; 
-#   
-#   
-#   # This is a last resort check that is probably unnecessary
-#   if( all(colnames(rx_beta) == colnames(rx_ZI))){
-#     rownames(fixef_zi_boot) = colnames(rx_beta)
-#     rownames(fixef_boot) = colnames(rx_beta)
-#     
-#     term_names = colnames(rx_beta)
-#     
-#     intercept_idx = grep("(Intercept)", term_names)
-#     if(length(intercept_idx) == 1){
-#       warning("No MAP prior will be set to intercept")
-#       term_names = term_names[-intercept_idx]
-#       sd_fixef = fixef_med[-intercept_idx]
-#       sd_fixef_zi = fixef_zi_med[-intercept_idx]
-#     }
-#     
-#     prior_df <- make_prior_df(term_names, sd_fixef, 
-#                               sd_fixef_zi, low_cutoff = low_cutoff,
-#                               high_cutoff = high_cutoff)
-#   } else {
-#     stop("Mismatch is colnames between beta and bionomial fit outputs")
-#   }
-#   
-#   # Create object
-#   methods::new("strainspy_priors", 
-#                method = "empirical", 
-#                priors_df = prior_df,
-#                boot_fixef = fixef_boot,
-#                boot_fixef_ZI = fixef_zi_boot,
-#                design = design,
-#                call = match.call())
-# }
+
 
 #' Constructor for strainspy_priors using preset or user defined priors
 #' 
@@ -487,46 +317,7 @@ beta_chunk <- function(chunk, mx_pred, est_disp = FALSE) {
   return(out)
 }
 
-# beta_chunk <- function(chunk, mx_pred, est_disp = F) {
-#   coef_list <- vector("list", nrow(chunk))
-#   if(est_disp) log_phi_list <- vector("list", nrow(chunk))
-#   keep <- logical(nrow(chunk))
-#   
-#   for (i in seq_len(nrow(chunk))) {
-#     y <- chunk[i, ]
-#     idx = which(y != 0)
-#     
-#     if (length(idx) < 0.1*nrow(mx_pred)) next
-#     
-#     y = strainspy:::offset_ANI(y[idx]/100)
-#     
-#     X = mx_pred[idx, ]
-#     
-#     fit <- tryCatch(
-#       betareg::betareg.fit(X, y),
-#       error = function(e) NULL
-#     )
-#     
-#     if (!is.null(fit)) {
-#       coef_list[[i]] <- fit$coefficients$mean
-#       
-#       if(est_disp){
-#         log_phi_list[[i]] <- fit$coefficients$precision
-#       }
-#       
-#       keep[i] <- TRUE
-#     }
-#   }
-#   # return only successful fits
-#   if(est_disp){
-#     return(list(coefs = coef_list[keep],
-#                 log_phi = log_phi_list[keep]))
-#     
-#   } else {
-#     return(coef_list[keep]) 
-#   }
-#   
-# }
+
 
 getDispEst <- function(log_phi_vec, B = 2000, trim = 0.02, seed = NULL) {
   
@@ -536,8 +327,8 @@ getDispEst <- function(log_phi_vec, B = 2000, trim = 0.02, seed = NULL) {
   
   # optional trimming
   if (!is.null(trim) && trim > 0) {
-    lo <- quantile(x, trim)
-    hi <- quantile(x, 1 - trim)
+    lo <- stats::quantile(x, trim)
+    hi <- stats::quantile(x, 1 - trim)
     x <- x[x > lo & x < hi]
   }
   

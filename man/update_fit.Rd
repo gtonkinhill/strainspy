@@ -8,7 +8,7 @@ update_fit(
   fit,
   update_idx,
   se,
-  scale_continous = TRUE,
+  scale_continuous = TRUE,
   min_identity = 0.98,
   method = "glmmTMB",
   family = glmmTMB::ordbeta(),
@@ -23,7 +23,7 @@ update_fit(
 
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
 
-\item{scale_continous}{Binary specifying whether to rescale numeric values. Default T}
+\item{scale_continuous}{Binary specifying whether to rescale numeric values. Default T}
 
 \item{min_identity}{Only for \code{caseControlFit()}. A numeric value specifying the minimum identity threshold to consider (default=0.98).}
 

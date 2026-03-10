@@ -8,10 +8,11 @@ glmZiBFit(
   se,
   design,
   nthreads = 1,
-  scale_continous = TRUE,
+  scale_continuous = TRUE,
   MAP_prior = "preset_weak",
   BPPARAM = NULL,
-  method = "glmmTMB"
+  method = "glmmTMB",
+  return_vcov = TRUE
 )
 }
 \arguments{
@@ -22,7 +23,7 @@ glmZiBFit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults
 to one 1.}
 
-\item{scale_continous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{FALSE}.}
+\item{scale_continuous}{Logical. If \code{TRUE}, all numeric columns in \code{colData(se)} are z-score standardized (mean = 0, SD = 1). Defaults to \code{TRUE}.}
 
 \item{MAP_prior}{One of \code{strainspy_priors} object, character string (\verb{"preset_weak", "preset_strong"}),
 a \code{data.frame} of priors, or \code{NULL}. Default \code{"preset_weak"}. See Details.}
@@ -31,6 +32,9 @@ a \code{data.frame} of priors, or \code{NULL}. Default \code{"preset_weak"}. See
 will configure an appropriate backend automatically.}
 
 \item{method}{Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.}
+
+\item{return_vcov}{Logical. Return variance-covariance matrices for each model, required for \code{estimate_effect_sizes()}.
+Disabling will result in a much smaller \code{strainspy_fit} object that is useful for most analyses. Defaults to \code{TRUE}.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:

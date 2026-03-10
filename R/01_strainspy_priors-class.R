@@ -95,6 +95,11 @@ methods::setMethod("show", "strainspy_priors", function(object) {
   invisible(object)
 })
 
+#' Plot method for strainspy_priors objects
+#'
+#' @param object An object of class \code{strainspy_priors} that has bootstrap information
+#' @param prior Prior to be plotted
+#' @return Invisibly returns the object
 #' @export
 methods::setGeneric("plot_prior_bootstrap", function(object, prior) standardGeneric("plot_prior_bootstrap"))
 

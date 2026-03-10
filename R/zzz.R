@@ -9,7 +9,8 @@ utils::globalVariables(c(
   "rbinom", "relative_abundance", "row_indices", "set", "slotNames",
   "str_extract", "strip_random_effects", "tax", "taxonomy", "tibble",
   "zi_coefficient", "zi_p_adjust", "zi_p_value", 'isTip', 'y', 'label', 'Genome',
-  "zero_count", "total", "zero_prop", "Value_orig", "value"
+  "zero_count", "total", "zero_prop", "Value_orig", "value", "component", 
+  "ref_nz", "comp_nz", "ref_total", "comp_total", "estimate", "fail_reasons"
 ))
 
 

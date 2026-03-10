@@ -2,7 +2,8 @@
 % Please edit documentation in R/glmQBFit.R
 \name{glmQBFit}
 \alias{glmQBFit}
-\title{glmQB}
+\title{glmQB
+TODO: Implement return of vcov info. Patched for compatibility (returns NULL)}
 \usage{
 glmQBFit(se, design, nthreads = 1L, scale_continous = TRUE, BPPARAM = NULL)
 }
@@ -35,7 +36,8 @@ A \code{strainspy_fit} object with the following components:
 }
 \description{
 This function fits a quasibinomial regression model using \code{stats::glm()}.
-
+}
+\details{
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined
 formula containing only fixed effect parameters, and fits a quasibinomial
 regression model on the assay data.

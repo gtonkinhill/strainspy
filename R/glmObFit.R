@@ -1,5 +1,7 @@
 #' glmObFit
 #'
+#' TODO: Implement return of vcov info. Patched for compatibility (returns NULL)
+#'
 #' This function fits a ordinalbeta regression model using the `glmmTMB` package.
 #' It takes a `SummarizedExperiment` object as input, along with a user-defined formula,
 #' and fits an ordinal beta regression model on the assay data.
@@ -18,7 +20,7 @@
 #' @param design Formula. A formula to specify the fixed and random effects, e.g., ` ~ Group + (1|Sample)`.
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
-#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` 
+#' @param scale_continuous Logical. If `TRUE`, all numeric columns in `colData(se)` 
 #' are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param MAP_prior One of `strainspy_priors` object, character string (`"preset_weak", "preset_strong"`),
 #' a `data.frame` of priors, or `NULL`. Default `"preset_weak"`. See Details. 
@@ -59,7 +61,7 @@
 #' }
 #'
 #' @export
-glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 'preset_weak', 
+glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior = 'preset_weak', 
                      family=glmmTMB::ordbeta(), BPPARAM=NULL) {
   # add message
   cat("Fitting model... \n")
@@ -75,7 +77,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
   
   # colData (sample metadata)
   col_data <- SummarizedExperiment::colData(se)
-  if (scale_continous==TRUE){
+  if (scale_continuous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
         col_data[[col]] <- scale(col_data[[col]])  # Scale numeric columns
@@ -131,6 +133,8 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
+  cat("Fitting model... \n")
+  
   results <- BiocParallel::bplapply(
     row_chunks,
     function(row_indices) fit_ob_model(SummarizedExperiment::assay(se)[row_indices,],
@@ -154,7 +158,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continous=TRUE, MAP_prior = 
   } else {
     seRD = SummarizedExperiment::rowData(se)
   }
-  cat("Fitting model... \n")
+
   # Create the strainspy_fit object
   ObetaGLM <- new("strainspy_fit",
                   row_data = seRD,

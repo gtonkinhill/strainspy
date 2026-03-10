@@ -8,7 +8,7 @@
 #' @param min_identity A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults
 #'        to one 1.
-#' @param scale_continous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
+#' @param scale_continuous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
 #'
@@ -45,7 +45,7 @@
 #' }
 #'
 #' @export
-caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_continous=TRUE, BPPARAM=NULL) {
+caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_continuous=TRUE, BPPARAM=NULL) {
 
   # Validate input
   if (!inherits(se, "SummarizedExperiment")) {
@@ -58,7 +58,7 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
 
   # colData (sample metadata)
   col_data <- SummarizedExperiment::colData(se)
-  if (scale_continous==TRUE){
+  if (scale_continuous==TRUE){
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
         col_data[[col]] <- scale(col_data[[col]])  # Scale numeric columns

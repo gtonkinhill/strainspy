@@ -134,7 +134,7 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 #' @param fit A `strainspy_fit` object
 #' @param update_idx Vector of indices that need to be updated
 #' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
-#' @param scale_continous Binary specifying whether to rescale numeric values. Default T
+#' @param scale_continuous Binary specifying whether to rescale numeric values. Default T
 #' @param min_identity Only for `caseControlFit()`. A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'. Only applicable for `glmZiBFit()`.
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`. Only applicable for `glmFit()`
@@ -146,7 +146,7 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 #' @import SummarizedExperiment
 #' @importFrom glmmTMB glmmTMB
 update_fit <- function(fit, update_idx, 
-                       se, scale_continous=TRUE,
+                       se, scale_continuous=TRUE,
                        min_identity=0.98, method='glmmTMB', family=glmmTMB::ordbeta(), 
                        nthreads=1,  BPPARAM=NULL) {
   
@@ -175,15 +175,15 @@ update_fit <- function(fit, update_idx,
   switch(fit_type,
          "glmZiBFit" = {
            cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
-           fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM)
+           fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM)
          },
          "glmObFit" = {
            cat("Updating", length(update_idx), "values by calling glmObFit\n")
-           fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM, family = family)
+           fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM, family = family)
          },
          "caseControlFit" = {
            cat("Updating", length(update_idx), "values by calling caseControlFit\n")
-           fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, design = design, nthreads = nthreads, scale_continous = scale_continous, BPPARAM = BPPARAM)
+           fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM)
          },
          {
            # Default case (optional)
