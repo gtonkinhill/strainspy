@@ -74,7 +74,7 @@ design <- as.formula(" ~ Case_status + Age_at_collection")
 
 # Fit a Zero-inflated beta model using the default preset_weak MAP prior
 fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
-#>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%
+#> Fitting model... 
 ```
 
 ### Summarise and plot the results
@@ -82,18 +82,17 @@ fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 ``` r
 # Get top hits
 top_hits(fit, coef = 2)
-#> Getting tophits for Case_statusPD
-#> # A tibble: 3 × 10
+#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
+#> # A tibble: 2 × 10
 #>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
 #>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
-#> 1 NZ_WSNW0100… GCF_009767…       0.168    0.124  1.75e-1   1              -1.80 
-#> 2 UREB0100000… GCA_900546…       0.248    0.0638 9.86e-5   0.0466         -0.349
-#> 3 DVOB0100001… GCA_018713…       0.232    0.0598 1.05e-4   0.0497         -0.663
+#> 1 NZ_WSNW0100… GCF_009767…       0.167    0.124  1.80e-1   1              -1.82 
+#> 2 UREB0100000… GCA_900546…       0.248    0.0638 1.01e-4   0.0475         -0.350
 #> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
 
 # Create Volcano plot
 plot_volcano(fit, label = T)
-#> Getting tophits for Case_statusPD
+#> Found 472 tophits for Case_statusPD at alpha = 1 using holm
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
@@ -102,7 +101,7 @@ plot_volcano(fit, label = T)
 
 ``` r
 plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
-#> Getting tophits for Case_statusPD
+#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 ```
 
 <img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />

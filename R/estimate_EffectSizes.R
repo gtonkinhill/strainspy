@@ -34,8 +34,6 @@
 #' a beta hit to be considered meaningful. Effect sizes small than this are 
 #' flagged: `small effect`. Default = 1.5e-3 corresponds to 0.15% delta ANI. 
 #' @param nthreads Number of threads for parallel processing. Default `1`.
-#' @param scale_continuous Logical, whether to scale numeric columns in colData. 
-#' Default `TRUE`
 #' @param reorder_hits Logical. Return `th` after reordering hits to priorities
 #' best supported ones. Default `FALSE`.
 #' @param BPPARAM Optional BiocParallelParam object.
@@ -50,8 +48,7 @@
 comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
                                           beta_min_nz = 0.1, 
                                           beta_min_ani_diff = 1.5e-3, 
-                                          nthreads = 1L, scale_continuous=TRUE, 
-                                          reorder_hits = F,
+                                          nthreads = 1L, reorder_hits = F,
                                           BPPARAM=NULL){
   
   required_pkgs <- c("emmeans")
@@ -122,7 +119,7 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
   col_data <- SummarizedExperiment::colData(se)
   
   # stick with scaling done during the original fit
-  if (fit@scale_continous){ 
+  if (fit@scale_continuous){ 
     for (col in names(col_data)) {
       if (is.numeric(col_data[[col]])) {
         col_data[[col]] <- scale(col_data[[col]])  # Scale numeric columns

@@ -12,7 +12,6 @@ comp_ani_diff_and_posthoc_test(
   beta_min_nz = 0.1,
   beta_min_ani_diff = 0.0015,
   nthreads = 1L,
-  scale_continuous = TRUE,
   reorder_hits = F,
   BPPARAM = NULL
 )
@@ -36,9 +35,6 @@ a beta hit to be considered meaningful. Effect sizes small than this are
 flagged: \verb{small effect}. Default = 1.5e-3 corresponds to 0.15\% delta ANI.}
 
 \item{nthreads}{Number of threads for parallel processing. Default \code{1}.}
-
-\item{scale_continuous}{Logical, whether to scale numeric columns in colData.
-Default \code{TRUE}}
 
 \item{reorder_hits}{Logical. Return \code{th} after reordering hits to priorities
 best supported ones. Default \code{FALSE}.}
