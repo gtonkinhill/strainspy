@@ -64,6 +64,9 @@ se <- read_sylph(example_sylph_path, meta_data = meta_data)
 # least 30 samples
 se <- filter_by_presence(se, min_nonzero = 30)
 #> Retained 472 rows after filtering
+
+# Read in taxonomy
+taxonomy <- read_taxonomy(example_taxonomy_path)
 ```
 
 ### Fit the model
@@ -75,20 +78,15 @@ design <- as.formula(" ~ Case_status + Age_at_collection")
 # Fit a Zero-inflated beta model using the default preset_weak MAP prior
 fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 #> Fitting model... 
+#>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%
 ```
 
 ### Summarise and plot the results
 
 ``` r
 # Get top hits
-top_hits(fit, coef = 2)
+th = top_hits(fit, coef = 2)
 #> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
-#> # A tibble: 2 × 10
-#>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
-#>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
-#> 1 NZ_WSNW0100… GCF_009767…       0.167    0.124  1.80e-1   1              -1.82 
-#> 2 UREB0100000… GCA_900546…       0.248    0.0638 1.01e-4   0.0475         -0.350
-#> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
 
 # Create Volcano plot
 plot_volcano(fit, label = T)
@@ -97,6 +95,38 @@ plot_volcano(fit, label = T)
 
 <img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
 
+``` r
+
+th
+#> # A tibble: 2 × 10
+#>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
+#>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
+#> 1 NZ_WSNW0100… GCF_009767…       0.167    0.124  1.80e-1   1              -1.82 
+#> 2 UREB0100000… GCA_900546…       0.248    0.0638 1.01e-4   0.0475         -0.350
+#> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
+```
+
+*Coprobacillus cateniformis* shows difference in presence (adjusted p =
+0.0213). *Clostridiales bacterium* shows difference in identity
+(adjusted p \< 0.01).
+
+### Perform post-hoc testing to validate the beta hit
+
+``` r
+th = comp_ani_diff_and_posthoc_test(se, fit, th)
+#>   |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
+
+# This NA indicates posthoc testing does not invalidate this beta hit
+is.na(th$Comment)
+#> [1] TRUE
+
+th$ANI_Difference
+#> [1] -0.2481419
+```
+
+In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls
+comapared to Parkinsons (PD).
+
 ## Visualise the distribution of top hits with Case_status
 
 ``` r
@@ -104,23 +134,17 @@ plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
 #> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-8-1.png" width="100%" />
-*Coprobacillus cateniformis* shows difference in presence.
-*Clostridiales bacterium* and *Candidatus Copromorpha
-excrementipullorum* shows difference in identity.
+<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
 
 ## Incorporate taxonomy
 
 ### Generate taxonomy informed Manhattan plot with adjusted p-values
 
 ``` r
-# Read in taxonomy
-taxonomy <- read_taxonomy(example_taxonomy_path)
-
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
 
 ### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
@@ -128,7 +152,7 @@ plot_manhattan(fit, taxonomy = taxonomy)
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-10-1.png)<!-- -->
+![](inst/vignette-supp/unnamed-chunk-11-1.png)<!-- -->
 
 ## Example using Sourmash output
 

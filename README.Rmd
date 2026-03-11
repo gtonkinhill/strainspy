@@ -71,6 +71,9 @@ se <- read_sylph(example_sylph_path, meta_data =  meta_data)
 
 # Filter by presence. This will remove any strains that are not present in at least 30 samples
 se <- filter_by_presence(se, min_nonzero = 30)
+
+# Read in taxonomy
+taxonomy <- read_taxonomy(example_taxonomy_path)
 ```
 
 ### Fit the model
@@ -87,26 +90,39 @@ fit <- glmZiBFit(se,  design, nthreads=parallel::detectCores())
 
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 # Get top hits
-top_hits(fit, coef = 2)
+th = top_hits(fit, coef = 2)
 
 # Create Volcano plot
 plot_volcano(fit, label = T)
+
+th
 ```
+
+*Coprobacillus cateniformis* shows difference in presence (adjusted p = 0.0213). *Clostridiales bacterium* shows difference in identity (adjusted p < 0.01). 
+
+### Perform post-hoc testing to validate the beta hit
+
+```{r}
+th = comp_ani_diff_and_posthoc_test(se, fit, th)
+
+# This NA indicates posthoc testing does not invalidate this beta hit
+is.na(th$Comment)
+
+th$ANI_Difference
+```
+
+In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls comapared to Parkinsons (PD).
 
 ## Visualise the distribution of top hits with Case_status
 
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name)
 ```
-*Coprobacillus cateniformis* shows difference in presence. *Clostridiales bacterium* and *Candidatus Copromorpha excrementipullorum* shows difference in identity.
 
 ## Incorporate taxonomy
 
 ### Generate taxonomy informed Manhattan plot with adjusted p-values
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
-# Read in taxonomy
-taxonomy <- read_taxonomy(example_taxonomy_path)
-
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 

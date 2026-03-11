@@ -221,7 +221,7 @@ process_contig <- function(
   # subset to only keep relavant rows
   mdlmx = model.matrix(formula1, cd_df)
   
-  ref_rows = which(mdlmx[, "(Intercept)"] == 1 & rowSums(mdlmx) == 1)
+  ref_rows = which(mdlmx[, "(Intercept)"] == 1 & mdlmx[,lvls[2]] == 0)
   comp_rows = which(mdlmx[, lvls[2]] == 1)
   
   # find out support
