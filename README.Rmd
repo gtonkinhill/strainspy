@@ -53,6 +53,7 @@ This walkthrough demonstrates a typical `strainspy` analysis and showcases some 
 
 ```{r, fig.width =8, fig.height=6, fig.align='center'}
 library(strainspy)
+library(ggplot2)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 example_sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
@@ -111,7 +112,7 @@ is.na(th$Comment)
 th$ANI_Difference
 ```
 
-In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls comapared to Parkinsons (PD).
+In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls compared to Parkinson Disease (PD).
 
 ## Visualise the distribution of top hits with Case_status
 
@@ -131,7 +132,36 @@ plot_manhattan(fit, taxonomy = taxonomy)
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-## Example using Sourmash output
+## Estimate sample richness
+
+This can be used as a proxy for alpha diversity. 
+
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
+rchns = estimate_sample_richness(se, taxonomy)$species_richness
+df_rch = merge(
+  data.frame(run_accession = names(rchns), value = rchns),
+  meta_data,
+  by = "run_accession"
+)
+
+ggplot(df_rch, aes(Case_status, value, fill = Case_status)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(width = 0.15, alpha = 0.4) +
+  theme_classic() + ylab("Number of Species")
+
+```
+
+## Estimate between sample diversity
+
+```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
+divs = strainspy::estimate_beta_diversity(se, phenotype = 'Case_status', return_plots = T) 
+
+divs$plots$NMDS
+```
+
+## Working with other inputs
+
+### Example using Sourmash output
 ```{r}
 example_sourmash_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
 sm <- read_sourmash(example_sourmash_path, meta_data)
@@ -140,7 +170,7 @@ All remaining functions are compatible with this output.
 
 **Note:** `strainspy` provides a function to merge `sourmash gather` and `sourmash search` outputs. See help for details.
 
-## Example using MetaPhlAn output
+### Example using MetaPhlAn output
 ```{r}
 example_metaphlan_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
 example_taxonomy_path <- system.file("extdata", "metaphlan_taxonomy.tsv.gz", package = "strainspy")

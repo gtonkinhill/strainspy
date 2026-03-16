@@ -44,6 +44,7 @@ package environment.
 
 ``` r
 library(strainspy)
+library(ggplot2)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
 example_sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
@@ -125,7 +126,7 @@ th$ANI_Difference
 ```
 
 In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls
-comapared to Parkinsons (PD).
+compared to Parkinson Disease (PD).
 
 ## Visualise the distribution of top hits with Case_status
 
@@ -154,7 +155,66 @@ plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 
 ![](inst/vignette-supp/unnamed-chunk-11-1.png)<!-- -->
 
-## Example using Sourmash output
+## Estimate sample richness
+
+This can be used as a proxy for alpha diversity.
+
+``` r
+rchns = estimate_sample_richness(se, taxonomy)$species_richness
+df_rch = merge(data.frame(run_accession = names(rchns), value = rchns), meta_data,
+    by = "run_accession")
+
+ggplot(df_rch, aes(Case_status, value, fill = Case_status)) + geom_boxplot(outlier.shape = NA) +
+    geom_jitter(width = 0.15, alpha = 0.4) + theme_classic() + ylab("Number of Species")
+```
+
+<img src="inst/vignette-supp/unnamed-chunk-12-1.png" width="100%" />
+
+## Estimate between sample diversity
+
+``` r
+divs = strainspy::estimate_beta_diversity(se, phenotype = "Case_status", return_plots = T)
+#> Run 0 stress 0.2209113 
+#> Run 1 stress 0.2208914 
+#> ... New best solution
+#> ... Procrustes: rmse 0.001283966  max resid 0.01049977 
+#> Run 2 stress 0.2221602 
+#> Run 3 stress 0.2215367 
+#> Run 4 stress 0.2224751 
+#> Run 5 stress 0.2208967 
+#> ... Procrustes: rmse 0.001241622  max resid 0.01047751 
+#> Run 6 stress 0.2235561 
+#> Run 7 stress 0.2303237 
+#> Run 8 stress 0.2209092 
+#> ... Procrustes: rmse 0.001346247  max resid 0.01265921 
+#> Run 9 stress 0.2213041 
+#> ... Procrustes: rmse 0.006201783  max resid 0.08068013 
+#> Run 10 stress 0.2241569 
+#> Run 11 stress 0.2356318 
+#> Run 12 stress 0.220944 
+#> ... Procrustes: rmse 0.001679674  max resid 0.01045541 
+#> Run 13 stress 0.2209528 
+#> ... Procrustes: rmse 0.002181134  max resid 0.0138078 
+#> Run 14 stress 0.2215357 
+#> Run 15 stress 0.2355633 
+#> Run 16 stress 0.2305136 
+#> Run 17 stress 0.2232026 
+#> Run 18 stress 0.221555 
+#> Run 19 stress 0.2231904 
+#> Run 20 stress 0.2652676 
+#> *** Best solution was not repeated -- monoMDS stopping criteria:
+#>      1: no. of iterations >= maxit
+#>     18: stress ratio > sratmax
+#>      1: scale factor of the gradient < sfgrmin
+
+divs$plots$NMDS
+```
+
+<img src="inst/vignette-supp/unnamed-chunk-13-1.png" width="100%" />
+
+## Working with other inputs
+
+### Example using Sourmash output
 
 ``` r
 example_sourmash_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
@@ -166,7 +226,7 @@ All remaining functions are compatible with this output.
 **Note:** `strainspy` provides a function to merge `sourmash gather` and
 `sourmash search` outputs. See help for details.
 
-## Example using MetaPhlAn output
+### Example using MetaPhlAn output
 
 ``` r
 example_metaphlan_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")

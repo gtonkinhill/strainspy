@@ -4,7 +4,12 @@
 \alias{estimate_sample_richness}
 \title{Estimate species richness and coverage of reference strains using ANI}
 \usage{
-estimate_sample_richness(se, taxonomy, ani_threshold = 95)
+estimate_sample_richness(
+  se,
+  taxonomy,
+  ani_threshold = 95,
+  report_strain_richness = F
+)
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
@@ -12,12 +17,14 @@ estimate_sample_richness(se, taxonomy, ani_threshold = 95)
 \item{taxonomy}{An optional taxonomy file read using \code{strainspy::read_taxonomy()}.}
 
 \item{ani_threshold}{Numeric ANI threshold used to define presence (default: 95).}
+
+\item{report_strain_richness}{Return the estimated strain_richness count. See description (default: FALSE)}
 }
 \value{
 A named list with:
 \describe{
 \item{species_richness}{Integer vector giving the number of species detected per sample.}
-\item{strain_coverage}{Numeric vector giving the database-normalised strain coverage per sample.}
+\item{strain_coverage}{NA or Numeric vector giving the database-normalised strain coverage per sample.}
 }
 }
 \description{
@@ -30,15 +37,15 @@ Species richness is defined as the number of species with at least
 one strain exceeding the ANI threshold. This requires taxonomy data, which
 can be read in using \code{read_taxonomy()}.
 
-Strain coverage is a database-dependent, normalised score that increases
-with the number of reference strains detected within a species. When only one
-strain is present for a species, it contributes 1 towards strain coverage. As
-more strains are detected, the contribution increases toward 2, reaching 2
-when all reference strains are detected. This is designed to prevent
-inflation for species with many reference strains.
-
-This measures the \strong{coverage of reference strain space in the database},
-not true biological strain richness.
+\strong{Experimental} Strain coverage is a database-dependent, normalised score
+that increases with the number of reference strains detected within a species.
+When only one strain is present for a species, it contributes 1 towards
+strain coverage. Asmore strains are detected, the contribution increases
+toward 2, reaching 2 when all reference strains are detected. Although this
+is designed to prevent inflation for species with many reference strains,
+this measures the \strong{coverage of reference strain space in the database},
+not true biological strain richness. Therefore, this value is not returned by
+default.
 
 The strain coverage metric is computed as:
 \deqn{1 + (k - 1) / N}
@@ -48,5 +55,5 @@ in the database.
 
 This approach does \strong{not} resolve true strain multiplicity and may
 overestimate coverage when a single biological strain matches many
-highly similar reference genomes.
+highly similar reference genomes. Alternative approaches are being investigated.
 }
