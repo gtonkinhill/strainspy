@@ -17,6 +17,12 @@
 #' observations supporting each beta effect. Second, it compares the estimated 
 #' mean ANI difference against a preset threshold. A comment is added to each 
 #' hit depending on the outcome.
+#' 
+#' By default, this function uses the formula from `fit@design`. However, if the
+#' formula contains multiple covariates, this can cause emmeans to behave 
+#' unexpectedly. For example, if `fit@design = ~ disease + age + sex + country + (1|study)`,
+#' this can cause this function to throw errors or warnings.  Using a `simplified_formula = ~ disease`
+#' to override can be a useful approach.
 #'
 #' This function is designed to directly work on the `tibble` returned from 
 #' `top_hits()`.
@@ -25,6 +31,9 @@
 #' assay data and metadata
 #' @param fit A fitted `strainspy_fit`model
 #' @param th `tibble` returned by `top_hits()`.
+#' @param simplified_formula A formula to use instead of `fit@design`, useful
+#' when the original design was too complex and causes emmeans to fail during 
+#' ANI estimation (default NULL).
 #' @param beta_min_nz Minimum non-zero proportion per phenotype group required 
 #' to consider a beta hit is well supported. Hits driven by a proportion 
 #' of non zero values below this threshold at least in one phenotype group are 
@@ -46,8 +55,9 @@
 #' @export
 #' @importFrom BiocParallel bplapply SnowParam SerialParam
 comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
+                                          simplified_formula = NULL,
                                           beta_min_nz = 0.1, 
-                                          beta_min_ani_diff = 1.5e-3, 
+                                          beta_min_ani_diff = 1.5e-2, 
                                           nthreads = 1L, reorder_hits = F,
                                           BPPARAM=NULL){
   
@@ -143,6 +153,7 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
     coef_idx,
     process_contig,
     fit = fit,
+    form = simplified_formula,
     se = se,
     col_data = col_data,
     pheno = attr(th, 'phenotype_coef'),
@@ -151,8 +162,7 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
   
   op <- dplyr::bind_rows(op_list)
   
-  op <- op %>%
-    dplyr::left_join(th, by = "Contig_name")
+  op <- dplyr::left_join(th, op, by = "Contig_name")
   
   op = posthoc_test(op, beta_min_nz, beta_min_ani_diff)
   
@@ -193,6 +203,7 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
 process_contig <- function(
     i, # row_index
     fit,
+    form = NULL,
     se,
     col_data,
     pheno
@@ -203,8 +214,16 @@ process_contig <- function(
   names(beta1) <- sub(".*[Ii]ntercept.*", "(Intercept)", names(beta1))
   lvls = c("(Intercept)", names(beta1)[pheno])
   beta1 = beta1[lvls]
-  combined_formula = as.formula(paste(c("Value", as.character(fit@design)),
-                                      collapse = " "))
+  
+  if(is.null(form)){
+    combined_formula = as.formula(paste(c("Value", as.character(fit@design)),
+                                                        collapse = " "))
+  } else{
+    combined_formula = as.formula(paste(c("Value", as.character(form)),
+                                        collapse = " "))
+  }
+  
+  
   
   formula1 <- strainspy:::nobars_(combined_formula)
   
@@ -232,6 +251,8 @@ process_contig <- function(
   
   mf1 = mf1[picked_rows, ]
   
+  mf1 = remove_bad_rows(mf1) # qdrg doesn't like bad rows, remove them and warn!
+  
   rg <- emmeans::qdrg(
     formula = formula1,
     data = mf1,
@@ -244,6 +265,13 @@ process_contig <- function(
   emm1 = emmeans::emmeans(rg, rg@model.info$terms)
   res = data.frame(emmeans::contrast(emm1, method = "trt.vs.ctrl"))
   pck_row = which(!is.nan(res$p.value))
+  
+  if(length(pck_row) > 1){
+    if(length(unique(res$p.value[pck_row]))){
+      pck_row = pck_row[1] # If there are multiple rows (happens when several covariates are present)
+    }
+  }
+  
   if(length(pck_row) == 1){
     data.frame(Contig_name = rownames(se)[i], ref_nz = s1[1], ref_total = s1[2], comp_nz = s2[1], comp_total = s2[2], res[pck_row,])
   } else {
@@ -263,6 +291,23 @@ quickly_find_support <- function(rows, data) {
   )
 }
 
+remove_bad_rows <- function(df) {
+  if (!is.data.frame(df)) stop("Input must be a data.frame")
+  
+  # Identify rows with NA, NULL, or Inf
+  bad_rows <- apply(df, 1, function(row) {
+    any(is.na(row) | is.infinite(row) | sapply(row, is.null))
+  })
+  
+  n_removed <- sum(bad_rows)
+  
+  if (n_removed > 0) {
+    warning(sprintf("Removed %d rows containing NA, NULL, or Inf", n_removed))
+  }
+  
+  # Return cleaned data.frame
+  df[!bad_rows, , drop = FALSE]
+}
 
 annotate_effect <- function(top_hit_contigs = NULL, 
                             phenotype_coef = NULL, 

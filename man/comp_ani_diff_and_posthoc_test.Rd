@@ -9,8 +9,9 @@ comp_ani_diff_and_posthoc_test(
   se,
   fit,
   th = NULL,
+  simplified_formula = NULL,
   beta_min_nz = 0.1,
-  beta_min_ani_diff = 0.0015,
+  beta_min_ani_diff = 0.015,
   nthreads = 1L,
   reorder_hits = F,
   BPPARAM = NULL
@@ -23,6 +24,10 @@ assay data and metadata}
 \item{fit}{A fitted \code{strainspy_fit}model}
 
 \item{th}{\code{tibble} returned by \code{top_hits()}.}
+
+\item{simplified_formula}{A formula to use instead of \code{fit@design}, useful
+when the original design was too complex and causes emmeans to fail during
+ANI estimation (default NULL).}
 
 \item{beta_min_nz}{Minimum non-zero proportion per phenotype group required
 to consider a beta hit is well supported. Hits driven by a proportion
@@ -65,6 +70,12 @@ Posthoc testing uses two approaches. First, it counts the number of non-zero
 observations supporting each beta effect. Second, it compares the estimated
 mean ANI difference against a preset threshold. A comment is added to each
 hit depending on the outcome.
+
+By default, this function uses the formula from \code{fit@design}. However, if the
+formula contains multiple covariates, this can cause emmeans to behave
+unexpectedly. For example, if \code{fit@design = ~ disease + age + sex + country + (1|study)},
+this can cause this function to throw errors or warnings.  Using a \code{simplified_formula = ~ disease}
+to override can be a useful approach.
 
 This function is designed to directly work on the \code{tibble} returned from
 \code{top_hits()}.

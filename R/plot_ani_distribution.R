@@ -255,7 +255,11 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param phenotype One variable in `colnames(se@colData)`, except `Sample_File`. The selected variable must be categorical
 #' @param contig Contig name to visualise
+#' @param bins Numeric. Number of bins to plot the histogram.
 #' @param drop_zeros Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE
+#' @param show_quantiles Bool. If TRUE, min, max, etc. will be shown as vertical lines. Default TRUE
+#' @param fit_spline Bool. If TRUE, a spline will be fitted to each histogram.
+#' 
 #'
 #' @examples
 #' \dontrun{
@@ -274,32 +278,45 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' }
 #'
 #' @export
-plot_histogram <- function(se, phenotype, contig, drop_zeros = F) {
-  stopifnot(is(se, "SummarizedExperiment"))
+plot_histogram <- function(se, phenotype, contig,
+                           bins = 250,
+                           drop_zeros = FALSE,
+                           show_quantiles = TRUE,
+                           fit_spline = FALSE) {
+  
+  stopifnot(methods::is(se, "SummarizedExperiment"))
   stopifnot(is.character(phenotype), length(phenotype) == 1)
   
-  dat <- colData(se) |> as.data.frame()
+  dat <- SummarizedExperiment::colData(se) |>
+    as.data.frame()
   
-  idx = which(rownames(se) == contig)
+  idx <- which(rownames(se) == contig)
+  
   if (length(idx) != 1) {
-    stop(sprintf("Contig '%s' not found (or found multiple times) in rowNames(se).", contig))
+    stop(sprintf(
+      "Contig '%s' not found (or found multiple times) in rownames(se).",
+      contig
+    ))
   }
   
-  dat$Value_orig <- assay(se)[idx, ]
-  
+  dat$Value_orig <- SummarizedExperiment::assay(se)[idx, ]
   
   if (drop_zeros) {
     dat <- dplyr::filter(dat, Value_orig != 0)
   }
   
+  # -------------------------
+  # Summary stats
+  # -------------------------
+  
   summ <- dat |>
     dplyr::group_by(.data[[phenotype]]) |>
     dplyr::summarise(
       Min    = min(Value_orig),
-      Q1     = quantile(Value_orig, 0.25),
+      Q1     = stats::quantile(Value_orig, 0.25, names = FALSE),
       Median = median(Value_orig),
       Mean   = mean(Value_orig),
-      Q3     = quantile(Value_orig, 0.75),
+      Q3     = stats::quantile(Value_orig, 0.75, names = FALSE),
       Max    = max(Value_orig),
       .groups = "drop"
     ) |>
@@ -309,26 +326,130 @@ plot_histogram <- function(se, phenotype, contig, drop_zeros = F) {
       values_to = "value"
     )
   
-  p <- ggplot2::ggplot(dat,
-                       ggplot2::aes(x = Value_orig, fill = .data[[phenotype]])) +
-    ggplot2::geom_histogram(position = "identity", alpha = 0.4, bins = 250) +
-    ggplot2::geom_vline(data = summ,
-                        ggplot2::aes(xintercept = value, color = stat),
-                        linetype = "dashed", size = 0.6, show.legend = TRUE) +
-    ggplot2::facet_wrap(stats::as.formula(paste("~", phenotype)), ncol = 1) +
+  # -------------------------
+  # Spline (density via KDE + GAM smoothing)
+  # -------------------------
+  
+  spline_df <- NULL
+  
+  if (fit_spline) {
+    
+    if (!requireNamespace("mgcv", quietly = TRUE)) {
+      stop("For fit_spline = TRUE, package 'mgcv' is required.")
+    }
+    
+    spline_df <- dat %>%
+      dplyr::group_by(.data[[phenotype]]) %>%
+      dplyr::group_modify(~{
+        
+        x <- .x$Value_orig
+        
+        # guard: skip degenerate groups
+        if (length(unique(x)) < 5 || stats::sd(x) == 0) {
+          return(tibble::tibble())
+        }
+        
+        # kernel density estimate (stable, no bins)
+        d <- density(x, n = 256, na.rm = TRUE)
+        
+        dens_df <- tibble::tibble(
+          x = d$x,
+          density = d$y
+        )
+        
+        fit <- mgcv::gam(
+          density ~ s(x, k = min(10, length(d$x) - 1)),
+          data = dens_df
+        )
+        
+        grid <- tibble::tibble(
+          x = seq(min(d$x), max(d$x), length.out = 500)
+        )
+        
+        grid$y <- predict(fit, newdata = grid)
+        
+        grid$y <- pmax(grid$y, 0)
+        
+        grid
+      })
+  }
+  
+  # -------------------------
+  # Base plot
+  # -------------------------
+  
+  p <- ggplot2::ggplot(
+    dat,
+    ggplot2::aes(
+      x = Value_orig,
+      fill = .data[[phenotype]]
+    )
+  ) +
+    ggplot2::geom_histogram(
+      ggplot2::aes(y = after_stat(density)),
+      position = "identity",
+      alpha = 0.4,
+      bins = bins
+    )
+  
+  # -------------------------
+  # Spline overlay
+  # -------------------------
+  
+  if (fit_spline) {
+    p <- p +
+      ggplot2::geom_line(
+        data = spline_df,
+        ggplot2::aes(x = x, y = y, colour = .data[[phenotype]]),
+        linewidth = 1.2,
+        inherit.aes = FALSE
+      )
+  }
+  
+  # -------------------------
+  # Quantiles
+  # -------------------------
+  
+  if (show_quantiles) {
+    p <- p +
+      ggplot2::geom_vline(
+        data = summ,
+        ggplot2::aes(xintercept = value, colour = stat),
+        linetype = "dashed",
+        linewidth = 0.6,
+        show.legend = TRUE
+      ) +
+      ggplot2::scale_colour_manual(values = c(
+        Min    = "black",
+        Q1     = "blue",
+        Median = "red",
+        Mean   = "darkgreen",
+        Q3     = "blue",
+        Max    = "black"
+      )) +
+      ggplot2::labs(colour = "Statistic")
+  }
+  
+  # -------------------------
+  # Final formatting
+  # -------------------------
+  
+  p <- p +
+    ggplot2::facet_wrap(
+      stats::as.formula(paste("~", phenotype)),
+      ncol = 1
+    ) +
+    ggplot2::labs(
+      x = "Value",
+      y = "Density"
+    ) +
     ggplot2::theme_minimal() +
-    ggplot2::labs(x = "Value_orig", y = "Count", color = "Statistic") +
     ggplot2::ggtitle(clean_contig_names(contig)) +
-    ggplot2::scale_color_manual(values = c(
-      Min    = "black",
-      Q1     = "blue",
-      Median = "red",
-      Mean   = "darkgreen",
-      Q3     = "blue",
-      Max    = "black"
-    )) +
-    ggplot2::theme(text = ggplot2::element_text(size = 16))
+    ggplot2::theme(
+      text = ggplot2::element_text(size = 16)
+    )
   
   attr(p, "summary_table") <- summ
+  
   return(p)
 }

@@ -10,3 +10,4 @@ simulations*
 .RDataTmp
 *.html
 docs
+.positai

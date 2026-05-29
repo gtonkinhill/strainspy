@@ -103,6 +103,7 @@ methods::setMethod("show", "strainspy_priors", function(object) {
 #' @export
 methods::setGeneric("plot_prior_bootstrap", function(object, prior) standardGeneric("plot_prior_bootstrap"))
 
+#' @rdname plot_prior_bootstrap
 #' @export
 methods::setMethod("plot_prior_bootstrap", signature(object = "strainspy_priors"),
                    function(object, prior) {

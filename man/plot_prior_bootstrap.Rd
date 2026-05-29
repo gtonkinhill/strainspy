@@ -2,9 +2,12 @@
 % Please edit documentation in R/01_strainspy_priors-class.R
 \name{plot_prior_bootstrap}
 \alias{plot_prior_bootstrap}
+\alias{plot_prior_bootstrap,strainspy_priors-method}
 \title{Plot method for strainspy_priors objects}
 \usage{
 plot_prior_bootstrap(object, prior)
+
+\S4method{plot_prior_bootstrap}{strainspy_priors}(object, prior)
 }
 \arguments{
 \item{object}{An object of class \code{strainspy_priors} that has bootstrap information}
