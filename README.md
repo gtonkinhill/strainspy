@@ -4,15 +4,10 @@
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/gtonkinhill/strainspy/workflows/R-CMD-check-hard/badge.svg)](https://github.com/gtonkinhill/strainspy/actions)
-<!-- [![DOI](https://zenodo.org/badge/XXXX.svg)](https://zenodo.org/badge/latestdoi/XXXX) -->
+[![Databases](https://zenodo.org/badge/DOI/10.5281/zenodo.21796878.svg)](https://zenodo.org/records/21796878)
 <!-- badges: end -->
 
 # Strainspy
-
-## Project Status: Active Development
-
-StrainSpy is currently under active development. APIs and functionality
-may change without notice, including backward-incompatible updates.
 
 ## Installation
 
@@ -94,18 +89,17 @@ plot_volcano(fit, label = T)
 #> Found 472 tophits for Case_statusPD at alpha = 1 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-7-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-7-1.png" alt="" width="100%" />
 
 ``` r
 
-th
-#> # A tibble: 2 × 10
-#>   Contig_name  Genome_file coefficient std_error p_value p_adjust zi_coefficient
-#>   <chr>        <chr>             <dbl>     <dbl>   <dbl>    <dbl>          <dbl>
-#> 1 NZ_WSNW0100… GCF_009767…       0.167    0.124  1.80e-1   1              -1.82 
-#> 2 UREB0100000… GCA_900546…       0.248    0.0638 1.01e-4   0.0475         -0.350
-#> # ℹ 3 more variables: zi_std_error <dbl>, zi_p_value <dbl>, zi_p_adjust <dbl>
+knitr::kable(th)
 ```
+
+| Contig_name | Genome_file | coefficient | std_error | p_value | p_adjust | zi_coefficient | zi_std_error | zi_p_value | zi_p_adjust |
+|:---|:---|---:|---:|---:|---:|---:|---:|---:|---:|
+| NZ_WSNW01000023.1 Coprobacillus cateniformis strain RCA1-24 10234_10235, whole genome shotgun sequence | GCF_009767585.1 | 0.1667314 | 0.1243133 | 0.1798493 | 1.0000000 | -1.8172219 | 0.4454086 | 0.0000451 | 0.0212661 |
+| UREB01000001.1 uncultured Clostridiales bacterium isolate UMGS913 genome assembly, contig: NODE_380_length_41473_cov_4.232942, whole genome shotgun sequence | GCA_900546685.1 | 0.2481419 | 0.0638069 | 0.0001007 | 0.0475203 | -0.3495862 | 0.2874739 | 0.2239611 | 1.0000000 |
 
 *Coprobacillus cateniformis* shows difference in presence (adjusted p =
 0.0213). *Clostridiales bacterium* shows difference in identity
@@ -119,14 +113,15 @@ th = comp_ani_diff_and_posthoc_test(se, fit, th)
 
 # This NA indicates posthoc testing does not invalidate this beta hit
 is.na(th$Comment)
-#> [1] TRUE
+#> [1] TRUE TRUE
 
 th$ANI_Difference
-#> [1] -0.2481419
+#> [1]        NA 0.2481419
 ```
 
-In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls
-compared to Parkinson Disease (PD).
+In *Clostridiales bacterium*, average ANI (green dashed line) is 0.25%
+lower in Controls compared to Parkinson Disease (PD). The distribution
+appears different between groups.
 
 ## Visualise the distribution of top hits with Case_status
 
@@ -135,7 +130,15 @@ plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
 #> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-9-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-9-1.png" alt="" width="100%" />
+
+``` r
+plot_histogram(se, "Case_status", top_hits(fit)$Contig_name[2], drop_zeros = TRUE,
+    fit_spline = T, bins = 54, separate_facets = T)
+#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
+```
+
+<img src="inst/vignette-supp/unnamed-chunk-9-2.png" alt="" width="100%" />
 
 ## Incorporate taxonomy
 
@@ -145,7 +148,7 @@ plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-10-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-10-1.png" alt="" width="100%" />
 
 ### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
@@ -168,49 +171,17 @@ ggplot(df_rch, aes(Case_status, value, fill = Case_status)) + geom_boxplot(outli
     geom_jitter(width = 0.15, alpha = 0.4) + theme_classic() + ylab("Number of Species")
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-12-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-12-1.png" alt="" width="100%" />
 
 ## Estimate between sample diversity
 
 ``` r
 divs = strainspy::estimate_beta_diversity(se, phenotype = "Case_status", return_plots = T)
-#> Run 0 stress 0.2209113 
-#> Run 1 stress 0.2208914 
-#> ... New best solution
-#> ... Procrustes: rmse 0.001283966  max resid 0.01049977 
-#> Run 2 stress 0.2221602 
-#> Run 3 stress 0.2215367 
-#> Run 4 stress 0.2224751 
-#> Run 5 stress 0.2208967 
-#> ... Procrustes: rmse 0.001241622  max resid 0.01047751 
-#> Run 6 stress 0.2235561 
-#> Run 7 stress 0.2303237 
-#> Run 8 stress 0.2209092 
-#> ... Procrustes: rmse 0.001346247  max resid 0.01265921 
-#> Run 9 stress 0.2213041 
-#> ... Procrustes: rmse 0.006201783  max resid 0.08068013 
-#> Run 10 stress 0.2241569 
-#> Run 11 stress 0.2356318 
-#> Run 12 stress 0.220944 
-#> ... Procrustes: rmse 0.001679674  max resid 0.01045541 
-#> Run 13 stress 0.2209528 
-#> ... Procrustes: rmse 0.002181134  max resid 0.0138078 
-#> Run 14 stress 0.2215357 
-#> Run 15 stress 0.2355633 
-#> Run 16 stress 0.2305136 
-#> Run 17 stress 0.2232026 
-#> Run 18 stress 0.221555 
-#> Run 19 stress 0.2231904 
-#> Run 20 stress 0.2652676 
-#> *** Best solution was not repeated -- monoMDS stopping criteria:
-#>      1: no. of iterations >= maxit
-#>     18: stress ratio > sratmax
-#>      1: scale factor of the gradient < sfgrmin
 
 divs$plots$NMDS
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-13-1.png" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-13-1.png" alt="" width="100%" />
 
 ## Working with other inputs
 

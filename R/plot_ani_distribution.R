@@ -255,11 +255,12 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' @param se  SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.
 #' @param phenotype One variable in `colnames(se@colData)`, except `Sample_File`. The selected variable must be categorical
 #' @param contig Contig name to visualise
-#' @param bins Numeric. Number of bins to plot the histogram.
+#' @param bins Numeric. Number of bins to plot the histogram. This parameter should be adjusted to properly visualise the ANI differences. Default 250 
 #' @param drop_zeros Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE
 #' @param show_quantiles Bool. If TRUE, min, max, etc. will be shown as vertical lines. Default TRUE
-#' @param fit_spline Bool. If TRUE, a spline will be fitted to each histogram.
-#' 
+#' @param fit_spline Bool. If TRUE, a spline will be fitted to each histogram. Default FALSE 
+#' @param fit_control Numeric. Smaller values increase the smoothness of the fitted spline. Default 100
+#' @param separate_facets Bool. If TRUE, each category of the phenotype will be plotted in a separate facet. Default TRUE 
 #'
 #' @examples
 #' \dontrun{
@@ -282,7 +283,9 @@ plot_histogram <- function(se, phenotype, contig,
                            bins = 250,
                            drop_zeros = FALSE,
                            show_quantiles = TRUE,
-                           fit_spline = FALSE) {
+                           fit_spline = FALSE, 
+                           fit_control = 100,
+                           separate_facets = TRUE) {
   
   stopifnot(methods::is(se, "SummarizedExperiment"))
   stopifnot(is.character(phenotype), length(phenotype) == 1)
@@ -344,26 +347,35 @@ plot_histogram <- function(se, phenotype, contig,
         
         x <- .x$Value_orig
         
-        # guard: skip degenerate groups
         if (length(unique(x)) < 5 || stats::sd(x) == 0) {
           return(tibble::tibble())
         }
         
-        # kernel density estimate (stable, no bins)
-        d <- density(x, n = 256, na.rm = TRUE)
-        
-        dens_df <- tibble::tibble(
-          x = d$x,
-          density = d$y
+        # -------------------------
+        # empirical histogram (NO KDE)
+        # -------------------------
+        h <- hist(
+          x,
+          breaks = bins,
+          plot = FALSE
         )
         
+        dens_df <- tibble::tibble(
+          x = h$mids,
+          density = h$density
+        )
+        
+        # -------------------------
+        # GAM smoothing ONLY
+        # -------------------------
         fit <- mgcv::gam(
-          density ~ s(x, k = min(10, length(d$x) - 1)),
-          data = dens_df
+          density ~ s(x, k = min(fit_control, length(h$mids) - 1), bs = "tp"),
+          data = dens_df,
+          method = "REML"
         )
         
         grid <- tibble::tibble(
-          x = seq(min(d$x), max(d$x), length.out = 500)
+          x = seq(min(h$mids), max(h$mids), length.out = 500)
         )
         
         grid$y <- predict(fit, newdata = grid)
@@ -433,18 +445,20 @@ plot_histogram <- function(se, phenotype, contig,
   # -------------------------
   # Final formatting
   # -------------------------
-  
+  if(separate_facets){
+    p <- p +
+      ggplot2::facet_wrap(
+        stats::as.formula(paste("~", phenotype)),
+        ncol = 1
+      ) 
+  }
   p <- p +
-    ggplot2::facet_wrap(
-      stats::as.formula(paste("~", phenotype)),
-      ncol = 1
-    ) +
     ggplot2::labs(
       x = "Value",
       y = "Density"
     ) +
     ggplot2::theme_minimal() +
-    ggplot2::ggtitle(clean_contig_names(contig)) +
+    ggplot2::ggtitle(strainspy:::clean_contig_names(contig)) +
     ggplot2::theme(
       text = ggplot2::element_text(size = 16)
     )

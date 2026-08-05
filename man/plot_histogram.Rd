@@ -4,7 +4,17 @@
 \alias{plot_histogram}
 \title{Generate a histogram for a single contig for a categorical phenotype.}
 \usage{
-plot_histogram(se, phenotype, contig, drop_zeros = F)
+plot_histogram(
+  se,
+  phenotype,
+  contig,
+  bins = 250,
+  drop_zeros = FALSE,
+  show_quantiles = TRUE,
+  fit_spline = FALSE,
+  fit_control = 100,
+  separate_facets = TRUE
+)
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing the assay data and metadata.}
@@ -13,7 +23,17 @@ plot_histogram(se, phenotype, contig, drop_zeros = F)
 
 \item{contig}{Contig name to visualise}
 
+\item{bins}{Numeric. Number of bins to plot the histogram. This parameter should be adjusted to properly visualise the ANI differences. Default 250}
+
 \item{drop_zeros}{Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE}
+
+\item{show_quantiles}{Bool. If TRUE, min, max, etc. will be shown as vertical lines. Default TRUE}
+
+\item{fit_spline}{Bool. If TRUE, a spline will be fitted to each histogram. Default FALSE}
+
+\item{fit_control}{Numeric. Smaller values increase the smoothness of the fitted spline. Default 100}
+
+\item{separate_facets}{Bool. If TRUE, each category of the phenotype will be plotted in a separate facet. Default TRUE}
 }
 \description{
 Generate a histogram for a single contig for a categorical phenotype.

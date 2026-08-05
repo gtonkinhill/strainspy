@@ -21,15 +21,11 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/gtonkinhill/strainspy/workflows/R-CMD-check-hard/badge.svg)](https://github.com/gtonkinhill/strainspy/actions)
-<!-- [![DOI](https://zenodo.org/badge/XXXX.svg)](https://zenodo.org/badge/latestdoi/XXXX) -->
+[![Databases](https://zenodo.org/badge/DOI/10.5281/zenodo.21796878.svg)](https://zenodo.org/records/21796878)
 <!-- badges: end -->
 
 
 # Strainspy
-
-## Project Status: Active Development
-
-StrainSpy is currently under active development. APIs and functionality may change without notice, including backward-incompatible updates.
 
 ## Installation
 
@@ -96,7 +92,7 @@ th = top_hits(fit, coef = 2)
 # Create Volcano plot
 plot_volcano(fit, label = T)
 
-th
+knitr::kable(th)
 ```
 
 *Coprobacillus cateniformis* shows difference in presence (adjusted p = 0.0213). *Clostridiales bacterium* shows difference in identity (adjusted p < 0.01). 
@@ -112,12 +108,14 @@ is.na(th$Comment)
 th$ANI_Difference
 ```
 
-In *Clostridiales bacterium*, average ANI is 0.25% lower in Controls compared to Parkinson Disease (PD).
+In *Clostridiales bacterium*, average ANI (green dashed line) is 0.25% lower in Controls compared to Parkinson Disease (PD). The distribution appears different between groups.
 
 ## Visualise the distribution of top hits with Case_status
 
 ```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
 plot_ani_dist(se, 'Case_status', top_hits(fit)$Contig_name)
+plot_histogram(se, 'Case_status', top_hits(fit)$Contig_name[2], 
+               drop_zeros = TRUE, fit_spline = T, bins = 54, separate_facets = T)
 ```
 
 ## Incorporate taxonomy
@@ -153,7 +151,7 @@ ggplot(df_rch, aes(Case_status, value, fill = Case_status)) +
 
 ## Estimate between sample diversity
 
-```{r, fig.width=8, fig.asp=0.75, out.width='100%'}
+```{r, fig.width=8, fig.asp=0.75, out.width='100%', warning=FALSE, message=FALSE, results='hide'}
 divs = strainspy::estimate_beta_diversity(se, phenotype = 'Case_status', return_plots = T) 
 
 divs$plots$NMDS
