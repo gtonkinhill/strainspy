@@ -26,7 +26,7 @@ remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 ```
 
 A full set of examples and analyses performed using `StrainSpy` are
-available at
+available [here](https://sudaraka88.github.io/strainspy-manuscript/).
 
 Several useful notes for using StrainSpy with your own data is provided
 at the [end of this read me](#analysing-your-own-data).
