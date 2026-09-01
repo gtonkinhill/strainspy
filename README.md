@@ -27,6 +27,8 @@ remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 
 A full set of examples and analyses performed using `StrainSpy` are
 available [here](https://sudaraka88.github.io/strainspy-manuscript/).
+Raw R scripts used in the analysis are available at:
+<https://github.com/Sudaraka88/strainspy-manuscript>.
 
 Several useful notes for using StrainSpy with your own data is provided
 at the [end of this read me](#analysing-your-own-data).
@@ -246,9 +248,12 @@ This will create a unique output `tsv` file for each metagenome.
 
 ### Combining Sylph outputs
 
-`StrainSpy` provides a function `merge_sylph_files()` to combine
-multiple Sylph output files into a single file. Alternatively, you can
-do this in bash. See [below](#running-sylph-on-an-hpc-cluster).
+`StrainSpy` can directly accept a vector of paths to individual Sylph
+outputs into `read_sylph()`. Internally, this will call the function
+`merge_sylph_files()` to combine these into a single temp file.
+Alternatively, you can call `merge_sylph_files()` to combine Sylph
+outputs and save them to a single file that can also be used with
+`read_sylph()`, similar to the example in [Quick Start](#quick-start).
 
 **Tip:** Make sure that all output files were generated using the same
 Sylph database and analysis settings (i.e., `query` or `profile`).

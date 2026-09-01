@@ -9,7 +9,10 @@
 #' object without metadata. In that case, apply necessary fixes and subsequently 
 #' call `modify_metadata()`. 
 #'
-#' @param file_path Character. Path to the Sylph query or profile output file (tab-separated format).
+#' @param file_path Character. Path to the Sylph query or profile output file(s) in `tsv` format. 
+#' A single merged sylph output file processed with `merge_sylph_files()`, or a character vector of paths 
+#' to individual sylph output files can be provided. If multiple files are provided, they will be merged internally and saved to a temporary file. 
+#' If the internal merging fails, use `merge_sylph_files()` to merge the files externally and provide the merged file path.
 #' @param meta_data data.frame. An optional tibble or data frame containing sample metadata. See Details
 #' @param variable Character. Name of the input variable to import. Defaults to `Adjusted_ANI`, other options can include `Naive_ANI`, `Taxonomic_abundance` and `Sequence_abundance`.
 #' @param min_identity Numeric. Minimum identity threshold for filtering ANI values. Defaults to `95`.
@@ -41,6 +44,13 @@
 read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min_identity = 95, clean_names = TRUE) {
   
   # Check input argument
+  if(file_path %>% length() > 1){
+    message("Paths to multiple Sylph files provided. Merging them into a single file for processing.")
+    temp_file <- tempfile(fileext = ".tsv") # We are using disk IO for quicker integration for now, change later
+    merge_sylph_files(file_path, temp_file)
+    file_path <- temp_file
+  }
+  
   if (!is.character(file_path) || length(file_path) != 1) {
     stop("`file_path` must be a character string specifying the path to the Sylph output file.")
   }
