@@ -30,18 +30,12 @@
 #' @importFrom S4Vectors DataFrame na.omit
 #'
 #' @examples
-#' \dontrun{
+#' 
+#' \donttest{
 #'   # Read a merged sourmash file into a SummarizedExperiment object
-#'   example_path <- system.file("extdata", "example_sourmash_merged.csv.gz", package = "strainspy")
+#'   example_path <- system.file("extdata", "example_sourmash.csv.gz", 
+#'   package = "strainspy")
 #'   sm <- read_sourmash(example_path)
-#'   # View the SummarizedExperiment
-#'   sm
-#'   # View the assays (numerical matrix)
-#'   assay(sm)
-#'   # View the rowData (metadata for contigs)
-#'   rowData(sm)
-#'   # View the colData (metadata for samples)
-#'   colData(sm)
 #' }
 #' @export
 read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment_ani",
@@ -66,10 +60,10 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
   
   if("contig" %in% preview_col_names) {
     required_columns = c("query_name", "name", "contig", variable)
-    genome_and_contig = T
+    genome_and_contig = TRUE
   } else {
     required_columns <- c("query_name", "name", variable)
-    genome_and_contig = F
+    genome_and_contig = FALSE
   }
   
   # Validate that the data contains the expected columns
@@ -84,7 +78,7 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
   sourmash_data <- data.table::fread(
     file_path,
     na.strings = c("", "NA"),
-    header = T,
+    header = TRUE,
     select = required_columns
   )
   
@@ -209,14 +203,15 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
 #' If provided, columns `md5`, `name` and `filename` are required.  This function uses `name` and `md5` to match the manifest data with sourmash outputs. 
 #' In the final output, `filename` will be used to identify each hit. If the `filename` is a path, the basename without extensions will be used instead.
 #' @param output Save path for the output file. Internally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
-#' @param strip_unusable Remove columns containing data not useful for further analysis. Default T. 
+#' @param strip_unusable Remove columns containing data not useful for further analysis. Default TRUE. 
+#' @return Invisibly returns `NULL`. The merged sourmash table is written to `output`.
 #' @export
-merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, strip_unusable = T){
+merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, strip_unusable = TRUE){
   if (length(sourmash_files) == 0) {
     stop("No sourmash output files provided.")
   }
   
-  header <- data.table::fread(sourmash_files[1], nrows = 1, header = T)
+  header <- data.table::fread(sourmash_files[1], nrows = 1, header = TRUE)
   header = colnames(header)
   
   data_list <- lapply(sourmash_files, function(file) fread(file, skip = 1, quote = "\"" ))
@@ -275,7 +270,7 @@ merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, s
     set(merged_data, j = colnames(merged_data)[unique(drp)], value = NULL)
   }
   
-  data.table::fwrite(merged_data, output, quote = TRUE, col.names = T)
+  data.table::fwrite(merged_data, output, quote = TRUE, col.names = TRUE)
   
   message("Merged sourmash output file saved to: ", output, "... You can use this output with read_sourmash()")
 }

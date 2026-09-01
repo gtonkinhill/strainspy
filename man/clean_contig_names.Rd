@@ -4,7 +4,7 @@
 \alias{clean_contig_names}
 \title{Automatically clean contig names for plots}
 \usage{
-clean_contig_names(contig_names, max_length = 50, return_map = F)
+clean_contig_names(contig_names, max_length = 50, return_map = FALSE)
 }
 \arguments{
 \item{contig_names}{Vector of contig names. These will be cleaned up. This function usually works with long sylph contigs, such as those given by \code{top_hits(fit_ANI)$Contig_name}}

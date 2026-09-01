@@ -11,7 +11,8 @@ utils::globalVariables(c(
   "zi_coefficient", "zi_p_adjust", "zi_p_value", 'isTip', 'y', 'label', 'Genome',
   "zero_count", "total", "zero_prop", "Value_orig", "value", "component", 
   "ref_nz", "comp_nz", "ref_total", "comp_total", "estimate", "fail_reasons",
-  "component_p", "NMDS1", "NMDS2", "Group", "DistanceToCentroid"
+  "component_p", "NMDS1", "NMDS2", "Group", "DistanceToCentroid",
+  "spline_x", "spline_density", "spline_y", "density"
 ))
 
 

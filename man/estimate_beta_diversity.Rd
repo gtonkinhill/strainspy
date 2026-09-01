@@ -43,3 +43,13 @@ If distance_only = TRUE, returns distance object. Otherwise a list with:
 \description{
 Estimate beta diversity from ANI
 }
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+se <- filter_by_presence(se, min_nonzero = 30)
+d <- estimate_beta_diversity(se[1:15, ], distance_only = TRUE)
+
+}

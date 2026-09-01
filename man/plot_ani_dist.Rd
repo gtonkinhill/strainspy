@@ -36,11 +36,16 @@ Must match the length and order of \code{contigs}. If NULL (default), shortening
 
 \item{plot_type}{Specify whether \code{box} or \code{violin} plot is required. Default \code{box}.}
 }
+\value{
+If \code{plot = TRUE}, returns a \code{ggplot} object (or a combined patchwork plot
+when \code{show_zero_plot = TRUE}). If \code{plot = FALSE}, returns a long-format table
+used to generate the ANI distribution plot.
+}
 \description{
 Generate a violin or box plot for a subset of contigs for a categorical phenotype.
 }
 \examples{
-\dontrun{
+\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")

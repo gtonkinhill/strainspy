@@ -43,21 +43,21 @@
 #' @importFrom glmmTMB glmmTMB
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #' 
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
 #'
-#' fit <- glmFit(se,  design, nthreads=parallel::detectCores(), family=glmmTMB::ordbeta())
-#' top_hits(fit, alpha=0.5)
-#' plot_manhattan(fit)
-#'
+#' fit <- glmObFit(se[1:10,],  design, family=glmmTMB::ordbeta())
+#' 
 #' }
 #'
 #' @export
@@ -190,9 +190,8 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
 #' @param combined_formula The formula for the conditional mean model.
 #' @param fixed_priors Optional priors for the model.
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`.
-#' 
-#' #' @return A list with model coefficients, zero-inflation coefficients, residuals,
-#'         log-likelihood, and convergence status.
+#' @return A list where each element contains per-feature fitted coefficients,
+#' residuals, and convergence status.
 fit_ob_model <- function(se_subset, col_data, combined_formula, fixed_priors, family) {
   
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){

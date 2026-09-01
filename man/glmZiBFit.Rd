@@ -56,21 +56,20 @@ It takes a \code{SummarizedExperiment} object as input, along with a user-define
 and fits a zero-inflated beta regression model on the assay data.
 }
 \examples{
-\dontrun{
+\donttest{
 library(strainspy)
 
-example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path, example_meta)
 se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status")
 
-fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
-top_hits(fit, alpha=0.5)
-plot_manhattan(fit)
-
+fit <- glmZiBFit(se[1:10,], design, nthreads=2)
 }
 
 }

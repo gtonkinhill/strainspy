@@ -8,7 +8,7 @@ merge_metaphlan_files(
   metaphlan_files,
   output_folder,
   output_filename = "metaphlan",
-  sgb_database = T
+  sgb_database = TRUE
 )
 }
 \arguments{
@@ -20,6 +20,15 @@ merge_metaphlan_files(
 
 \item{sgb_database}{bool. Specify whether the default sgb database was used for profiling. Set to FALSE if \code{sgb_to_gtdb_profile.py} was run on the profiles as a post processing step. Default TRUE}
 }
+\value{
+Invisibly returns \code{NULL}. The function writes two files to \code{output_folder}:
+a merged profile table (\verb{*_merged.tsv.gz}) and a taxonomy table (\verb{*_taxonomy.tsv.gz}).
+}
 \description{
 Merge \code{MetaPhlAn >=4.0} profiles into a single file to use with \code{read_metaphlan()} and generate the taxonomy file required for downstream analysis.
+}
+\examples{
+files <- character(0)
+is.character(files)
+
 }

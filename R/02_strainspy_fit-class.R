@@ -59,6 +59,7 @@ methods::setClass("strainspy_fit",
 #' convergence, and coefficient matrix dimensions.
 #'
 #' @param object An object of class `strainspy_fit`.
+#' @return Invisibly returns `NULL` after printing a compact summary.
 #' @export
 methods::setMethod("show", "strainspy_fit", function(object) {
   cat("strainspy_fit object\n")
@@ -68,7 +69,7 @@ methods::setMethod("show", "strainspy_fit", function(object) {
   print(object@design)
   
   cat(rep("-", 30), "\n", sep = "")
-  cat("Converged=", length(which(object@convergence==T)) , ", Failed=", length(which(object@convergence==F)), "\n", sep = '')
+  cat("Converged=", length(which(object@convergence==TRUE)) , ", Failed=", length(which(object@convergence==FALSE)), "\n", sep = '')
   
   cat(rep("-", 30), "\n", sep = "")
   cat("Coefficients: ", nrow(object@coefficients), " features x ", ncol(object@coefficients), " terms\n")
@@ -102,6 +103,15 @@ methods::setMethod("show", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` containing zero-inflation coefficients.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+#' ~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+#' class(getZICoefficients(fit))
 #' @export
 methods::setGeneric("getZICoefficients", function(object) methods::standardGeneric("getZICoefficients"))
 
@@ -117,6 +127,15 @@ methods::setMethod("getZICoefficients", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` containing residuals.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+#' ~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+#' class(getResiduals(fit))
 #' @export
 methods::setGeneric("getResiduals", function(object) methods::standardGeneric("getResiduals"))
 
@@ -132,6 +151,8 @@ methods::setMethod("getResiduals", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A `DataFrame` or `NULL` containing FDR values.
+#' @examples
+#' methods::hasMethod("getFDR", "strainspy_fit")
 #' @export
 methods::setGeneric("getFDR", function(object) methods::standardGeneric("getFDR"))
 
@@ -169,6 +190,15 @@ methods::setMethod("summary", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A vector of contig names
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+#' ~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+#' head(getContigNames(fit))
 #' @export
 methods::setGeneric("getContigNames", function(object) methods::standardGeneric("getContigNames"))
 
@@ -184,6 +214,15 @@ methods::setMethod("getContigNames", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A vector of fitted genomes
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+#' ~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+#' head(getGenomes(fit))
 #' @export
 methods::setGeneric("getGenomes", function(object) methods::standardGeneric("getGenomes"))
 
@@ -199,6 +238,15 @@ methods::setMethod("getGenomes", "strainspy_fit", function(object) {
 #'
 #' @param object An object of class `strainspy_fit`.
 #' @return A vector of fitted sample names 
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+#' ~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+#' head(getSamples(fit))
 #' @export
 methods::setGeneric("getSamples", function(object) methods::standardGeneric("getSamples"))
 

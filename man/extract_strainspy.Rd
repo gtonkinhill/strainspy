@@ -23,25 +23,33 @@ extract_strainspy(
 
 \item{drop_zeros}{Bool. If TRUE, ANI or Abundance 0 values will not be included in the violin plot. Default FALSE.}
 }
+\value{
+A long-format \code{data.frame} with sample metadata, contig identity columns,
+ANI values, row-level annotations, and optional taxonomy columns.
+}
 \description{
 Extract data from a StrainSpy \code{SummarizedExperiment} object in long format
 }
 \examples{
-\dontrun{
+\donttest{
 library(strainspy)
 
-example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
 # Change variable from character to factor
 example_meta$Case_status = factor(example_meta$Case_status)
 
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path, example_meta)
 
-tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", package = "strainspy")
+tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", 
+package = "strainspy")
 tax <- read_taxonomy(tax_path)
 
-extract_strainspy(se, variables = c("Case_status", "Age_at_collection"), contigs = rownames(se)[1:5], taxonomy=tax)
+extract_strainspy(se, variables = c("Case_status", "Age_at_collection"), 
+contigs = rownames(se)[1:5], taxonomy=tax)
 
 }
 

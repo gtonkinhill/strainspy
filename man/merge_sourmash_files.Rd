@@ -8,7 +8,7 @@ merge_sourmash_files(
   sourmash_files,
   manifest_file = NULL,
   output,
-  strip_unusable = T
+  strip_unusable = TRUE
 )
 }
 \arguments{
@@ -21,7 +21,10 @@ In the final output, \code{filename} will be used to identify each hit. If the \
 
 \item{output}{Save path for the output file. Internally, data.table::fwrite is used, provide the extension \code{gz} to save a compressed file.}
 
-\item{strip_unusable}{Remove columns containing data not useful for further analysis. Default T.}
+\item{strip_unusable}{Remove columns containing data not useful for further analysis. Default TRUE.}
+}
+\value{
+Invisibly returns \code{NULL}. The merged sourmash table is written to \code{output}.
 }
 \description{
 Merge the outputs of \verb{sourmash search} or \verb{sourmash gather} into a single file.

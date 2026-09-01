@@ -25,3 +25,13 @@ This function performs multiple testing adjustment on the results of a strainspy
 integrating taxonomic information. Various correction methods are available,
 including Harmonic Mean P-value (HMP), Bonferroni and Benjamini-Hochberg (BH).
 }
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz",
+ package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+top_hits(fit, coef = 2, alpha = 1)
+}

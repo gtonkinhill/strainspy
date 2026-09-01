@@ -12,11 +12,12 @@
 #' @import SummarizedExperiment
 #'
 #' @examples
-#' \dontrun{
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' \donttest{
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path)
 #'
-#' # Filter to keep only rows with at least 20 non-zero entries in the Adjusted_ANI assay
+#' # Filter to keep only rows with >20 non-zero entries 
 #' filtered_se <- filter_by_presence(se, min_nonzero = 20)
 #' }
 #'
@@ -94,7 +95,7 @@ filter_by_presence_longitudinal <- function(se, min_subjects = 3, min_timepoints
 #'
 #' @param se A `SummarizedExperiment` object.
 #' @param min_nonzero Integer. The minimum number of non-zero entries required to retain a row. Default is 10.
-#' @param rescale_abundance bool. Instead of containment ANI (e.g. sylph), if `assay(se)` contains relative abundance (e.g. `metaphlan`), set `rescale_abundance=T`.
+#' @param rescale_abundance bool. Instead of containment ANI (e.g. sylph), if `assay(se)` contains relative abundance (e.g. `metaphlan`), set `rescale_abundance=TRUE`.
 #' After filtering, this rescales the remaining abundances to ensure they sum to 100.
 #'
 #' @return A filtered `SummarizedExperiment` object with only the rows that meet the criteria.
@@ -102,18 +103,19 @@ filter_by_presence_longitudinal <- function(se, min_subjects = 3, min_timepoints
 #' @import SummarizedExperiment
 #'
 #' @examples
-#' \dontrun{
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' \donttest{
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path)
 #'
-#' # Filter to keep only rows with at least 10 non-zero entries in the Adjusted_ANI assay
+#' # Filter to keep only rows with at least 10 non-zero entries in the assay
 #' filtered_se <- filter_by_presence(se)
 #'
 #' # View the filtered object
 #' filtered_se
 #' }
 #'
-filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundance = F) {
+filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundance = FALSE) {
   
   # Check that the input is a SummarizedExperiment object
   if (!inherits(se, "SummarizedExperiment")) {
@@ -136,12 +138,12 @@ filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundan
   
   # diagnostic plot
   ord = order(nonzero_counts)
-  plot(nonzero_counts[ord], col = ifelse(rows_to_keep==T, "red", "blue")[ord]) + abline(h = min_nonzero)
+  plot(nonzero_counts[ord], col = ifelse(rows_to_keep==TRUE, "red", "blue")[ord]) + abline(h = min_nonzero)
   
   filtered_se <- se[rows_to_keep, ]
   
   if(rescale_abundance){
-    warning("Setting rescale_abundance=T rescales each sample's abundances to sum to 100. 
+    warning("Setting rescale_abundance=TRUE rescales each sample's abundances to sum to 100. 
             This option should be not be used with ANI data and may interfere with association testing for abundance.")
     asy = SummarizedExperiment::assay(filtered_se)
     asy = apply(asy, 2, function(x) x/sum(x)*100)

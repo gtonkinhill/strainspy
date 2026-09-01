@@ -39,12 +39,20 @@
 #' This approach does **not** resolve true strain multiplicity and may
 #' overestimate coverage when a single biological strain matches many
 #' highly similar reference genomes. Alternative approaches are being investigated.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
+#' package = "strainspy"))
+#' rich <- estimate_sample_richness(se[1:20, ], tax)
 #' 
 #' @export
-estimate_sample_richness = function(se, taxonomy, ani_threshold=95, report_strain_richness = F){
+estimate_sample_richness = function(se, taxonomy, ani_threshold=95, report_strain_richness = FALSE){
   
   # Get the species level data
-  tax_sp = strainspy:::add_tax2tophits(data.frame(Genome_file = se@elementMetadata$Genome_file), taxonomy, columns = "Species")
+  tax_sp = add_tax2tophits(data.frame(Genome_file = se@elementMetadata$Genome_file), taxonomy, columns = "Species")
   
   
   asy = SummarizedExperiment::assay(se)
@@ -91,6 +99,14 @@ estimate_sample_richness = function(se, taxonomy, ani_threshold=95, report_strai
 #'   \item \code{betadisper} — betadisper object
 #'   \item \code{plots} — list of ggplot2 objects (if return_plots = TRUE)
 #' }
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' se <- filter_by_presence(se, min_nonzero = 30)
+#' d <- estimate_beta_diversity(se[1:15, ], distance_only = TRUE)
 #'
 #' @export
 estimate_beta_diversity <- function(

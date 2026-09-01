@@ -6,41 +6,6 @@
 #' @param beta simulate a decreased in identiy by factor of beta (default=0.95)
 #' @param zi simulate an increased shift in the proportion of zeros by zi (default=0.1)
 #' @return a vector of transformed values
-#' @examples
-#' \dontrun{
-#' N_group <- 1000
-#'
-#' shape1 <- 2
-#' shape2 <- 10
-#' base_zero <- 0.5
-#'
-#' sim <- rbeta(N_group, shape1, shape2)
-#' sim <- sim*rbinom(length(sim), 1, base_zero)
-#'
-#'
-#' # Simulate a treatment effect.
-#'
-#' beta_difference <- runif(1, 0.5, 0.9)
-#' treat_zero_effect <- 0.2
-#'
-#' treat <- rescale_beta(sim, beta_difference, treat_zero_effect)
-#'
-#' df <- data.frame(cat=rep(c('a','b'), each=N_group),
-#'                  vals=c(sim,treat$rescaled))
-#'
-#' m <- glmmTMB::glmmTMB(vals ~ cat, data=df,
-#'                       family=glmmTMB::beta_family(link="logit"),
-#'                       ziformula = ~cat)
-#'
-#' coefs <- glmmTMB::fixef(m)$cond
-#' zi_coefs <- glmmTMB::fixef(m)$zi
-#'
-#' cat("Simulated log-odds ratio", log(beta_difference), "\n",
-#'     "Inferred log-odds ratio", coefs["catb"])
-#' 
-#' cat("Simulated log-odds ratio", treat$expected_zi, "\n",
-#'    "Inferred log-odds ratio", zi_coefs["catb"])
-#' }
 rescale_beta <- function(x, beta = 0.98, zi=0.1) {
   
   # Ensure x is between 0 and 1
@@ -78,56 +43,6 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 }
 
 
-# #' Add or modify metadata in an `SummarizedExperiment` object
-# #'
-# #' This function adds or modifies metadata in `SummarizedExperiment` object read using functions such as `read_sylph()` and `read_metaphlan()`.
-# #'
-# #' @param se SummarizedExperiment object generated from `strainspy` read functions.
-# #' @param meta_data data.frame. A tibble or data frame containing sample metadata.
-# #' @param replace bool. If T, the meta data in se (i.e., `se@coldata`) will be replaced with the provided meta_data file. Default F.
-# #' The **first column must contain sample names** that match exactly with the `colnames(se)`.
-# #' @return SummmarizedExperiment object `se`, updated with the new meta data.
-# modify_metadata <- function(se, meta_data, replace = F) {
-#   meta_samples <- unique(meta_data[[1]])
-#   if (length(missing_from_meta <- setdiff(se@colData$Sample_file, meta_samples)) > 0) {
-#     stop("The following samples from 'se' are not in 'meta_data': ", paste(missing_from_meta, collapse = ", "))
-#   }
-#   
-#   if (length(missing_from_se <- setdiff(meta_samples, se@colData$Sample_file)) > 0) {
-#     stop("The following samples from 'meta_data' are not in 'se': ", paste(missing_from_se, collapse = ", "))
-#   }
-#   
-#   # check and reorder as necessary
-#   asy = SummarizedExperiment::assay(se)
-#   if ( !all(names(asy[1,]) == se@colData@rownames) ) {
-#     stop("Mismatch between se rownames and assay order")
-#   }
-#   
-#   if(replace == T){
-#     se@colData@listData = list(se@colData@listData$Sample_file)
-#   }
-#   
-#   # we can't have the same colname in se@colData and meta_data
-#   test_cols = which(colnames(meta_data) %in% colnames(se@colData))
-#   if(length(test_cols) >0) {
-#     warning(paste("Columns:", colnames(meta_data)[test_cols], "exist(s) in se@colData and will be dropped without merging. Set replace = T to replace instead" ))
-#     meta_data = meta_data[,-test_cols]
-#   }
-#   
-#   if(ncol(meta_data) > 0) {
-#     new_metadata <- S4Vectors::DataFrame(base::merge(se@colData, meta_data,
-#                                                      by.x = "Sample_file",
-#                                                      by.y = names(meta_data)[1],
-#                                                      all.x = TRUE,
-#                                                      sort = FALSE)) # Keeps all Sample_file entries from se
-#     
-#     se@colData@listData = as.list(new_metadata)
-#   } else {
-#     warning("No new metadata to add, returning the same se object.")
-#   }
-#   
-#   return(se)
-# }
 
 #' Update the model fit by calling the specified fit function only a subset of features. Same design will be fitted.
 #'
@@ -137,7 +52,7 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 #' @param scale_continuous Binary specifying whether to rescale numeric values. Default T
 #' @param min_identity Only for `caseControlFit()`. A numeric value specifying the minimum identity threshold to consider (default=0.98).
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'. Only applicable for `glmZiBFit()`.
-#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`. Only applicable for `glmFit()`
+#' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`. Only applicable for `glmZiBFit()`
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults to 1.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
 #'        
@@ -147,7 +62,8 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 #' @importFrom glmmTMB glmmTMB
 update_fit <- function(fit, update_idx, 
                        se, scale_continuous=TRUE,
-                       min_identity=0.98, method='glmmTMB', family=glmmTMB::ordbeta(), 
+                       min_identity=0.98, method='glmmTMB', 
+                       family=glmmTMB::ordbeta(), 
                        nthreads=1,  BPPARAM=NULL) {
   
   if (!inherits(se, "SummarizedExperiment")) {
@@ -175,15 +91,20 @@ update_fit <- function(fit, update_idx,
   switch(fit_type,
          "glmZiBFit" = {
            cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
-           fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM)
+           fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, 
+                              scale_continuous = scale_continuous, BPPARAM = BPPARAM)
          },
          "glmObFit" = {
            cat("Updating", length(update_idx), "values by calling glmObFit\n")
-           fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM, family = family)
+           fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, 
+                             scale_continuous = scale_continuous, BPPARAM = BPPARAM, 
+                             family = family)
          },
          "caseControlFit" = {
            cat("Updating", length(update_idx), "values by calling caseControlFit\n")
-           fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, design = design, nthreads = nthreads, scale_continuous = scale_continuous, BPPARAM = BPPARAM)
+           fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, 
+                                   design = design, nthreads = nthreads, 
+                                   scale_continuous = scale_continuous, BPPARAM = BPPARAM)
          },
          {
            # Default case (optional)
@@ -412,6 +333,40 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
 
 
 
+### A potential use case for these functions 
+#  
+# library(strainspy)
+# N_group <- 1000
+# shape1 <- 2
+# shape2 <- 10
+# base_zero <- 0.5
+# 
+# sim <- rbeta(N_group, shape1, shape2)
+# sim <- sim*rbinom(length(sim), 1, base_zero)
+# 
+# 
+# # Simulate a treatment effect.
+# 
+# beta_difference <- runif(1, 0.5, 0.9)
+# treat_zero_effect <- 0.2
+# 
+# treat <- rescale_beta(sim, beta_difference, treat_zero_effect)
+# 
+# df <- data.frame(cat=rep(c('a','b'), each=N_group),
+#                  vals=c(sim,treat$rescaled))
+# 
+# m <- glmmTMB::glmmTMB(vals ~ cat, data=df,
+#                       family=glmmTMB::beta_family(link="logit"),
+#                       ziformula = ~cat)
+# 
+# coefs <- glmmTMB::fixef(m)$cond
+# zi_coefs <- glmmTMB::fixef(m)$zi
+# 
+# cat("Simulated log-odds ratio", log(beta_difference), "\n",
+#     "Inferred log-odds ratio", coefs["catb"])
+# 
+# cat("Simulated log-odds ratio", treat$expected_zi, "\n",
+#    "Inferred log-odds ratio", zi_coefs["catb"])
 
 
 

@@ -19,39 +19,3 @@ a vector of transformed values
 \description{
 This function applies a simple linear transformation to simulate a treatment effect.
 }
-\examples{
-\dontrun{
-N_group <- 1000
-
-shape1 <- 2
-shape2 <- 10
-base_zero <- 0.5
-
-sim <- rbeta(N_group, shape1, shape2)
-sim <- sim*rbinom(length(sim), 1, base_zero)
-
-
-# Simulate a treatment effect.
-
-beta_difference <- runif(1, 0.5, 0.9)
-treat_zero_effect <- 0.2
-
-treat <- rescale_beta(sim, beta_difference, treat_zero_effect)
-
-df <- data.frame(cat=rep(c('a','b'), each=N_group),
-                 vals=c(sim,treat$rescaled))
-
-m <- glmmTMB::glmmTMB(vals ~ cat, data=df,
-                      family=glmmTMB::beta_family(link="logit"),
-                      ziformula = ~cat)
-
-coefs <- glmmTMB::fixef(m)$cond
-zi_coefs <- glmmTMB::fixef(m)$zi
-
-cat("Simulated log-odds ratio", log(beta_difference), "\n",
-    "Inferred log-odds ratio", coefs["catb"])
-
-cat("Simulated log-odds ratio", treat$expected_zi, "\n",
-   "Inferred log-odds ratio", zi_coefs["catb"])
-}
-}

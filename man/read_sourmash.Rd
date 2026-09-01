@@ -41,17 +41,11 @@ object without metadata. In that case, apply necessary fixes and subsequently
 call \code{modify_metadata()}.
 }
 \examples{
-\dontrun{
+
+\donttest{
   # Read a merged sourmash file into a SummarizedExperiment object
-  example_path <- system.file("extdata", "example_sourmash_merged.csv.gz", package = "strainspy")
+  example_path <- system.file("extdata", "example_sourmash.csv.gz", 
+  package = "strainspy")
   sm <- read_sourmash(example_path)
-  # View the SummarizedExperiment
-  sm
-  # View the assays (numerical matrix)
-  assay(sm)
-  # View the rowData (metadata for contigs)
-  rowData(sm)
-  # View the colData (metadata for samples)
-  colData(sm)
 }
 }

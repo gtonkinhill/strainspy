@@ -62,3 +62,20 @@ plotted in alphabetical order. Significance threshold will be \code{alpha}.
 If Zero-Inflated Beta regression was used to model \code{object}, separate
 facets will be used for zero-inflated and beta components of the model.
 }
+\examples{
+\donttest{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+se <- filter_by_presence(se, min_nonzero = 30)
+tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
+package = "strainspy"))
+fit <- glmZiBFit(se[1:10, ], ~ Case_status + Age_at_collection, 
+nthreads = 1, return_vcov = FALSE)
+mh_data <- plot_manhattan(fit, taxonomy = tax, plot = FALSE)
+head(mh_data)
+}
+
+}

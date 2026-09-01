@@ -29,7 +29,7 @@ will configure an appropriate backend automatically.}
 
 \item{high_cutoff}{Floor for large SD estimates. Default 10}
 
-\item{est_disperion_prior}{Estimate a prior for disperion (default = F)}
+\item{est_disperion_prior}{Estimate a prior for disperion (default = FALSE)}
 }
 \value{
 An object of class \code{strainspy_priors}.
@@ -37,4 +37,19 @@ An object of class \code{strainspy_priors}.
 \description{
 Fits fast binomial and beta models to estimate MAP prior SDs for use in
 zero-inflated and ordinal beta models fitted using \code{GLMMTMB}.
+}
+\examples{
+if (requireNamespace("fastglm", quietly = TRUE) && 
+requireNamespace("betareg", quietly = TRUE)) {
+  meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+  package = "strainspy"))
+  meta$Case_status <- factor(meta$Case_status)
+  se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+  package = "strainspy"), meta_data = meta)
+  se <- filter_by_presence(se, min_nonzero = 30)
+  pri <- compute_eb_priors(se[1:10, ], 
+  ~ Case_status + Age_at_collection, nthreads = 1)
+  class(pri)
+}
+
 }

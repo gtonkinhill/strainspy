@@ -24,12 +24,14 @@ This function performs Principal Component Analysis (PCA) on a SummarizedExperim
 and generates a PCA biplot colored by a specified phenotype.
 }
 \examples{
-\dontrun{
-example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+\donttest{
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path, example_meta)
-plot_pca_biplot(se, coef = 3)
+plot_pca_biplot(se, phenotype = 3)
 }
 
 }

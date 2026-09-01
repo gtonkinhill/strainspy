@@ -64,20 +64,20 @@ This will result in a call to \code{strainspy::define_priors()} to generate prio
 To disable MAP estimation and perform standard REML fitting, set \code{MAP_prior = NULL}.
 }
 \examples{
-\dontrun{
+\donttest{
 library(strainspy)
 
-example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path, example_meta)
 se <- filter_by_presence(se)
 
 design <- as.formula(" ~ Case_status + Age_at_collection")
 
-fit <- glmFit(se,  design, nthreads=parallel::detectCores(), family=glmmTMB::ordbeta())
-top_hits(fit, alpha=0.5)
-plot_manhattan(fit)
+fit <- glmObFit(se[1:10,],  design, family=glmmTMB::ordbeta())
 
 }
 

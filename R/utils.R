@@ -54,7 +54,7 @@ anyBars <- function(term) {
 #' @param return_map bool. Return data.frame of original and shortened contig names for mapping
 #' 
 #' @return A data.frame or original and shortened names, or a vector of shortened name in the same order
-clean_contig_names <- function(contig_names, max_length = 50, return_map = F) {
+clean_contig_names <- function(contig_names, max_length = 50, return_map = FALSE) {
   clean_one <- function(name, max_length) {
     if (nchar(name) <= max_length) return(name)  # Skip cleaning if already short
     

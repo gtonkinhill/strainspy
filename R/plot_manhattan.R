@@ -39,6 +39,21 @@
 #' @param plot If set to false, the function will return a tibble with data used to generate the plot. NOTE: Will be disregarded if taxonomy is provided with the option `aggregate_by_taxa = FALSE`.
 #' 
 #' @return A `ggplot` object showing the Manhattan plot if `plot = TRUE`, else a `data.frame` with plot data.
+#' @examples
+#' \donttest{
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' se <- filter_by_presence(se, min_nonzero = 30)
+#' tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
+#' package = "strainspy"))
+#' fit <- glmZiBFit(se[1:10, ], ~ Case_status + Age_at_collection, 
+#' nthreads = 1, return_vcov = FALSE)
+#' mh_data <- plot_manhattan(fit, taxonomy = tax, plot = FALSE)
+#' head(mh_data)
+#' }
 #' 
 #' @export
 plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NULL, method = "holm",
@@ -146,7 +161,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
       return(plot_data)
     }
     
-    custom_colors = strainspy:::colour_by_tax(genomes = plot_data$Name[which(plot_data$Level == "Strain")], taxonomy = taxonomy,
+    custom_colors = colour_by_tax(genomes = plot_data$Name[which(plot_data$Level == "Strain")], taxonomy = taxonomy,
                                   tax_levels = tax_levels)
     plot_data[[col_tax_level]] <- factor(
       plot_data[[col_tax_level]],

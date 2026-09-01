@@ -10,6 +10,19 @@
 #' @param taxonomy A taxonomy data.table object. If provided, the p-values will be adjusted at each taxonomic level.
 #' @param index_range This option is only used to generate Manhattan plot segments for higher taxonomic levels
 #' @return A tibble with original and adjusted p-values.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' se <- filter_by_presence(se, min_nonzero = 30)
+#' tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz",
+#' package = "strainspy"))
+#' fit <- glmZiBFit(se[1:10, ], ~ Case_status + Age_at_collection, 
+#' nthreads = 1, return_vcov = FALSE)
+#' out <- hadjust(fit, coef = 2, taxonomy = tax)
+#' head(out)
 #'
 #' @importFrom tibble add_column as_tibble
 #' @importFrom dplyr group_by left_join arrange mutate across all_of n rename summarise
@@ -37,7 +50,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   mdl = as.character(object@call)[[1]]
   if ("caseControlFit" == mdl) {
     main_model <- "Logistic"
-  } else if ("glmZiBFit" == mdl | "glmFit" == mdl) {
+  } else if ("glmZiBFit" == mdl | "glmObFit" == mdl) {
     main_model <- "Beta"
   } else {
     main_model <- "Unknown model" # We need to expand this as we include models

@@ -39,30 +39,31 @@
 #' 
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
 #' design <- as.formula(" ~ Case_status")
 #'
-#' fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
-#' top_hits(fit, alpha=0.5)
-#' plot_manhattan(fit)
-#'
+#' fit <- glmZiBFit(se[1:10,], design, nthreads=2)
 #' }
 #'
 #' @export
 glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE, 
                       MAP_prior = 'preset_weak', BPPARAM=NULL, method='glmmTMB',
                       return_vcov = TRUE) {
-  # Check if glmmTMB is installed
-  if (!requireNamespace("glmmTMB", quietly = TRUE)) {
-    stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
+  method <- match.arg(method, choices = c("glmmTMB", "gamlss"))
+
+  # Check if glmmTMB is installed when selected as backend
+  if (method == "glmmTMB" && !requireNamespace("glmmTMB", quietly = TRUE)) {
+    stop("The 'glmmTMB' package is required for method = 'glmmTMB' but is not installed. Please install it with install.packages('glmmTMB').")
   }
   
   # Validate input
@@ -86,7 +87,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
   }
   
   # check if formula is valid
-  nbd = strainspy:::nobars_(design)
+  nbd = nobars_(design)
   if(is.null(nbd)){
     stop(paste(paste(design, collapse = ''), "--- is not a valid formula."))
   } 
@@ -99,7 +100,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
     stop("Column names of assay data do not match row names of colData.")
   }
   
-  prior_obj = strainspy:::resolve_priors(MAP_prior, se, nbd)
+  prior_obj = resolve_priors(MAP_prior, se, nbd)
   fixed_priors = prior_obj@priors_df
   
   # Set up parallel infrastructure
@@ -124,14 +125,14 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
   
   cat("Fitting model... \n")
   
-  if (method=='glmmTMB'){
+  if (method == 'glmmTMB') {
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_zero_inflated_beta(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
                                                    col_data, combined_formula, design, fixed_priors),
       BPPARAM = BPPARAM
     )
-  } else{
+  } else {
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
@@ -226,7 +227,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
 fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
-    col_data$Value <- strainspy:::offset_ANI(as.vector(se_subset[row_index, ])/100)
+    col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)
     
     # Run the zero-inflated beta regression
     fit <- tryCatch({

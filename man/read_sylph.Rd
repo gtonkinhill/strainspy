@@ -42,11 +42,11 @@ object without metadata. In that case, apply necessary fixes and subsequently
 call \code{modify_metadata()}.
 }
 \examples{
-\dontrun{
-  # Read a Sylph file (query or profile) with associated metadata into a SummarizedExperiment object
-  example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
-  example_meta <- readr::read_csv(example_meta_path)
-  example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-  se <- read_sylph(example_path, example_meta)
+
+\donttest{
+  # Read a Sylph file 
+  example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+  package = "strainspy")
+  sy <- read_sylph(example_path)
 }
 }

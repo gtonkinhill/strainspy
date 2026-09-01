@@ -18,3 +18,6 @@ A \code{DataFrame} or \code{NULL} containing FDR values.
 \description{
 Returns the false discovery rates (FDR) from a \code{strainspy_fit} object, if available.
 }
+\examples{
+methods::hasMethod("getFDR", "strainspy_fit")
+}

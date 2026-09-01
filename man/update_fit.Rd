@@ -29,7 +29,7 @@ update_fit(
 
 \item{method}{Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'. Only applicable for \code{glmZiBFit()}.}
 
-\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}. Only applicable for \code{glmFit()}}
+\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}. Only applicable for \code{glmZiBFit()}}
 
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults to 1.}
 

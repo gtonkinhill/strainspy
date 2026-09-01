@@ -8,7 +8,7 @@ estimate_sample_richness(
   se,
   taxonomy,
   ani_threshold = 95,
-  report_strain_richness = F
+  report_strain_richness = FALSE
 )
 }
 \arguments{
@@ -56,4 +56,14 @@ in the database.
 This approach does \strong{not} resolve true strain multiplicity and may
 overestimate coverage when a single biological strain matches many
 highly similar reference genomes. Alternative approaches are being investigated.
+}
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy"))
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
+package = "strainspy"))
+rich <- estimate_sample_richness(se[1:20, ], tax)
+
 }

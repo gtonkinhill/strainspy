@@ -100,6 +100,8 @@ methods::setMethod("show", "strainspy_priors", function(object) {
 #' @param object An object of class \code{strainspy_priors} that has bootstrap information
 #' @param prior Prior to be plotted
 #' @return Invisibly returns the object
+#' @examples
+#' methods::hasMethod("plot_prior_bootstrap", "strainspy_priors")
 #' @export
 methods::setGeneric("plot_prior_bootstrap", function(object, prior) standardGeneric("plot_prior_bootstrap"))
 
@@ -160,6 +162,15 @@ methods::setMethod("plot_prior_bootstrap", signature(object = "strainspy_priors"
 #'
 #' @param object A \code{strainspy_priors} object.
 #' @return A data frame of prior parameters for fixed effects.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' pri <- suppressWarnings(define_priors(se[1:10, ], 
+#' ~ Case_status + Age_at_collection, method = "preset_weak"))
+#' head(extract_fixef_priors(pri))
 #' @export
 methods::setGeneric("extract_fixef_priors", function(object) standardGeneric("extract_fixef_priors"))
 

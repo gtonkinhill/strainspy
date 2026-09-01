@@ -35,22 +35,28 @@ plot_histogram(
 
 \item{separate_facets}{Bool. If TRUE, each category of the phenotype will be plotted in a separate facet. Default TRUE}
 }
+\value{
+A \code{ggplot} histogram object. A summary table of per-group statistics is
+attached as \code{attr(plot, "summary_table")}.
+}
 \description{
 Generate a histogram for a single contig for a categorical phenotype.
 }
 \examples{
-\dontrun{
+\donttest{
 library(strainspy)
 
-example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy")
 example_meta <- readr::read_csv(example_meta_path)
 # Change variable from character to factor
 example_meta$Case_status = factor(example_meta$Case_status)
 
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path, example_meta)
 
-plot_histogram(se, phenotype = "Case_status", contigs = rownames(se)[1])
+plot_histogram(se, phenotype = "Case_status", contig = rownames(se)[1])
 
 }
 

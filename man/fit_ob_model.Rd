@@ -15,10 +15,11 @@ fit_ob_model(se_subset, col_data, combined_formula, fixed_priors, family)
 
 \item{fixed_priors}{Optional priors for the model.}
 
-\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.
-
-#' @return A list with model coefficients, zero-inflation coefficients, residuals,
-log-likelihood, and convergence status.}
+\item{family}{A \code{glmmTMB} family object. Defaults to \code{glmmTMB::ordbeta()}.}
+}
+\value{
+A list where each element contains per-feature fitted coefficients,
+residuals, and convergence status.
 }
 \description{
 Fits a zero-inflated beta regression for a single feature in an assay

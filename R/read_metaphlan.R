@@ -30,18 +30,11 @@
 #' @importFrom S4Vectors DataFrame na.omit
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #'   # Read a merged metaphlan profile file into a SummarizedExperiment object
-#'   example_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
+#'   example_path <- system.file("extdata", "metaphlan_merged.tsv.gz", 
+#'   package = "strainspy")
 #'   mp <- read_metaphlan(example_path)
-#'   # View the SummarizedExperiment
-#'   mp
-#'   # View the assays (numerical matrix)
-#'   assay(mp)
-#'   # View the rowData (metadata for contigs)
-#'   rowData(mp)
-#'   # View the colData (metadata for samples)
-#'   colData(mp)
 #' }
 #' @export
 read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundance",
@@ -62,7 +55,7 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
   ))
   
   required_columns <- c("query_name", "name", variable)
-  genome_and_contig = F
+  genome_and_contig = FALSE
   
   
   # Validate that the data contains the expected columns 
@@ -77,7 +70,7 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
   metaphlan_data <- data.table::fread(
     file_path,
     na.strings = c("", "NA"),
-    header = T,
+    header = TRUE,
     select = required_columns
   )
   
@@ -179,14 +172,19 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
 #' @param output_folder Folder path to save outputs.
 #' @param output_filename File name for the two outputs. By default, the two files will be saved as metaphlan_merged.tsv.gz and metaphlan_taxonomy.tsv.gz
 #' @param sgb_database bool. Specify whether the default sgb database was used for profiling. Set to FALSE if `sgb_to_gtdb_profile.py` was run on the profiles as a post processing step. Default TRUE
+#' @return Invisibly returns `NULL`. The function writes two files to `output_folder`:
+#' a merged profile table (`*_merged.tsv.gz`) and a taxonomy table (`*_taxonomy.tsv.gz`).
+#' @examples
+#' files <- character(0)
+#' is.character(files)
 #' 
 #' @export
-merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filename = "metaphlan", sgb_database = T){
+merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filename = "metaphlan", sgb_database = TRUE){
   if (length(metaphlan_files) == 0) {
     stop("No metaphlan profiles provided.")
   }
   
-  header <- data.table::fread(metaphlan_files[1], nrows = 10, header = T)  ### There are some leading comment lines, best to read beyond them nrows = 10
+  header <- data.table::fread(metaphlan_files[1], nrows = 10, header = TRUE)  ### There are some leading comment lines, best to read beyond them nrows = 10
   header = colnames(header)
   
   if(!"#clade_name" %in% header  | !"relative_abundance" %in% header){
@@ -202,7 +200,7 @@ merge_metaphlan_files <- function(metaphlan_files, output_folder, output_filenam
   
   # sgb files go to t__ level
   # gtdb files go to s__ level
-  if(sgb_database == T) {
+  if(sgb_database == TRUE) {
     data_list <- lapply(seq_along(metaphlan_files), function(i) {
       file = metaphlan_files[i]
       tmp = data.table::fread(file);

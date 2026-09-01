@@ -13,7 +13,7 @@ comp_ani_diff_and_posthoc_test(
   beta_min_nz = 0.1,
   beta_min_ani_diff = 0.015,
   nthreads = 1L,
-  reorder_hits = F,
+  reorder_hits = FALSE,
   BPPARAM = NULL
 )
 }
@@ -79,4 +79,19 @@ to override can be a useful approach.
 
 This function is designed to directly work on the \code{tibble} returned from
 \code{top_hits()}.
+}
+\examples{
+if (requireNamespace("emmeans", quietly = TRUE)) {
+  meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+  package = "strainspy"))
+  meta$Case_status <- factor(meta$Case_status)
+  se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+  package = "strainspy"), meta_data = meta)
+  se <- filter_by_presence(se, min_nonzero = 30)[1:10, ]
+  fit <- glmZiBFit(se, ~ Case_status + Age_at_collection, nthreads = 1)
+  th <- top_hits(fit, coef = 2, alpha = 1)
+  posthoc <- comp_ani_diff_and_posthoc_test(se, fit, th, nthreads = 1)
+  head(posthoc$ANI_Difference)
+}
+
 }

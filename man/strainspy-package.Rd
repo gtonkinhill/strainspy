@@ -2,10 +2,27 @@
 % Please edit documentation in R/strainspy-package.R
 \docType{package}
 \name{strainspy-package}
-\alias{strainspy}
 \alias{strainspy-package}
 \title{strainspy: Strain Level Microbiome Wide Association Studies}
 \description{
-Strainspy fits statistical models to detect microbial strains associated with a phenotype. For small sample sizes, models can be fitted using empirical Bayes maximum a posteriori (MAP) priors to improve detection power. Supports various experimental design scenarios, including repeated measures.
+Fits statistical models to detect microbial strains associated with a phenotype. For small sample sizes, models can be fitted using empirical Bayes maximum a posteriori (MAP) priors to improve detection power. Supports various experimental design scenarios, including repeated measures.
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/gtonkinhill/strainspy}
+  \item Report bugs at \url{https://github.com/gtonkinhill/strainspy/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Sudaraka Mallawarachchi \email{smallawaarachchi@gmail.com}
+
+Authors:
+\itemize{
+  \item Sudaraka Mallawarachchi \email{smallawaarachchi@gmail.com}
+  \item Gerry Tonkin-Hill \email{g.tonkinhill@gmail.com}
+}
+
 }
 \keyword{internal}

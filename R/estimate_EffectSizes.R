@@ -51,6 +51,19 @@
 #' Component (Beta, ZI or both), Mean ANI_Difference, Contrast, Non-Zero Counts 
 #' of contrast components, and a general `Comment` on each hit. The commetn will 
 #' be `NA` if the hit passes all posthoc tests.
+#' @examples
+#' if (requireNamespace("emmeans", quietly = TRUE)) {
+#'   meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#'   package = "strainspy"))
+#'   meta$Case_status <- factor(meta$Case_status)
+#'   se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#'   package = "strainspy"), meta_data = meta)
+#'   se <- filter_by_presence(se, min_nonzero = 30)[1:10, ]
+#'   fit <- glmZiBFit(se, ~ Case_status + Age_at_collection, nthreads = 1)
+#'   th <- top_hits(fit, coef = 2, alpha = 1)
+#'   posthoc <- comp_ani_diff_and_posthoc_test(se, fit, th, nthreads = 1)
+#'   head(posthoc$ANI_Difference)
+#' }
 #' 
 #' @export
 #' @importFrom BiocParallel bplapply SnowParam SerialParam
@@ -58,7 +71,7 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
                                           simplified_formula = NULL,
                                           beta_min_nz = 0.1, 
                                           beta_min_ani_diff = 1.5e-2, 
-                                          nthreads = 1L, reorder_hits = F,
+                                          nthreads = 1L, reorder_hits = FALSE,
                                           BPPARAM=NULL){
   
   required_pkgs <- c("emmeans")
@@ -225,12 +238,12 @@ process_contig <- function(
   
   
   
-  formula1 <- strainspy:::nobars_(combined_formula)
+  formula1 <- nobars_(combined_formula)
   
   V1 <- fit@vcov[[i]][lvls, lvls]
   
   cd = col_data
-  cd$Value = strainspy:::offset_ANI(
+  cd$Value = offset_ANI(
     as.vector(SummarizedExperiment::assay(se)[i, ]) / 100
   )
   cd_df <- as.data.frame(cd)

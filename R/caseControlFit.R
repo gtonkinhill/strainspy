@@ -27,21 +27,21 @@
 #' @importFrom stats terms
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
 #' example_meta$Case_status <- factor(example_meta$Case_status)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
 #' design <- as.formula("Case_status ~ Value + Age_at_collection")
 #'
-#' fit <- caseControlFit(se, design, nthreads=parallel::detectCores())
-#' min(fit@p_values[,2], na.rm=TRUE)
-#'
+#' fit <- caseControlFit(se[1:10,], design, nthreads=2)
 #' }
 #'
 #' @export

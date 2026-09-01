@@ -31,12 +31,12 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#'   # Read a Sylph file (query or profile) with associated metadata into a SummarizedExperiment object
-#'   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
-#'   example_meta <- readr::read_csv(example_meta_path)
-#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-#'   se <- read_sylph(example_path, example_meta)
+#' 
+#' \donttest{
+#'   # Read a Sylph file 
+#'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#'   package = "strainspy")
+#'   sy <- read_sylph(example_path)
 #' }
 read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min_identity = 95, clean_names = TRUE) {
   
@@ -186,4 +186,61 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min
   
   # Return the SummarizedExperiment object
   return(se)
+}
+
+#' merge_sylph_files
+#' 
+#' Merge the outputs of `sylph query` or `sylph profile` into a single file.
+#' The output of this function is suitable to use in read_sylph()
+#' 
+#' 
+#' @param sylph_files A character vector of sylph output file paths to merge.
+#' @param output Save path for the output file. Internally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
+#' @return Invisibly returns `NULL`. The merged sylph table is written to `output`.
+#' @export
+merge_sylph_files <- function(sylph_files, output) {
+  stopifnot(is.character(sylph_files), length(sylph_files) > 0)
+  stopifnot(is.character(output), length(output) == 1)
+  
+  if (!all(file.exists(sylph_files))) {
+    missing <- sylph_files[!file.exists(sylph_files)]
+    stop("Sylph files not found: ", paste(missing, collapse = ", "))
+  }
+  
+  open_input <- function(path) {
+    if (grepl("\\.gz$", path, ignore.case = TRUE)) {
+      gzfile(path, open = "rt")
+    } else {
+      file(path, open = "rt")
+    }
+  }
+  
+  open_output <- function(path) {
+    if (grepl("\\.gz$", path, ignore.case = TRUE)) {
+      gzfile(path, open = "wt")
+    } else {
+      file(path, open = "wt")
+    }
+  }
+  
+  out <- open_output(output)
+  on.exit(close(out), add = TRUE)
+  
+  for (i in seq_along(sylph_files)) {
+    con <- open_input(sylph_files[i])
+    
+    if (i > 1) {
+      readLines(con, n = 1)  # skip header
+    }
+    
+    repeat {
+      lines <- readLines(con, n = 10000)
+      if (!length(lines)) break
+      writeLines(lines, out)
+    }
+    
+    close(con)
+  }
+  
+  invisible(output)
 }

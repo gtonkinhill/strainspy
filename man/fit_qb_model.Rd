@@ -11,10 +11,11 @@ fit_qb_model(se_subset, col_data, combined_formula)
 
 \item{col_data}{A data frame containing the design matrix and additional covariates.}
 
-\item{combined_formula}{The formula for the conditional mean model.
-
-#' @return A list with model coefficients, zero-inflation coefficients, residuals,
-log-likelihood, and convergence status.}
+\item{combined_formula}{The formula for the conditional mean model.}
+}
+\value{
+A list where each element contains per-feature fitted coefficients,
+residuals, and convergence status.
 }
 \description{
 Fits a quasibinomial regression for a single feature in an assay

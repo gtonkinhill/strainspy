@@ -17,9 +17,12 @@
 #' @param show_points Bool. If TRUE, points will be overlaid with jitter using ggforce::geom_sina(). Default TRUE
 #' @param plot If set to false, the function will return a tibble with data used to generate the plot.
 #' @param plot_type Specify whether `box` or `violin` plot is required. Default `box`.
+#' @return If `plot = TRUE`, returns a `ggplot` object (or a combined patchwork plot
+#' when `show_zero_plot = TRUE`). If `plot = FALSE`, returns a long-format table
+#' used to generate the ANI distribution plot.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
@@ -49,7 +52,7 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
   }
   
   if(!is.null(facet_phenotype)) {
-    facet = T
+    facet = TRUE
     
     if(phenotype == facet_phenotype){
       stop("phenotype and facet_phenotype cannnot be the same")
@@ -67,7 +70,7 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
       stop("facet_phenotype must be a factor")
     }
   } else {
-    facet = F
+    facet = FALSE
   }
   
   chk_contigs = contigs %in% rownames(se)
@@ -92,7 +95,7 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
     if(!is.null(contig_names)){
       colnames(tmp) = c(phenotype, contig_names)
     } else {
-      contig_names = strainspy:::clean_contig_names(colnames(tmp)[-1])
+      contig_names = clean_contig_names(colnames(tmp)[-1])
       colnames(tmp) = c(phenotype, contig_names)
     }
   } else {
@@ -102,7 +105,7 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
     if(!is.null(contig_names)){
       colnames(tmp) = c(phenotype, facet_phenotype, contig_names)
     } else {
-      contig_names = strainspy:::clean_contig_names(colnames(tmp)[-c(1,2)])
+      contig_names = clean_contig_names(colnames(tmp)[-c(1,2)])
       colnames(tmp) = c(phenotype, facet_phenotype, contig_names)
     }
   }
@@ -177,13 +180,13 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
     phenotype_ <- rlang::sym(phenotype)
     
     phen_levels <- levels(factor(df_long[[phenotype]]))
-    phen_cols <- setNames(strainspy:::get_colors(length(phen_levels)), phen_levels) # can maintain consistency between the two plots
+    phen_cols <- setNames(get_colors(length(phen_levels)), phen_levels) # can maintain consistency between the two plots
     
     p <- ggplot2::ggplot(df_long, ggplot2::aes(x = Contig, y = ANI, group = interaction(Contig, !!phenotype_)))
     
     if(plot_type == 'violin'){
       p <- p + ggplot2::geom_violin(ggplot2::aes(fill = !!phenotype_),
-                                    trim = T, alpha = 0.2, drop = FALSE)
+                                    trim = TRUE, alpha = 0.2, drop = FALSE)
     } else {
       p <- p + ggplot2::geom_boxplot(ggplot2::aes(fill = !!phenotype_),
                                      outlier.shape = NA, alpha = 0.5)  # semi-transparent boxplot
@@ -261,20 +264,24 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' @param fit_spline Bool. If TRUE, a spline will be fitted to each histogram. Default FALSE 
 #' @param fit_control Numeric. Smaller values increase the smoothness of the fitted spline. Default 100
 #' @param separate_facets Bool. If TRUE, each category of the phenotype will be plotted in a separate facet. Default TRUE 
+#' @return A `ggplot` histogram object. A summary table of per-group statistics is
+#' attached as `attr(plot, "summary_table")`.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
 #' # Change variable from character to factor
 #' example_meta$Case_status = factor(example_meta$Case_status)
 #'
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #'
-#' plot_histogram(se, phenotype = "Case_status", contigs = rownames(se)[1])
+#' plot_histogram(se, phenotype = "Case_status", contig = rownames(se)[1])
 #'
 #' }
 #'
@@ -345,9 +352,9 @@ plot_histogram <- function(se, phenotype, contig,
       dplyr::group_by(.data[[phenotype]]) %>%
       dplyr::group_modify(~{
         
-        x <- .x$Value_orig
+        value_vec <- .x$Value_orig
         
-        if (length(unique(x)) < 5 || stats::sd(x) == 0) {
+        if (length(unique(value_vec)) < 5 || stats::sd(value_vec) == 0) {
           return(tibble::tibble())
         }
         
@@ -355,32 +362,32 @@ plot_histogram <- function(se, phenotype, contig,
         # empirical histogram (NO KDE)
         # -------------------------
         h <- hist(
-          x,
+          value_vec,
           breaks = bins,
           plot = FALSE
         )
         
         dens_df <- tibble::tibble(
-          x = h$mids,
-          density = h$density
+          spline_x = h$mids,
+          spline_density = h$density
         )
         
         # -------------------------
         # GAM smoothing ONLY
         # -------------------------
         fit <- mgcv::gam(
-          density ~ s(x, k = min(fit_control, length(h$mids) - 1), bs = "tp"),
+          spline_density ~ s(spline_x, k = min(fit_control, length(h$mids) - 1), bs = "tp"),
           data = dens_df,
           method = "REML"
         )
         
         grid <- tibble::tibble(
-          x = seq(min(h$mids), max(h$mids), length.out = 500)
+          spline_x = seq(min(h$mids), max(h$mids), length.out = 500)
         )
         
-        grid$y <- predict(fit, newdata = grid)
+        grid$spline_y <- predict(fit, newdata = grid)
         
-        grid$y <- pmax(grid$y, 0)
+        grid$spline_y <- pmax(grid$spline_y, 0)
         
         grid
       })
@@ -412,7 +419,7 @@ plot_histogram <- function(se, phenotype, contig,
     p <- p +
       ggplot2::geom_line(
         data = spline_df,
-        ggplot2::aes(x = x, y = y, colour = .data[[phenotype]]),
+        ggplot2::aes(x = .data$spline_x, y = .data$spline_y, colour = .data[[phenotype]]),
         linewidth = 1.2,
         inherit.aes = FALSE
       )
@@ -458,7 +465,7 @@ plot_histogram <- function(se, phenotype, contig,
       y = "Density"
     ) +
     ggplot2::theme_minimal() +
-    ggplot2::ggtitle(strainspy:::clean_contig_names(contig)) +
+    ggplot2::ggtitle(clean_contig_names(contig)) +
     ggplot2::theme(
       text = ggplot2::element_text(size = 16)
     )

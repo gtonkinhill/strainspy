@@ -29,18 +29,20 @@
 #' @importFrom methods as
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' 
 #' se <- read_sylph(example_path, example_meta, 'Taxonomic_abundance')
 #' se <- filter_by_presence(se, 20)
 #'
 #' design <- as.formula(" ~ Case_status + Age_at_collection")
-#' fit <- abundanceFit(se,  design, nthreads=parallel::detectCores(), transform='CLR')
+#' fit <- abundanceFit(se[1:10,],  design, nthreads=2, transform='CLR')
 #' top_hits(fit, alpha = 0.5)
 #'
 #' }

@@ -1,4 +1,4 @@
-#' glmQB
+#' glmQBFit
 #' TODO: Implement return of vcov info. Patched for compatibility (returns NULL)
 #' 
 #' This function fits a quasibinomial regression model using `stats::glm()`.
@@ -33,23 +33,21 @@
 #' 
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' library(strainspy)
 #'
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz",
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #'
-#' design <- as.formula(" ~ Case_status + Age_at_collection")
+#' design <- as.formula(" ~ Case_status")
 #'
-#' fit <- glmQB(se,  design, nthreads=parallel::detectCores())
-#' top_hits(fit, alpha=0.5)
-#' plot_manhattan(fit)
-#'
+#' fit <- glmQBFit(se[1:10,], design, nthreads=2)
 #' }
-#'
 #' @export
 glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL) {
   
@@ -170,9 +168,8 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
 #' @param se_subset A `SummarizedExperiment` object containing the assay data.
 #' @param col_data A data frame containing the design matrix and additional covariates.
 #' @param combined_formula The formula for the conditional mean model.
-#' 
-#' #' @return A list with model coefficients, zero-inflation coefficients, residuals,
-#'         log-likelihood, and convergence status.
+#' @return A list where each element contains per-feature fitted coefficients,
+#' residuals, and convergence status.
 fit_qb_model <- function(se_subset, col_data, combined_formula) {
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     ## Extract the values for the current feature

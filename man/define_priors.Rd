@@ -8,7 +8,7 @@ define_priors(
   se,
   design,
   method = "preset_weak",
-  add_dispersion_prior = F,
+  add_dispersion_prior = FALSE,
   priors_df = NULL
 )
 }
@@ -31,4 +31,15 @@ An object of class \code{strainspy_priors}.
 }
 \description{
 Constructor for strainspy_priors using preset or user defined priors
+}
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz",
+ package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+pri <- suppressWarnings(define_priors(se[1:10, ], 
+~ Case_status + Age_at_collection, method = "preset_weak"))
+class(pri)
+
 }

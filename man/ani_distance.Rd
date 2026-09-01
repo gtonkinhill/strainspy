@@ -29,9 +29,11 @@ A distance matrix.
 This function calculates the distance between samples in a \code{SummarizedExperiment} object representing strain level ANI data.
 }
 \examples{
-\dontrun{
-example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
-tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", package = "strainspy")
+\donttest{
+example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy")
+tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", 
+package = "strainspy")
 se <- read_sylph(example_path)
 tax <- read_taxonomy(tax_path)
 distance_matrix <- ani_distance(se)

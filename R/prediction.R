@@ -32,8 +32,16 @@
 #' use in \pkg{caret} functions such as \code{caret::train()}. 
 #'
 #' @examples
-#' \dontrun{
-#' contigs <- top_hits(fit, coef = 2, method = "BH", alpha = 0.05)$Contig_name
+#' \donttest{
+#' library(strainspy)
+#' 
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
+#' example_meta <- readr::read_csv(example_meta_path)
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
+#' sy <- read_sylph(example_path, example_meta)
+#' contigs <- rownames(sy)[1:10]
 #' df <- prep_for_prediction(
 #'   sy = sy,
 #'   outcome = "Case_status",
@@ -43,7 +51,7 @@
 #' }
 #'
 #' @export
-prep_for_prediction <- function(sy, outcome, contigs, covariates = NULL, use_genome_names = T) {
+prep_for_prediction <- function(sy, outcome, contigs, covariates = NULL, use_genome_names = TRUE) {
   meta <- as.data.frame(SummarizedExperiment::colData(sy))
   sy_mx <- SummarizedExperiment::assay(sy)
   

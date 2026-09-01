@@ -18,3 +18,13 @@ A \code{DataFrame} containing zero-inflation coefficients.
 \description{
 Returns the zero-inflation coefficients from a \code{strainspy_fit} object.
 }
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+fit <- glmZiBFit(filter_by_presence(se, min_nonzero = 30)[1:10, ], 
+~ Case_status + Age_at_collection, nthreads = 1, return_vcov = FALSE)
+class(getZICoefficients(fit))
+}

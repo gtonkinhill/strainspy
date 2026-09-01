@@ -20,3 +20,6 @@ Invisibly returns the object
 \description{
 Plot method for strainspy_priors objects
 }
+\examples{
+methods::hasMethod("plot_prior_bootstrap", "strainspy_priors")
+}

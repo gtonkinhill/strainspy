@@ -20,15 +20,17 @@
 #' @return A ggplot2 object if plot = TRUE, otherwise a dataframe containing the relevant statistics.
 #'
 #' @examples
-#' \dontrun{
-#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+#' \donttest{
+#' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
+#' package = "strainspy")
 #' example_meta <- readr::read_csv(example_meta_path)
-#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' se <- filter_by_presence(se)
 #' design <- as.formula(" ~ Case_status + Sex")
-#' fit <- glmZiBFit(se, design, nthreads=parallel::detectCores())
-#' plot_volcano(fit_glmmtmb, coef = 2, label = T)
+#' fit <- glmZiBFit(se[1:10,], design, nthreads=2)
+#' plot_volcano(fit, coef = 2, label = TRUE)
 #' }
 #'
 #' @export
@@ -105,7 +107,7 @@ plot_volcano <- function(object, coef = 2, alpha = 0.05, method = "holm",
   } else { # Plot one-model volcano plot
     hits <- hits |>
       dplyr::mutate(log10p = log10(p_value)) |>
-      dplyr::mutate(sig = ifelse(p_adjust < alpha, T, F))
+      dplyr::mutate(sig = ifelse(p_adjust < alpha, TRUE, FALSE))
     
     if(!plot) {
       return(hits)

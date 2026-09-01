@@ -2,16 +2,24 @@ Package: strainspy
 Type: Package
 Title: Strain Level Microbiome Wide Association Studies
 Version: 0.1.0
-Depends: R (>= 3.5.0)
-Author: Gerry Tonkin-Hill
-Maintainer: Gerry Tonkin-Hill <g.tonkinhill@gmail.com>
-Description: Strainspy fits statistical models to detect microbial strains 
+Depends: R (>= 4.1.0)
+Authors@R: c(
+    person(given = "Gerry", family = "Tonkin-Hill",
+        role = "aut", email = "g.tonkinhill@gmail.com"),
+    person(given = "Sudaraka", family = "Mallawarachchi",
+        role = c("aut", "cre"), email = "smallawaarachchi@gmail.com")
+    )
+Description: Fits statistical models to detect microbial strains 
     associated with a phenotype. For small sample sizes, models can be fitted 
     using empirical Bayes maximum a posteriori (MAP) priors to improve detection 
     power. Supports various experimental design scenarios, including repeated 
     measures.
 License: MIT + file LICENSE
 Encoding: UTF-8
+URL: https://github.com/gtonkinhill/strainspy
+BugReports: https://github.com/gtonkinhill/strainspy/issues
+biocViews: Software, Microbiome, Metagenomics, DifferentialExpression,
+    Sequencing
 Imports:
     ape,
     BiocParallel,
@@ -42,12 +50,19 @@ Imports:
     viridis
 Suggests:
     betareg,
+    BiocStyle,
     compositions,
     fastglm,
     future,
+    knitr,
+    mgcv,
     R.utils,
+    rmarkdown,
     testthat (>= 3.0.0),
-    emmeans
+    vegan,
+    emmeans,
+    readr
+VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

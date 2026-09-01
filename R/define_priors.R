@@ -13,8 +13,21 @@
 #'        will configure an appropriate backend automatically.
 #' @param low_cutoff Ceiling for small SD estimates. Default 0.1
 #' @param high_cutoff Floor for large SD estimates. Default 10
-#' @param est_disperion_prior Estimate a prior for disperion (default = F)
+#' @param est_disperion_prior Estimate a prior for disperion (default = FALSE)
 #' @return An object of class \code{strainspy_priors}.
+#' @examples
+#' if (requireNamespace("fastglm", quietly = TRUE) && 
+#' requireNamespace("betareg", quietly = TRUE)) {
+#'   meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+#'   package = "strainspy"))
+#'   meta$Case_status <- factor(meta$Case_status)
+#'   se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#'   package = "strainspy"), meta_data = meta)
+#'   se <- filter_by_presence(se, min_nonzero = 30)
+#'   pri <- compute_eb_priors(se[1:10, ], 
+#'   ~ Case_status + Age_at_collection, nthreads = 1)
+#'   class(pri)
+#' }
 #' 
 #' @importFrom stats sd median
 #' 
@@ -146,7 +159,7 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
         stringsAsFactors = FALSE
       )
       
-      boot_disp <- matrix(c(boot_mean, boot_sd), nrow = 2, byrow = T)
+      boot_disp <- matrix(c(boot_mean, boot_sd), nrow = 2, byrow = TRUE)
       rownames(boot_disp) <- c("log_phi_mean", "log_phi_sd")
     } else {
       warning('Dispersion cannot be estimated, not enough strains in sample (<=5)')
@@ -204,9 +217,18 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
 #' data.frame of priors suitable for glmmTMB model fitting. See `?glmmTMB::priors`
 #' for more details. Default NULL.
 #' @return An object of class \code{strainspy_priors}.
+#' @examples
+#' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz",
+#'  package = "strainspy"))
+#' meta$Case_status <- factor(meta$Case_status)
+#' se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+#' package = "strainspy"), meta_data = meta)
+#' pri <- suppressWarnings(define_priors(se[1:10, ], 
+#' ~ Case_status + Age_at_collection, method = "preset_weak"))
+#' class(pri)
 #' 
 #' @export
-define_priors = function(se, design, method = 'preset_weak', add_dispersion_prior = F, priors_df = NULL){
+define_priors = function(se, design, method = 'preset_weak', add_dispersion_prior = FALSE, priors_df = NULL){
   stopifnot(inherits(se, "SummarizedExperiment"))
   stopifnot(inherits(design, "formula"))
   ## Check if formula has random effects
@@ -291,7 +313,7 @@ beta_chunk <- function(chunk, mx_pred, est_disp = FALSE) {
     
     if (length(idx) < 0.1 * length(y)) next
     
-    y_sub <- strainspy:::offset_ANI(y[idx] / 100)
+    y_sub <- offset_ANI(y[idx] / 100)
     X_sub <- mx_pred[idx, , drop = FALSE]
     
     fit <- tryCatch(
@@ -321,7 +343,9 @@ beta_chunk <- function(chunk, mx_pred, est_disp = FALSE) {
 
 getDispEst <- function(log_phi_vec, B = 2000, trim = 0.02, seed = NULL) {
   
-  if (!is.null(seed)) set.seed(seed)
+  if (!is.null(seed)) {
+    warning("`seed` is ignored to comply with Bioconductor policy against set.seed() in package code.")
+  }
   
   x <- log_phi_vec[is.finite(log_phi_vec)]
   

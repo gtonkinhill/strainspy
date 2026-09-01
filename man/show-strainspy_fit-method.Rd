@@ -9,6 +9,9 @@
 \arguments{
 \item{object}{An object of class \code{strainspy_fit}.}
 }
+\value{
+Invisibly returns \code{NULL} after printing a compact summary.
+}
 \description{
 Displays a summary of a \code{strainspy_fit} object, including model design,
 convergence, and coefficient matrix dimensions.

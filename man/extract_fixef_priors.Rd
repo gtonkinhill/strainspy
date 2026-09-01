@@ -18,3 +18,13 @@ A data frame of prior parameters for fixed effects.
 \description{
 Access fixef priors needed for ordinal beta regression
 }
+\examples{
+meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
+package = "strainspy"))
+meta$Case_status <- factor(meta$Case_status)
+se <- read_sylph(system.file("extdata", "example_sylph_profile.tsv.gz", 
+package = "strainspy"), meta_data = meta)
+pri <- suppressWarnings(define_priors(se[1:10, ], 
+~ Case_status + Age_at_collection, method = "preset_weak"))
+head(extract_fixef_priors(pri))
+}
