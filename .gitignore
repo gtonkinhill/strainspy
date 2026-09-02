@@ -2,14 +2,13 @@
 .Rhistory
 .RData
 .Ruserdata
-.Rbuildignore
 *.Rproj
 TEST_DATA
 .DS_Store
 simulations*
 .RDataTmp
-*.html
+/*.html
 docs
 .positai
 .vscode
-vignettes
+^inst/doc$

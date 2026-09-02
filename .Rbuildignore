@@ -1,0 +1,15 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.positai$
+^\.claude$
+^\.github$
+^\.vscode$
+^\.Rhistory$
+^\.RData$
+^\.DS_Store$
+^strainspy\.Rcheck$
+^.*\.tar\.gz$
+^\.gitignore$

@@ -1,0 +1,162 @@
+---
+title: "strainspy Workflow"
+author: "Gerry Tonkin-Hill, Sudaraka Mallawaarachchi"
+output:
+  BiocStyle::html_document:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{strainspy Workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Why strainspy?
+
+`strainspy` fits strain-level association models from ANI/abundance profiles and metadata.
+This guide follows the README workflow and is written as a practical first analysis.
+
+You will walk through the core path most users care about:
+
+1. Load metadata and ANI profiles.
+2. Filter to informative strains.
+3. Fit a zero-inflated beta model with `glmZiBFit()`.
+4. Rank and interpret hits with `top_hits()`.
+5. Explore taxonomy-aware summaries and plot-ready outputs.
+6. Prepare data for downstream prediction and diversity analyses.
+
+All examples use bundled data so the workflow runs end-to-end.
+
+## Load package and example data
+
+```{r setup, message=FALSE, warning=FALSE}
+library(strainspy)
+
+meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
+sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+taxonomy_path <- system.file("extdata", "example_taxonomy.tsv.gz", package = "strainspy")
+
+meta <- read.csv(meta_path)
+meta$Case_status <- factor(meta$Case_status)
+
+taxonomy <- read_taxonomy(taxonomy_path)
+se <- read_sylph(sylph_path, meta_data = meta)
+
+# Recommended default: keep strains observed in at least 10% of samples
+min_nonzero <- ceiling(0.10 * ncol(se))
+se <- filter_by_presence(se, min_nonzero = min_nonzero)
+
+cat("Samples:", ncol(se), "\n")
+cat("Retained strains:", nrow(se), "\n")
+cat("min_nonzero used:", min_nonzero, "\n")
+```
+
+## Choosing key wrapper inputs
+
+If you use the high-level `strainspy()` wrapper, three inputs should be chosen deliberately:
+
+1. `design_formula`: the predictors you want to test.
+2. `coef`: which coefficient index from that design to report in `top_hits()`.
+3. `min_nonzero`: prevalence threshold (recommended default: `ceiling(0.10 * n_samples)`).
+
+For the design `~ Case_status + Age_at_collection`, `coef = 2` targets `Case_status`.
+You can verify term order with `colnames(model.matrix(~ Case_status + Age_at_collection, meta))`.
+
+## Fit the main model (`glmZiBFit`)
+
+```{r fit, message=FALSE, warning=FALSE}
+design <- as.formula("~ Case_status + Age_at_collection")
+
+fit <- glmZiBFit(
+  se,
+  design,
+  nthreads = 2L,
+  return_vcov = FALSE
+)
+
+fit
+```
+
+## Find top hits
+
+`top_hits()` is usually the first table you inspect after fitting.
+It highlights contigs with strongest phenotype association and provides adjusted p-values.
+
+```{r top-hits, message=FALSE, warning=FALSE}
+hits <- top_hits(fit, coef = 2, alpha = 1)
+head(hits[, c("Contig_name", "coefficient", "p_value", "p_adjust")])
+```
+
+## Add taxonomy context
+
+When taxonomy is available, `hadjust()` summarizes significance across taxonomic levels.
+
+```{r hadjust, message=FALSE, warning=FALSE}
+hier_hits <- hadjust(fit, coef = 2, taxonomy = taxonomy)
+head(hier_hits[, c("Level", "Model", "Name", "p_adjust")])
+```
+
+## Generate plot-ready outputs
+
+The README demonstrates visualization early because it helps with interpretation.
+To keep this vignette stable in automated builds, we return data frames (`plot = FALSE`) rather than rendering all figures.
+You can set `plot = TRUE` interactively.
+
+```{r plot-data, message=FALSE, warning=FALSE}
+plot_volcano(fit, coef = 2)
+plot_manhattan(fit, coef = 2, taxonomy = taxonomy)
+```
+
+## Diversity and prediction preparation
+
+Beyond hit calling, `strainspy` supports ecological summaries and model-ready tables.
+
+```{r utilities, message=FALSE, warning=FALSE}
+rich <- estimate_sample_richness(se, taxonomy)
+beta_dist <- estimate_beta_diversity(se, distance_only = TRUE)
+
+pred_df <- prep_for_prediction(
+  sy = se,
+  outcome = "Case_status",
+  contigs = rownames(se)[1:3],
+  covariates = "Age_at_collection",
+  use_genome_names = FALSE
+)
+
+length(rich$species_richness)
+class(beta_dist)
+dim(pred_df)
+```
+
+## Working with other profile inputs
+
+The same downstream workflow can be used with other supported profile readers.
+
+```{r other-inputs, message=FALSE, warning=FALSE}
+example_sourmash_path <- system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
+example_metaphlan_path <- system.file("extdata", "metaphlan_merged.tsv.gz", package = "strainspy")
+
+sm <- read_sourmash(example_sourmash_path, meta)
+mp <- read_metaphlan(example_metaphlan_path, meta)
+
+class(sm)
+class(mp)
+```
+
+## Notes
+
+- If taxonomy is not available, sequence-level workflows (`top_hits`, `plot_volcano`) still run.
+- For optional features requiring additional packages, see individual function help pages.
+
+## Next steps
+
+After this walkthrough, common next analyses are:
+
+1. Re-fit on the full filtered dataset (`se`) and tighten `alpha` in `top_hits()`.
+2. Use taxonomy-informed Manhattan summaries to prioritize clades.
+3. Export `prep_for_prediction()` outputs to train external classifiers.
+
+## Session information
+
+```{r session-info}
+sessionInfo()
+```
