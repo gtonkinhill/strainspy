@@ -14,7 +14,8 @@ comp_ani_diff_and_posthoc_test(
   beta_min_ani_diff = 0.015,
   nthreads = 1L,
   reorder_hits = FALSE,
-  BPPARAM = NULL
+  BPPARAM = NULL,
+  progress = TRUE
 )
 }
 \arguments{
@@ -45,6 +46,8 @@ flagged: \verb{small effect}. Default = 1.5e-3 corresponds to 0.15\% delta ANI.}
 best supported ones. Default \code{FALSE}.}
 
 \item{BPPARAM}{Optional BiocParallelParam object.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{tibble} similar to \code{th}, with added columns giving details on:

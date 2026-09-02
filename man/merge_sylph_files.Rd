@@ -18,3 +18,22 @@ Invisibly returns \code{NULL}. The merged sylph table is written to \code{output
 Merge the outputs of \verb{sylph query} or \verb{sylph profile} into a single file.
 The output of this function is suitable to use in read_sylph()
 }
+\examples{
+# Split the bundled profile into two per-sample files, then merge them back.
+profile <- data.table::fread(
+  system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+)
+samples <- head(unique(profile$Sample_file), 2)
+parts <- vapply(samples, function(s) {
+  f <- tempfile(fileext = ".tsv")
+  data.table::fwrite(profile[profile$Sample_file == s, ], f, sep = "\t")
+  f
+}, character(1))
+
+merged <- tempfile(fileext = ".tsv.gz")
+merge_sylph_files(parts, merged)
+
+# The merged file carries one header and both samples
+se <- read_sylph(merged)
+dim(se)
+}

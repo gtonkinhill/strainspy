@@ -12,15 +12,13 @@
 #' @return A `ggplot` object showing the MDS plot, or a tibble of MDS coordinates if `plot = FALSE`.
 #'
 #' @examples
-#' \donttest{
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
 #' plot_mds(se, coef = 2)
-#' }
 #'
 #' @export
 plot_mds <- function(se,

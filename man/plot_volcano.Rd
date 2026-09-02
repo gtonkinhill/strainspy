@@ -42,10 +42,9 @@ This function creates a volcano plot from the results of a betaGLM analysis,
 highlighting the relationship between effect size (coefficients) and statistical significance (-log10 p-values).
 }
 \examples{
-\donttest{
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
 se <- read_sylph(example_path, example_meta)
@@ -53,6 +52,5 @@ se <- filter_by_presence(se)
 design <- as.formula(" ~ Case_status + Sex")
 fit <- glmZiBFit(se[1:10,], design, nthreads=2)
 plot_volcano(fit, coef = 2, label = TRUE)
-}
 
 }

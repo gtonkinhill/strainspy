@@ -43,12 +43,11 @@ attached as \code{attr(plot, "summary_table")}.
 Generate a histogram for a single contig for a categorical phenotype.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 # Change variable from character to factor
 example_meta$Case_status = factor(example_meta$Case_status)
 
@@ -58,6 +57,5 @@ se <- read_sylph(example_path, example_meta)
 
 plot_histogram(se, phenotype = "Case_status", contig = rownames(se)[1])
 
-}
 
 }

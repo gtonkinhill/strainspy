@@ -11,7 +11,8 @@ glmObFit(
   scale_continuous = TRUE,
   MAP_prior = "preset_weak",
   family = glmmTMB::ordbeta(),
-  BPPARAM = NULL
+  BPPARAM = NULL,
+  progress = TRUE
 )
 }
 \arguments{
@@ -33,6 +34,8 @@ For general use, leave this at default Advanced users can experiment with others
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:
@@ -64,12 +67,11 @@ This will result in a call to \code{strainspy::define_priors()} to generate prio
 To disable MAP estimation and perform standard REML fitting, set \code{MAP_prior = NULL}.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
 se <- read_sylph(example_path, example_meta)
@@ -79,6 +81,5 @@ design <- as.formula(" ~ Case_status + Age_at_collection")
 
 fit <- glmObFit(se[1:10,],  design, family=glmmTMB::ordbeta())
 
-}
 
 }

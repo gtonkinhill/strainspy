@@ -11,4 +11,6 @@ simulations*
 docs
 .positai
 .vscode
-^inst/doc$
+inst/doc/
+*.Rcheck
+*.BiocCheck

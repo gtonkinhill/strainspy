@@ -12,7 +12,8 @@ glmZiBFit(
   MAP_prior = "preset_weak",
   BPPARAM = NULL,
   method = "glmmTMB",
-  return_vcov = TRUE
+  return_vcov = TRUE,
+  progress = TRUE
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ will configure an appropriate backend automatically.}
 
 \item{return_vcov}{Logical. Return variance-covariance matrices for each model, required for \code{estimate_effect_sizes()}.
 Disabling will result in a much smaller \code{strainspy_fit} object that is useful for most analyses. Defaults to \code{TRUE}.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:
@@ -56,12 +59,11 @@ It takes a \code{SummarizedExperiment} object as input, along with a user-define
 and fits a zero-inflated beta regression model on the assay data.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
 se <- read_sylph(example_path, example_meta)
@@ -70,6 +72,5 @@ se <- filter_by_presence(se)
 design <- as.formula(" ~ Case_status")
 
 fit <- glmZiBFit(se[1:10,], design, nthreads=2)
-}
 
 }

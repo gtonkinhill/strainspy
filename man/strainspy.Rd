@@ -19,7 +19,8 @@ strainspy(
   nthreads = 2,
   return_vcov = FALSE,
   attach_taxonomy = TRUE,
-  overwrite = TRUE
+  overwrite = TRUE,
+  progress = TRUE
 )
 }
 \arguments{
@@ -57,6 +58,8 @@ by \code{glmZiBFit()}.}
 \item{attach_taxonomy}{If \code{TRUE} and \code{taxonomy_path} is provided, append taxonomy columns to top hits.}
 
 \item{overwrite}{If \code{FALSE}, abort when \code{output_path} already exists.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A data frame of top hits. If \code{taxonomy_path} is supplied and
@@ -66,7 +69,6 @@ A data frame of top hits. If \code{taxonomy_path} is supplied and
 A wrapper to run a full strainspy workflow with explicit input validation.
 }
 \examples{
-\donttest{
 meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
 sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
@@ -89,5 +91,4 @@ out <- strainspy(
   alpha = 1
 )
 head(out)
-}
 }

@@ -5,7 +5,14 @@
 \title{glmQBFit
 TODO: Implement return of vcov info. Patched for compatibility (returns NULL)}
 \usage{
-glmQBFit(se, design, nthreads = 1L, scale_continous = TRUE, BPPARAM = NULL)
+glmQBFit(
+  se,
+  design,
+  nthreads = 1L,
+  scale_continous = TRUE,
+  BPPARAM = NULL,
+  progress = TRUE
+)
 }
 \arguments{
 \item{se}{SummarizedExperiment. A \code{SummarizedExperiment} object containing
@@ -22,6 +29,8 @@ Defaults to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the
 function will configure an appropriate backend automatically.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:
@@ -43,12 +52,11 @@ formula containing only fixed effect parameters, and fits a quasibinomial
 regression model on the assay data.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz",
 package = "strainspy")
 se <- read_sylph(example_path, example_meta)
@@ -57,5 +65,4 @@ se <- filter_by_presence(se)
 design <- as.formula(" ~ Case_status")
 
 fit <- glmQBFit(se[1:10,], design, nthreads=2)
-}
 }

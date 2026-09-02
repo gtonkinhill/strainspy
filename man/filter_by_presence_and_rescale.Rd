@@ -22,7 +22,6 @@ This function is copied from filter_by_presence(). Additionally, it rescales abu
 each sample sums back to 100. Since this behaviour is not useful for association testing, this function is not exported.
 }
 \examples{
-\donttest{
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
 se <- read_sylph(example_path)
@@ -32,6 +31,5 @@ filtered_se <- filter_by_presence(se)
 
 # View the filtered object
 filtered_se
-}
 
 }

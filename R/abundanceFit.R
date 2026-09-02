@@ -11,6 +11,7 @@
 #' @param scale_continuous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `TRUE`.
 #' @param transform If data is already transformed, set to `NULL` (default). Supported options: arcsin transform `arcsin` or centered log ratio `CLR`. `CLR` requires `compositions` package.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'
 #' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
@@ -29,12 +30,11 @@
 #' @importFrom methods as
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' 
@@ -45,10 +45,11 @@
 #' fit <- abundanceFit(se[1:10,],  design, nthreads=2, transform='CLR')
 #' top_hits(fit, alpha = 0.5)
 #'
-#' }
 #'
 #' @export
-abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transform=NULL, BPPARAM=NULL) {
+abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transform=NULL, BPPARAM=NULL,
+                         progress=TRUE) {
+  check_progress(progress)
   # Check if glmmTMB is installed
   if (!requireNamespace("lmerTest", quietly = TRUE)) {
     stop("The 'lmerTest' package is required but is not installed. Please install it with install.packages('lmerTest').")
@@ -96,10 +97,12 @@ abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transfor
       # BPPARAM <- BiocParallel::MulticoreParam(
       #   workers = nthreads
       # )
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = progress, tasks=100)
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
     }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
   
   # Split rows into 50-row chunks
@@ -154,7 +157,8 @@ abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transfor
   BiocParallel::bpstop(BPPARAM)
   
   # sometimes results can be an empty list, remove those dynamically
-  rmidx = which(sapply(results, length) == 0)
+  # Drop features whose fit failed; handles both backend failure protocols.
+  rmidx = failed_fit_index(results)
   
   if(length(rmidx) > 0) {
     seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
@@ -177,7 +181,6 @@ abundanceFit <- function(se, design, nthreads=1, scale_continuous=TRUE, transfor
              residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
              convergence = purrr::map_lgl(results, ~ .x$convergence),
              design = design,
-             # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
              call = match.call()  # Store the function call for reproducibility
   )
   

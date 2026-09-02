@@ -19,5 +19,5 @@ A \code{strainspy_priors} object or NULL.
 }
 \description{
 Ensures \code{MAP_prior} is interpreted correctly and returns a valid
-\code{strainspy_priors} object or NULL (for MLE).
+\code{strainspy_priors} object or NULL (for unpenalised ML fits).
 }

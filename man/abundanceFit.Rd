@@ -10,7 +10,8 @@ abundanceFit(
   nthreads = 1,
   scale_continuous = TRUE,
   transform = NULL,
-  BPPARAM = NULL
+  BPPARAM = NULL,
+  progress = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,8 @@ abundanceFit(
 \item{transform}{If data is already transformed, set to \code{NULL} (default). Supported options: arcsin transform \code{arcsin} or centered log ratio \code{CLR}. \code{CLR} requires \code{compositions} package.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function will configure an appropriate backend automatically.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:
@@ -45,12 +48,11 @@ It takes a \code{SummarizedExperiment} object as input, along with a user-define
 Generally, these linear models are useful to model compositional abundance data (e.g. \code{Taxonomic_abundance} in Sylph Profile) with appropriate transforms.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
 
@@ -61,6 +63,5 @@ design <- as.formula(" ~ Case_status + Age_at_collection")
 fit <- abundanceFit(se[1:10,],  design, nthreads=2, transform='CLR')
 top_hits(fit, alpha = 0.5)
 
-}
 
 }

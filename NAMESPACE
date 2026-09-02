@@ -53,7 +53,6 @@ exportMethods(print)
 exportMethods(show)
 exportMethods(summary)
 import(SummarizedExperiment)
-import(gamlss)
 import(ggplot2)
 importClassesFrom(S4Vectors,DataFrame)
 importClassesFrom(S4Vectors,List)
@@ -88,6 +87,7 @@ importFrom(data.table,
   data.table,
   fread,
   merge.data.table,
+  set,
   tstrsplit
 )
 importFrom(dplyr,
@@ -128,13 +128,15 @@ importFrom(ggtree,
 )
 importFrom(glmmTMB,glmmTMB)
 importFrom(grDevices,rainbow)
+importFrom(graphics,abline)
 importFrom(lmerTest,lmer)
 importFrom(magrittr,"%>%")
 importFrom(methods,
   as,
   is,
   new,
-  slot
+  slot,
+  slotNames
 )
 importFrom(patchwork,plot_layout)
 importFrom(purrr,
@@ -144,11 +146,15 @@ importFrom(purrr,
 importFrom(rlang,sym)
 importFrom(stats,
   as.formula,
+  binomial,
   dist,
   logLik,
   median,
   model.matrix,
+  p.adjust,
+  prcomp,
   quantile,
+  rbinom,
   residuals,
   sd,
   setNames,
@@ -159,6 +165,9 @@ importFrom(tibble,
   as_tibble
 )
 importFrom(tidyr,pivot_longer)
-importFrom(utils,head)
+importFrom(utils,
+  capture.output,
+  head
+)
 importFrom(viridis,viridis)
 importMethodsFrom(S4Vectors,show)

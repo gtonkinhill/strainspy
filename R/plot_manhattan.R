@@ -40,7 +40,6 @@
 #' 
 #' @return A `ggplot` object showing the Manhattan plot if `plot = TRUE`, else a `data.frame` with plot data.
 #' @examples
-#' \donttest{
 #' meta <- read.csv(system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy"))
 #' meta$Case_status <- factor(meta$Case_status)
@@ -53,7 +52,6 @@
 #' nthreads = 1, return_vcov = FALSE)
 #' mh_data <- plot_manhattan(fit, taxonomy = tax, plot = FALSE)
 #' head(mh_data)
-#' }
 #' 
 #' @export
 plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NULL, method = "holm",
@@ -192,8 +190,8 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
       categories <- unique(plot_data[[col_tax_level]][order(plot_data$index_max)])
       colors_assigned <- custom_colors[seq_along(categories)]
       names(colors_assigned) <- categories
-      cat("Colour Legend:\n")
-      print(colors_assigned)
+      message("Colour legend:\n",
+              paste0("  ", names(colors_assigned), ": ", colors_assigned, collapse = "\n"))
     }
     
   } else {

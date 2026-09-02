@@ -41,10 +41,8 @@ object without metadata. In that case, apply necessary fixes and subsequently
 call \code{modify_metadata()}.
 }
 \examples{
-\donttest{
   # Read a merged metaphlan profile file into a SummarizedExperiment object
   example_path <- system.file("extdata", "metaphlan_merged.tsv.gz", 
   package = "strainspy")
   mp <- read_metaphlan(example_path)
-}
 }

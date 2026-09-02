@@ -22,10 +22,10 @@
 #' @param return_vcov If `TRUE`, include per-feature variance-covariance matrices in fit.
 #' @param attach_taxonomy If `TRUE` and `taxonomy_path` is provided, append taxonomy columns to top hits.
 #' @param overwrite If `FALSE`, abort when `output_path` already exists.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #' @return A data frame of top hits. If `taxonomy_path` is supplied and
 #' `attach_taxonomy = TRUE`, taxonomy columns are appended.
 #' @examples
-#' \donttest{
 #' meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
 #' sylph_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
@@ -48,7 +48,6 @@
 #'   alpha = 1
 #' )
 #' head(out)
-#' }
 #' @export
 strainspy <- function(meta_path, sylph_path, design_formula, coef,
                       min_nonzero = NULL,
@@ -60,7 +59,9 @@ strainspy <- function(meta_path, sylph_path, design_formula, coef,
                       nthreads = 2,
                       return_vcov = FALSE,
                       attach_taxonomy = TRUE,
-                      overwrite = TRUE) {
+                      overwrite = TRUE,
+                      progress = TRUE) {
+  check_progress(progress)
   if (!is.character(meta_path) || length(meta_path) != 1 || !nzchar(meta_path)) {
     stop("`meta_path` must be a non-empty character path to a metadata CSV file.")
   }
@@ -148,7 +149,7 @@ strainspy <- function(meta_path, sylph_path, design_formula, coef,
   }
 
   meta_data <- tryCatch({
-    readr::read_csv(meta_path, show_col_types = FALSE)
+    utils::read.csv(meta_path)
   }, error = function(e) {
     stop("Failed to read metadata file `", meta_path, "`: ", conditionMessage(e))
   })
@@ -203,7 +204,8 @@ strainspy <- function(meta_path, sylph_path, design_formula, coef,
     nthreads = nthreads,
     scale_continuous = scale_continuous,
     method = model_method,
-    return_vcov = return_vcov
+    return_vcov = return_vcov,
+    progress = progress
   )
 
   top_hits_df <- top_hits(fit, coef = coef, method = p_adjust_method, alpha = alpha)
@@ -228,7 +230,7 @@ strainspy <- function(meta_path, sylph_path, design_formula, coef,
     if (file.exists(output_path) && !isTRUE(overwrite)) {
       stop("Output file already exists and `overwrite = FALSE`: ", output_path)
     }
-    readr::write_csv(top_hits_df, output_path)
+    utils::write.csv(top_hits_df, output_path, row.names = FALSE)
   }
 
   top_hits_df

@@ -103,7 +103,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   
   if(!is.null(tax_col)){ 
     # Now reorder by global taxonomic tree
-    ordered_genomes <- colour_by_tax(unique(hierarchy_df$Genome_file), taxonomy)
+    ordered_genomes <- colour_by_tax(unique(hierarchy_df$Genome_file), tax)
     
     hierarchy_df <- hierarchy_df %>%
       dplyr::arrange(Model, match(Genome_file, ordered_genomes)) %>%

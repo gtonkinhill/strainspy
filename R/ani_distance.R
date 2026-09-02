@@ -16,7 +16,6 @@
 #' @importFrom stats dist
 #'
 #' @examples
-#' \donttest{
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' tax_path <- system.file("extdata", "example_taxonomy.tsv.gz", 
@@ -24,7 +23,6 @@
 #' se <- read_sylph(example_path)
 #' tax <- read_taxonomy(tax_path)
 #' distance_matrix <- ani_distance(se)
-#' }
 #'
 #' @export
 ani_distance <- function(se, taxonomy=NULL, tax_level="Species", collapse_method='representative') {

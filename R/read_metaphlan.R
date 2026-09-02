@@ -30,12 +30,10 @@
 #' @importFrom S4Vectors DataFrame na.omit
 #'
 #' @examples
-#' \donttest{
 #'   # Read a merged metaphlan profile file into a SummarizedExperiment object
 #'   example_path <- system.file("extdata", "metaphlan_merged.tsv.gz", 
 #'   package = "strainspy")
 #'   mp <- read_metaphlan(example_path)
-#' }
 #' @export
 read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundance",
                            clean_names = TRUE) {
@@ -137,6 +135,10 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
                                                     compression = TRUE)
   }
   
+  # Duplicated names would silently misalign metadata downstream.
+  check_unique_names(rownames(col_data), "sample", clean_names)
+  check_unique_names(rownames(row_data), "feature", clean_names)
+
   se = SummarizedExperiment::SummarizedExperiment(
     assays = list(Matrix::sparseMatrix(
       i = metaphlan_data[['row_indices']],

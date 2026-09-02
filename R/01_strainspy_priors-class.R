@@ -24,6 +24,41 @@ methods::setClass("strainspy_priors",
                   )
 )
 
+# A malformed `priors_df` is not rejected by glmmTMB with anything useful: it
+# fails with "replacement has length zero" deep inside the fit, and because the
+# fitters wrap each feature in tryCatch(error = function(e) NULL), every feature
+# is silently dropped and the user gets a fit object with zero rows. Validate
+# the shape here so the problem is reported once, clearly, up front.
+methods::setValidity("strainspy_priors", function(object) {
+  msg <- character(0)
+
+  valid_methods <- c("preset_weak", "preset_strong", "empirical", "manual")
+  if (length(object@method) != 1L || is.na(object@method)) {
+    msg <- c(msg, "`method` must be a single, non-missing character string.")
+  } else if (!object@method %in% valid_methods) {
+    msg <- c(msg, paste0("`method` must be one of ",
+                         paste(sQuote(valid_methods), collapse = ", "),
+                         "; got ", sQuote(object@method), "."))
+  }
+
+  # glmmTMB's `priors` argument requires these columns. An empty data frame is
+  # legitimate: it means no priors were set on any term.
+  if (nrow(object@priors_df) > 0L) {
+    required <- c("prior", "class", "coef")
+    missing_cols <- setdiff(required, colnames(object@priors_df))
+    if (length(missing_cols) > 0L) {
+      msg <- c(msg, paste0(
+        "`priors_df` is missing the column(s) ",
+        paste(sQuote(missing_cols), collapse = ", "),
+        " required by `glmmTMB::glmmTMB(priors = )`. Present: ",
+        paste(sQuote(colnames(object@priors_df)), collapse = ", "), "."
+      ))
+    }
+  }
+
+  if (length(msg) > 0L) msg else TRUE
+})
+
 
 
 #' Print method for strainspy_priors objects

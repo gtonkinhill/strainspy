@@ -31,12 +31,11 @@ ANI values, row-level annotations, and optional taxonomy columns.
 Extract data from a StrainSpy \code{SummarizedExperiment} object in long format
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 # Change variable from character to factor
 example_meta$Case_status = factor(example_meta$Case_status)
 
@@ -51,6 +50,5 @@ tax <- read_taxonomy(tax_path)
 extract_strainspy(se, variables = c("Case_status", "Age_at_collection"), 
 contigs = rownames(se)[1:5], taxonomy=tax)
 
-}
 
 }

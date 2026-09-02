@@ -1,18 +1,26 @@
+# Non-standard-evaluation column and aesthetic names referenced inside
+# data.table, dplyr and ggplot2 expressions. Function names do NOT belong
+# here - declare those with @importFrom in R/strainspy-package.R instead, so
+# that R CMD check can still catch a genuinely missing import.
 utils::globalVariables(c(
-  ".", "#clade_name", "ANI", "Class", "Coefficient", "Contig",
-  "Contig_name", "Dim1", "Dim2", "Domain", "Family", "Genome_file", "Genus",
-  "Level", "Model", "Name", "Order", "PC1", "PC2", "Phylum", "Sample_file",
-  "Species", "Taxonomy", "V1", "V2", "abline", "ani", "as", "binomial",
-  "capture.output", "coefficient", "col_indices", "dist", "genome", "index",
-  "index_max", "index_min", "log10p", "log_p_adjust", "max_index", "min_index",
-  "p.adjust", "p_adjust", "p_value", "phenotype", "prcomp", "pred", "query_name",
-  "rbinom", "relative_abundance", "row_indices", "set", "slotNames",
-  "str_extract", "strip_random_effects", "tax", "taxonomy", "tibble",
-  "zi_coefficient", "zi_p_adjust", "zi_p_value", 'isTip', 'y', 'label', 'Genome',
-  "zero_count", "total", "zero_prop", "Value_orig", "value", "component", 
-  "ref_nz", "comp_nz", "ref_total", "comp_total", "estimate", "fail_reasons",
-  "component_p", "NMDS1", "NMDS2", "Group", "DistanceToCentroid",
-  "spline_x", "spline_density", "spline_y", "density"
+  ".", "#clade_name", "ANI", "Class",
+  "coefficient", "Coefficient", "col_indices", "comp_nz",
+  "comp_total", "component", "component_p", "Contig",
+  "Contig_name", "density", "Dim1", "Dim2",
+  "DistanceToCentroid", "Domain", "estimate", "fail_reasons",
+  "Family", "genome", "Genome", "Genome_file",
+  "Genus", "Group", "index", "index_max",
+  "index_min", "isTip", "label", "Level",
+  "log_p_adjust", "log10p", "max_index", "min_index",
+  "Model", "Name", "NMDS1", "NMDS2",
+  "Order", "p_adjust", "p_value", "PC1",
+  "PC2", "phenotype", "Phylum", "pred",
+  "query_name", "ref_nz", "ref_total", "relative_abundance",
+  "row_indices", "Sample_file", "Species", "spline_density",
+  "spline_x", "tax", "taxonomy", "Taxonomy",
+  "total", "V1", "V2", "value",
+  "Value_orig", "y", "zero_count", "zero_prop",
+  "zi_coefficient", "zi_p_adjust", "zi_p_value"
 ))
 
 

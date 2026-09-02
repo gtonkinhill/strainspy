@@ -32,12 +32,11 @@
 #' use in \pkg{caret} functions such as \code{caret::train()}. 
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #' 
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' sy <- read_sylph(example_path, example_meta)
@@ -48,7 +47,6 @@
 #'   contigs = contigs,
 #'   covariates = c("Sex", "BMI")
 #' )
-#' }
 #'
 #' @export
 prep_for_prediction <- function(sy, outcome, contigs, covariates = NULL, use_genome_names = TRUE) {

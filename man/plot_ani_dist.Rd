@@ -45,11 +45,10 @@ used to generate the ANI distribution plot.
 Generate a violin or box plot for a subset of contigs for a categorical phenotype.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 # Change variable from character to factor
 example_meta$Case_status = factor(example_meta$Case_status)
 
@@ -57,6 +56,5 @@ example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", package =
 se <- read_sylph(example_path, example_meta)
 
 plot_ani_dist(se, phenotype = "Case_status", contigs = rownames(se)[1:5])
-}
 
 }

@@ -13,7 +13,8 @@ update_fit(
   method = "glmmTMB",
   family = glmmTMB::ordbeta(),
   nthreads = 1,
-  BPPARAM = NULL
+  BPPARAM = NULL,
+  progress = TRUE
 )
 }
 \arguments{
@@ -34,6 +35,8 @@ update_fit(
 \item{nthreads}{An integer specifying the number of (CPUs or workers) to use. Defaults to 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function will configure an appropriate backend automatically.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 Updated version of the fit object

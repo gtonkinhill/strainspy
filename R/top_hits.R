@@ -84,7 +84,8 @@ top_hits <- function(fit, coef=2, method = "holm", alpha=0.05) {
   if(nrow(res) == 0) {
     warning(sprintf("Multiple testing correction using `%s`: No significant associations detected for coef = %d at alpha = %f", method, coef, alpha))
   } else {
-    cat(paste("Found", nrow(res), "tophits for", names(fit@coefficients)[coef], "at alpha =", alpha, "using", method, "\n"))
+    message("Found ", nrow(res), " tophits for ", names(fit@coefficients)[coef],
+            " at alpha = ", alpha, " using ", method)
     # shortcut to attach phenotype and other info to top_hits
     attr(res, "phenotype_coef") = coef
     # attr(res, "phenotype") = names(fit@coefficients)[coef] # This fails with multifactor variables

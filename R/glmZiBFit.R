@@ -16,6 +16,7 @@
 #' @param method Character. The method to use for fitting the model. Either 'glmmTMB' (default) or 'gamlss'.
 #' @param return_vcov Logical. Return variance-covariance matrices for each model, required for `estimate_effect_sizes()`. 
 #' Disabling will result in a much smaller `strainspy_fit` object that is useful for most analyses. Defaults to `TRUE`.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'
 #' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
@@ -31,7 +32,6 @@
 #' \item{call}{Call to `glmZiBFit`} 
 #'
 #' @import SummarizedExperiment
-#' @import gamlss
 #' @importFrom glmmTMB glmmTMB
 #' @importFrom stats model.matrix
 #' @importFrom methods new
@@ -39,12 +39,11 @@
 #' 
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
@@ -53,17 +52,30 @@
 #' design <- as.formula(" ~ Case_status")
 #'
 #' fit <- glmZiBFit(se[1:10,], design, nthreads=2)
-#' }
 #'
 #' @export
 glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE, 
                       MAP_prior = 'preset_weak', BPPARAM=NULL, method='glmmTMB',
-                      return_vcov = TRUE) {
+                      return_vcov = TRUE, progress=TRUE) {
+  check_progress(progress)
   method <- match.arg(method, choices = c("glmmTMB", "gamlss"))
 
   # Check if glmmTMB is installed when selected as backend
   if (method == "glmmTMB" && !requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required for method = 'glmmTMB' but is not installed. Please install it with install.packages('glmmTMB').")
+  }
+
+  # Check if gamlss is installed when selected as backend
+  if (method == "gamlss") {
+    missing_pkgs <- c("gamlss", "gamlss.dist")[
+      !vapply(c("gamlss", "gamlss.dist"), requireNamespace, logical(1), quietly = TRUE)
+    ]
+    if (length(missing_pkgs) > 0) {
+      stop("The following package(s) are required for method = 'gamlss' but are not installed: ",
+           paste(missing_pkgs, collapse = ", "),
+           ". Please install them with install.packages(c(",
+           paste0('"', missing_pkgs, '"', collapse = ", "), ")).")
+    }
   }
   
   # Validate input
@@ -101,7 +113,8 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
   }
   
   prior_obj = resolve_priors(MAP_prior, se, nbd)
-  fixed_priors = prior_obj@priors_df
+  # prior_obj is NULL when MAP_prior = NULL (unpenalised / MLE fit)
+  fixed_priors = if (is.null(prior_obj)) NULL else prior_obj@priors_df
   
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
@@ -111,10 +124,12 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
       # BPPARAM <- BiocParallel::MulticoreParam(
       #   workers = nthreads
       # )
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = progress, tasks=100)
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
     }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
   
   # Split rows into 50-row chunks
@@ -123,7 +138,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
-  cat("Fitting model... \n")
+  if (progress) cat("Fitting model... \n")
   
   if (method == 'glmmTMB') {
     results <- BiocParallel::bplapply(
@@ -136,7 +151,8 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
     results <- BiocParallel::bplapply(
       row_chunks,
       function(row_indices) fit_zero_inflated_beta_gamlss(SummarizedExperiment::assay(se)[row_indices, , drop=FALSE],
-                                                          col_data, combined_formula, design, fixed_priors),
+                                                          col_data, combined_formula, design, fixed_priors,
+                                                          progress = progress),
       BPPARAM = BPPARAM
     )
   }
@@ -148,11 +164,9 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
   # Clean up
   BiocParallel::bpstop(BPPARAM)
   
-  # sometimes results can be an empty list, remove those dynamically
-  rmidx = which(sapply(results, length) == 0)
-  # sometimes the loglikelihood is NA when the result failed
-  rmidx = c(rmidx, which(is.na(unlist(lapply(results, function(x) x$log_likelihood)))))
-  rmidx = unique(rmidx)
+  # Drop features whose fit failed. See `failed_fit_index()` for why both the
+  # zero-length and the NA-log_likelihood protocols have to be handled.
+  rmidx = failed_fit_index(results)
   if(length(rmidx) > 0) {
     seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
     results[rmidx] <- NULL
@@ -178,7 +192,6 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
                               residuals = DataFrame(purrr::map_dfr(results, ~ .x$residuals)),
                               convergence = purrr::map_lgl(results, ~ .x$convergence),
                               design = design,
-                              # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                               call = match.call(),  # Store the function call for reproducibility
                               family = glmmTMB::beta_family(link = "logit")
     )
@@ -198,7 +211,6 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
                               residuals = DataFrame(purrr::map_dfr(results, ~ .x$residuals)),
                               convergence = purrr::map_lgl(results, ~ .x$convergence),
                               design = design,
-                              # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                               call = match.call(),  # Store the function call for reproducibility
                               family = glmmTMB::beta_family(link = "logit")
     )
@@ -293,12 +305,14 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #' @param combined_formula The formula for the conditional mean model.
 #' @param design The formula for the zero-inflation model.
 #' @param fixed_priors Optional priors for the model.
+#' @param progress Logical. If `TRUE` (default), a progress message is printed.
 #' @return A list with model coefficients, zero-inflation coefficients, residuals,
 #'         log-likelihood, and convergence status.
 #'
 #' @importFrom stats residuals
-fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula, design, fixed_priors) {
-  cat("Fitting model... \n")
+fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula, design, fixed_priors,
+                                          progress = TRUE) {
+  if (progress) cat("Fitting model... \n")
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)

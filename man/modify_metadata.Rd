@@ -30,15 +30,13 @@ however, factor levels should reflect the intended reference level. It is recomm
 manually convert such variables to factors with explicitly set levels \emph{before} calling \code{modify_metadata()}.
 }
 \examples{
-\donttest{
   # Add or modify metadata subsequently
   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
   package = "strainspy")
-  example_meta <- readr::read_csv(example_meta_path)
+  example_meta <- read.csv(example_meta_path)
   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
   package = "strainspy")
   se <- read_sylph(example_path)
   se <- modify_metadata(se, example_meta)
-}
 
 }

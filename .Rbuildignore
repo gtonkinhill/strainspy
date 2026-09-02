@@ -9,7 +9,8 @@
 ^\.vscode$
 ^\.Rhistory$
 ^\.RData$
-^\.DS_Store$
-^strainspy\.Rcheck$
+\.DS_Store$
+^.*\.Rcheck$
+^.*\.BiocCheck$
 ^.*\.tar\.gz$
 ^\.gitignore$

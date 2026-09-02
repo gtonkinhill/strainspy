@@ -11,6 +11,7 @@
 #' @param scale_continuous Logical. If `TRUE`, all numeric columns in `colData(se)` are z-score standardized (mean = 0, SD = 1). Defaults to `FALSE`.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'
 #' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
@@ -27,12 +28,11 @@
 #' @importFrom stats terms
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_meta$Case_status <- factor(example_meta$Case_status)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
@@ -42,10 +42,11 @@
 #' design <- as.formula("Case_status ~ Value + Age_at_collection")
 #'
 #' fit <- caseControlFit(se[1:10,], design, nthreads=2)
-#' }
 #'
 #' @export
-caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_continuous=TRUE, BPPARAM=NULL) {
+caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_continuous=TRUE, BPPARAM=NULL,
+                           progress=TRUE) {
+  check_progress(progress)
 
   # Validate input
   if (!inherits(se, "SummarizedExperiment")) {
@@ -98,10 +99,12 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
       # BPPARAM <- BiocParallel::MulticoreParam(
       #   workers = nthreads
       # )
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = progress, tasks=100)
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
     }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
 
   # Split rows into 50-row chunks
@@ -135,7 +138,6 @@ caseControlFit <- function(se, design, min_identity=0.98, nthreads=1, scale_cont
                    residuals = NULL,
                    convergence = purrr::map_lgl(results, ~ .x$convergence),
                    design = design,
-                   # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                    call = match.call()  # Store the function call for reproducibility
   )
 

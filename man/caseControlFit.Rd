@@ -10,7 +10,8 @@ caseControlFit(
   min_identity = 0.98,
   nthreads = 1,
   scale_continuous = TRUE,
-  BPPARAM = NULL
+  BPPARAM = NULL,
+  progress = TRUE
 )
 }
 \arguments{
@@ -27,6 +28,8 @@ to one 1.}
 
 \item{BPPARAM}{Optional \code{BiocParallelParam} object. If not provided, the function
 will configure an appropriate backend automatically.}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 A \code{strainspy_fit} object with the following components:
@@ -44,12 +47,11 @@ This function fits a logistic regression model similar to that published in the 
 It takes a \code{SummarizedExperiment} object as input, along with a user-defined formula.
 }
 \examples{
-\donttest{
 library(strainspy)
 
 example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 package = "strainspy")
-example_meta <- readr::read_csv(example_meta_path)
+example_meta <- read.csv(example_meta_path)
 example_meta$Case_status <- factor(example_meta$Case_status)
 example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 package = "strainspy")
@@ -59,6 +61,5 @@ se <- filter_by_presence(se)
 design <- as.formula("Case_status ~ Value + Age_at_collection")
 
 fit <- caseControlFit(se[1:10,], design, nthreads=2)
-}
 
 }

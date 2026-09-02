@@ -31,12 +31,10 @@
 #'
 #' @examples
 #' 
-#' \donttest{
 #'   # Read a merged sourmash file into a SummarizedExperiment object
 #'   example_path <- system.file("extdata", "example_sourmash.csv.gz", 
 #'   package = "strainspy")
 #'   sm <- read_sourmash(example_path)
-#' }
 #' @export
 read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment_ani",
                           clean_names = TRUE) {
@@ -161,6 +159,10 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
                                                     compression = TRUE)
   }
   
+  # Duplicated names would silently misalign metadata downstream.
+  check_unique_names(rownames(col_data), "sample", clean_names)
+  check_unique_names(rownames(row_data), "feature", clean_names)
+
   se = SummarizedExperiment::SummarizedExperiment(
     assays = list(Matrix::sparseMatrix(
       i = sourmash_data[['row_indices']],
@@ -205,6 +207,23 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
 #' @param output Save path for the output file. Internally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
 #' @param strip_unusable Remove columns containing data not useful for further analysis. Default TRUE. 
 #' @return Invisibly returns `NULL`. The merged sourmash table is written to `output`.
+#' @examples
+#' # Split the bundled sourmash output into two per-query files, then merge them.
+#' hits <- data.table::fread(
+#'   system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
+#' )
+#' queries <- head(unique(hits$query_name), 2)
+#' parts <- vapply(queries, function(q) {
+#'   f <- tempfile(fileext = ".csv")
+#'   data.table::fwrite(hits[hits$query_name == q, ], f)
+#'   f
+#' }, character(1))
+#'
+#' merged <- tempfile(fileext = ".csv.gz")
+#' merge_sourmash_files(parts, output = merged)
+#'
+#' sm <- read_sourmash(merged)
+#' dim(sm)
 #' @export
 merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, strip_unusable = TRUE){
   if (length(sourmash_files) == 0) {

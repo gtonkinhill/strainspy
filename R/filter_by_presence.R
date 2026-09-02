@@ -12,14 +12,12 @@
 #' @import SummarizedExperiment
 #'
 #' @examples
-#' \donttest{
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path)
 #'
 #' # Filter to keep only rows with >20 non-zero entries 
 #' filtered_se <- filter_by_presence(se, min_nonzero = 20)
-#' }
 #'
 #' @export
 filter_by_presence <- function(se, min_nonzero = 10) {
@@ -42,8 +40,8 @@ filter_by_presence <- function(se, min_nonzero = 10) {
   # Identify which rows have at least 'min_nonzero' non-zero entries
   rows_to_keep <- nonzero_counts >= min_nonzero
     
-  # Filter the assays, rowDatcolors()# Filter the assays, rowData, and colData in the SummarizedExperiment
-  cat("Retained", sum(rows_to_keep), "rows after filtering\n")
+  # Filter the assays, rowData, and colData in the SummarizedExperiment
+  message("Retained ", sum(rows_to_keep), " rows after filtering")
   filtered_se <- se[rows_to_keep, ]
   
   # Return the filtered SummarizedExperiment
@@ -103,7 +101,6 @@ filter_by_presence_longitudinal <- function(se, min_subjects = 3, min_timepoints
 #' @import SummarizedExperiment
 #'
 #' @examples
-#' \donttest{
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path)
@@ -113,7 +110,6 @@ filter_by_presence_longitudinal <- function(se, min_subjects = 3, min_timepoints
 #'
 #' # View the filtered object
 #' filtered_se
-#' }
 #'
 filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundance = FALSE) {
   
@@ -138,7 +134,11 @@ filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundan
   
   # diagnostic plot
   ord = order(nonzero_counts)
-  plot(nonzero_counts[ord], col = ifelse(rows_to_keep==TRUE, "red", "blue")[ord]) + abline(h = min_nonzero)
+  # These are two statements, not one expression: plot() returns NULL
+  # invisibly, so the original `plot(...) + abline(...)` evaluated to
+  # NULL + NULL and only worked because both sides ran as arguments.
+  plot(nonzero_counts[ord], col = ifelse(rows_to_keep == TRUE, "red", "blue")[ord])
+  abline(h = min_nonzero)
   
   filtered_se <- se[rows_to_keep, ]
   

@@ -14,6 +14,7 @@
 #' @param low_cutoff Ceiling for small SD estimates. Default 0.1
 #' @param high_cutoff Floor for large SD estimates. Default 10
 #' @param est_disperion_prior Estimate a prior for disperion (default = FALSE)
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #' @return An object of class \code{strainspy_priors}.
 #' @examples
 #' if (requireNamespace("fastglm", quietly = TRUE) && 
@@ -34,7 +35,9 @@
 #' @export
 compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
                               low_cutoff = 0.1, high_cutoff = 10,
-                              est_disperion_prior = FALSE) {
+                              est_disperion_prior = FALSE, progress = TRUE) {
+  
+  check_progress(progress)
   
   required_pkgs <- c("fastglm", "betareg")
   missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace,
@@ -69,18 +72,21 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
   
   # parallel backend
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
-    if (is.null(BPPARAM))
+    if (is.null(BPPARAM)) {
       BPPARAM <- BiocParallel::SnowParam(workers = nthreads,
-                                         progressbar = TRUE)
+                                         progressbar = progress)
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
+    }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
   
   ## --------------------
   ## ZI priors
   ## --------------------
   
-  cat("Computing fixef_zi priors...\n")
+  if (progress) cat("Computing fixef_zi priors...\n")
   
   rx_ZI <- BiocParallel::bplapply(chunk_list,
                                   glmBin_chunk,
@@ -101,7 +107,7 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
   ## Beta priors
   ## --------------------
   
-  cat("Computing fixef priors...\n")
+  if (progress) cat("Computing fixef priors...\n")
   
   rx_beta <- BiocParallel::bplapply(chunk_list,
                                     beta_chunk,
@@ -240,9 +246,11 @@ define_priors = function(se, design, method = 'preset_weak', add_dispersion_prio
   term_names <- colnames(mx_pred)
   
   if (method %in% c("preset_weak", "preset_strong")) {
-    intercept_idx = grep("(Intercept)", term_names)
+    intercept_idx = grep("(Intercept)", term_names, fixed = TRUE)
     if(length(intercept_idx) == 1){
-      warning("No MAP prior will be set to intercept")
+      # Leaving the intercept unpenalised is intended behaviour on the default
+      # path, so inform rather than warn (this fires on every default fit).
+      message("No MAP prior will be set on the intercept.")
       term_names = term_names[-intercept_idx]
     }
     

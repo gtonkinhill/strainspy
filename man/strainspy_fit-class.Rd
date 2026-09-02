@@ -38,8 +38,6 @@ The \code{strainspy_fit} class is designed to store the results of strainspy
 
 \item{\code{design}}{A matrix representing the design matrix of the model.}
 
-\item{\code{assay}}{A matrix containing the assay data used for fitting the model.}
-
 \item{\code{call}}{The matched call of the model.}
 
 \item{\code{family}}{The family of the fit.}

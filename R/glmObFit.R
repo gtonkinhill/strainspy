@@ -28,6 +28,7 @@
 #' For general use, leave this at default Advanced users can experiment with others families in `?glmmTMB::family_glmmTMB`
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function
 #'        will configure an appropriate backend automatically. 
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'
 #' @return A `strainspy_fit` object with the following components:
 #' \item{row_data}{A DFrame with 6 slots with feature details}
@@ -43,12 +44,11 @@
 #' @importFrom glmmTMB glmmTMB
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
@@ -58,13 +58,13 @@
 #'
 #' fit <- glmObFit(se[1:10,],  design, family=glmmTMB::ordbeta())
 #' 
-#' }
 #'
 #' @export
 glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior = 'preset_weak', 
-                     family=glmmTMB::ordbeta(), BPPARAM=NULL) {
+                     family=glmmTMB::ordbeta(), BPPARAM=NULL, progress=TRUE) {
+  check_progress(progress)
   # add message
-  cat("Fitting model... \n")
+  if (progress) cat("Fitting model... \n")
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -111,7 +111,9 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
   #   class = rep("fixef", each=nbeta),
   #   coef  = as.character(seq(1,nbeta)))
   prior_obj = resolve_priors(MAP_prior, se, nbd)
-  fixed_priors = extract_fixef_priors(prior_obj) # drop ZI priors
+  # prior_obj is NULL when MAP_prior = NULL (unpenalised / MLE fit); the S4
+  # generic has no NULL method, so guard before dispatching.
+  fixed_priors = if (is.null(prior_obj)) NULL else extract_fixef_priors(prior_obj) # drop ZI priors
 
   # Set up parallel infrastructure
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
@@ -121,10 +123,12 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
       # BPPARAM <- BiocParallel::MulticoreParam(
       #   workers = nthreads
       # )
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=100)
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = progress, tasks=100)
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
     }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
   
   # Split rows into 50-row chunks
@@ -133,7 +137,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
-  cat("Fitting model... \n")
+  if (progress) cat("Fitting model... \n")
   
   results <- BiocParallel::bplapply(
     row_chunks,
@@ -150,7 +154,8 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
   BiocParallel::bpstop(BPPARAM)
   
   # sometimes results can be an empty list, remove those dynamically
-  rmidx = which(sapply(results, length) == 0)
+  # Drop features whose fit failed; handles both backend failure protocols.
+  rmidx = failed_fit_index(results)
   
   if(length(rmidx) > 0) {
     seRD = SummarizedExperiment::rowData(se)[-rmidx, , drop = FALSE]
@@ -172,7 +177,6 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
                   residuals = DataFrame(purrr::map_dfr(results, ~ .x[[3]])),
                   convergence = purrr::map_lgl(results, ~ .x$convergence),
                   design = design,
-                  # assay = assays(se)[[1]],  # Retrieve assay data matrix from SummarizedExperiment
                   call = match.call()  # Store the function call for reproducibility
   )
   
@@ -209,7 +213,9 @@ fit_ob_model <- function(se_subset, col_data, combined_formula, fixed_priors, fa
     }, error = function(e) NULL)
     
     # Handle the case where the model could not be fitted
-    if (is.null(fit) || (fit$fit$convergence!=0)) {
+    # isTRUE() keeps this length-safe: if $fit$convergence is absent, `!= 0`
+    # yields logical(0), `||` yields NA, and `if (NA)` would abort the chunk.
+    if (is.null(fit) || !isTRUE(fit$fit$convergence == 0)) {
       warning("Failed to fit the model for species index: ", row_index)
       return(NULL)
     }

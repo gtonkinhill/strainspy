@@ -11,7 +11,8 @@ compute_eb_priors(
   BPPARAM = NULL,
   low_cutoff = 0.1,
   high_cutoff = 10,
-  est_disperion_prior = FALSE
+  est_disperion_prior = FALSE,
+  progress = TRUE
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ will configure an appropriate backend automatically.}
 \item{high_cutoff}{Floor for large SD estimates. Default 10}
 
 \item{est_disperion_prior}{Estimate a prior for disperion (default = FALSE)}
+
+\item{progress}{Logical. If \code{TRUE} (default), progress bars and progress messages are printed. Set to \code{FALSE} to silence them.}
 }
 \value{
 An object of class \code{strainspy_priors}.

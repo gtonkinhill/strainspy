@@ -35,12 +35,10 @@
 #'
 #' @examples
 #' 
-#' \donttest{
 #'   # Read a Sylph file 
 #'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #'   package = "strainspy")
 #'   sy <- read_sylph(example_path)
-#' }
 read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min_identity = 95, clean_names = TRUE) {
   
   # Check input argument
@@ -172,6 +170,10 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min
                                                     compression = TRUE)
   }
   
+  # Duplicated names would silently misalign metadata downstream.
+  check_unique_names(rownames(col_data), "sample", clean_names)
+  check_unique_names(rownames(row_data), "feature", clean_names)
+
   se = SummarizedExperiment::SummarizedExperiment(
     assays = list(Matrix::sparseMatrix(
       i = sylph_data[['row_indices']],
@@ -207,6 +209,24 @@ read_sylph <- function(file_path, meta_data=NULL, variable = "Adjusted_ANI", min
 #' @param sylph_files A character vector of sylph output file paths to merge.
 #' @param output Save path for the output file. Internally, data.table::fwrite is used, provide the extension `gz` to save a compressed file.
 #' @return Invisibly returns `NULL`. The merged sylph table is written to `output`.
+#' @examples
+#' # Split the bundled profile into two per-sample files, then merge them back.
+#' profile <- data.table::fread(
+#'   system.file("extdata", "example_sylph_profile.tsv.gz", package = "strainspy")
+#' )
+#' samples <- head(unique(profile$Sample_file), 2)
+#' parts <- vapply(samples, function(s) {
+#'   f <- tempfile(fileext = ".tsv")
+#'   data.table::fwrite(profile[profile$Sample_file == s, ], f, sep = "\t")
+#'   f
+#' }, character(1))
+#'
+#' merged <- tempfile(fileext = ".tsv.gz")
+#' merge_sylph_files(parts, merged)
+#'
+#' # The merged file carries one header and both samples
+#' se <- read_sylph(merged)
+#' dim(se)
 #' @export
 merge_sylph_files <- function(sylph_files, output) {
   stopifnot(is.character(sylph_files), length(sylph_files) > 0)

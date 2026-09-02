@@ -33,3 +33,21 @@ The output of this function is suitable to use in read_sourmash()
 \details{
 Refer to \href{https://sourmash.readthedocs.io/en/latest/classifying-signatures.html#searching-for-similar-samples-with-search}{sourmash documentation} for more information.
 }
+\examples{
+# Split the bundled sourmash output into two per-query files, then merge them.
+hits <- data.table::fread(
+  system.file("extdata", "example_sourmash.csv.gz", package = "strainspy")
+)
+queries <- head(unique(hits$query_name), 2)
+parts <- vapply(queries, function(q) {
+  f <- tempfile(fileext = ".csv")
+  data.table::fwrite(hits[hits$query_name == q, ], f)
+  f
+}, character(1))
+
+merged <- tempfile(fileext = ".csv.gz")
+merge_sourmash_files(parts, output = merged)
+
+sm <- read_sourmash(merged)
+dim(sm)
+}

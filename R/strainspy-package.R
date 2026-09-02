@@ -11,5 +11,13 @@
 #' @importFrom data.table .NGRP
 #' @importFrom data.table .SD
 #' @importFrom data.table data.table
+#' @importFrom data.table set
+#' @importFrom graphics abline
+#' @importFrom methods slotNames
+#' @importFrom stats binomial
+#' @importFrom stats p.adjust
+#' @importFrom stats prcomp
+#' @importFrom stats rbinom
+#' @importFrom utils capture.output
 ## usethis namespace: end
 NULL

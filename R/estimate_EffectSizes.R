@@ -46,6 +46,7 @@
 #' @param reorder_hits Logical. Return `th` after reordering hits to priorities
 #' best supported ones. Default `FALSE`.
 #' @param BPPARAM Optional BiocParallelParam object.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'
 #' @return A `tibble` similar to `th`, with added columns giving details on:
 #' Component (Beta, ZI or both), Mean ANI_Difference, Contrast, Non-Zero Counts 
@@ -72,7 +73,9 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
                                           beta_min_nz = 0.1, 
                                           beta_min_ani_diff = 1.5e-2, 
                                           nthreads = 1L, reorder_hits = FALSE,
-                                          BPPARAM=NULL){
+                                          BPPARAM=NULL, progress = TRUE){
+  
+  check_progress(progress)
   
   required_pkgs <- c("emmeans")
   missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
@@ -155,10 +158,12 @@ comp_ani_diff_and_posthoc_test = function(se, fit, th = NULL,
   if ((nthreads > 1) & (.Platform$OS.type != "windows")) {
     # Check the operating system and set the backend accordingly
     if (is.null(BPPARAM)) {
-      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = TRUE, tasks=length(top_hit_contigs))
+      BPPARAM <- BiocParallel::SnowParam(workers = nthreads, progressbar = progress, tasks=length(top_hit_contigs))
+    } else if (!progress) {
+      BiocParallel::bpprogressbar(BPPARAM) <- FALSE
     }
   } else {
-    BPPARAM <- BiocParallel::SerialParam(progressbar = TRUE)
+    BPPARAM <- BiocParallel::SerialParam(progressbar = progress)
   }
   
   

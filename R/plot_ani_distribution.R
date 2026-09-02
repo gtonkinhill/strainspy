@@ -22,11 +22,10 @@
 #' used to generate the ANI distribution plot.
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' # Change variable from character to factor
 #' example_meta$Case_status = factor(example_meta$Case_status)
 #'
@@ -34,7 +33,6 @@
 #' se <- read_sylph(example_path, example_meta)
 #'
 #' plot_ani_dist(se, phenotype = "Case_status", contigs = rownames(se)[1:5])
-#' }
 #'
 #' @export
 plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig_names = NULL, show_zero_plot = TRUE, 
@@ -268,12 +266,11 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #' attached as `attr(plot, "summary_table")`.
 #'
 #' @examples
-#' \donttest{
 #' library(strainspy)
 #'
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' # Change variable from character to factor
 #' example_meta$Case_status = factor(example_meta$Case_status)
 #'
@@ -283,7 +280,6 @@ plot_ani_dist <- function(se, phenotype, contigs, facet_phenotype = NULL, contig
 #'
 #' plot_histogram(se, phenotype = "Case_status", contig = rownames(se)[1])
 #'
-#' }
 #'
 #' @export
 plot_histogram <- function(se, phenotype, contig,

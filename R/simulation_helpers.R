@@ -55,6 +55,7 @@ rescale_beta <- function(x, beta = 0.98, zi=0.1) {
 #' @param family A `glmmTMB` family object. Defaults to `glmmTMB::ordbeta()`. Only applicable for `glmZiBFit()`
 #' @param nthreads An integer specifying the number of (CPUs or workers) to use. Defaults to 1.
 #' @param BPPARAM Optional `BiocParallelParam` object. If not provided, the function will configure an appropriate backend automatically.
+#' @param progress Logical. If `TRUE` (default), progress bars and progress messages are printed. Set to `FALSE` to silence them.
 #'        
 #' @return Updated version of the fit object 
 #'
@@ -64,7 +65,9 @@ update_fit <- function(fit, update_idx,
                        se, scale_continuous=TRUE,
                        min_identity=0.98, method='glmmTMB', 
                        family=glmmTMB::ordbeta(), 
-                       nthreads=1,  BPPARAM=NULL) {
+                       nthreads=1,  BPPARAM=NULL, progress=TRUE) {
+  
+  check_progress(progress)
   
   if (!inherits(se, "SummarizedExperiment")) {
     stop("`se` must be a SummarizedExperiment object.")
@@ -90,21 +93,23 @@ update_fit <- function(fit, update_idx,
   
   switch(fit_type,
          "glmZiBFit" = {
-           cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
+           if (progress) cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
            fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, 
-                              scale_continuous = scale_continuous, BPPARAM = BPPARAM)
+                              scale_continuous = scale_continuous, BPPARAM = BPPARAM,
+                              progress = progress)
          },
          "glmObFit" = {
-           cat("Updating", length(update_idx), "values by calling glmObFit\n")
+           if (progress) cat("Updating", length(update_idx), "values by calling glmObFit\n")
            fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, 
                              scale_continuous = scale_continuous, BPPARAM = BPPARAM, 
-                             family = family)
+                             family = family, progress = progress)
          },
          "caseControlFit" = {
-           cat("Updating", length(update_idx), "values by calling caseControlFit\n")
+           if (progress) cat("Updating", length(update_idx), "values by calling caseControlFit\n")
            fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, 
                                    design = design, nthreads = nthreads, 
-                                   scale_continuous = scale_continuous, BPPARAM = BPPARAM)
+                                   scale_continuous = scale_continuous, BPPARAM = BPPARAM,
+                                   progress = progress)
          },
          {
            # Default case (optional)
@@ -148,7 +153,9 @@ update_fit <- function(fit, update_idx,
     }
   }
   
-  
+  # Slot assignment does not run the class validity method (only new() and an
+  # explicit validObject() do), so re-check alignment before handing `fit` back.
+  methods::validObject(fit)
   
   return(fit)
   

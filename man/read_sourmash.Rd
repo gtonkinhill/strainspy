@@ -42,10 +42,8 @@ call \code{modify_metadata()}.
 }
 \examples{
 
-\donttest{
   # Read a merged sourmash file into a SummarizedExperiment object
   example_path <- system.file("extdata", "example_sourmash.csv.gz", 
   package = "strainspy")
   sm <- read_sourmash(example_path)
-}
 }

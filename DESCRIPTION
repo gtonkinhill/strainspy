@@ -1,7 +1,7 @@
 Package: strainspy
 Type: Package
 Title: Strain Level Microbiome Wide Association Studies
-Version: 0.1.0
+Version: 0.99.0
 Depends: R (>= 4.1.0)
 Authors@R: c(
     person(given = "Gerry", family = "Tonkin-Hill",
@@ -25,14 +25,14 @@ Imports:
     BiocParallel,
     data.table,
     dplyr,
-    gamlss,
-    gamlss.dist,
     ggforce,
     ggplot2,
     ggrepel,
     ggthemes,
     ggtree,
     glmmTMB,
+    graphics,
+    grDevices,
     harmonicmeanp,
     lmerTest,
     magrittr,
@@ -47,6 +47,8 @@ Imports:
     rlang,
     tibble,
     tidyr,
+    tools,
+    utils,
     viridis
 Suggests:
     betareg,
@@ -54,14 +56,15 @@ Suggests:
     compositions,
     fastglm,
     future,
+    gamlss,
+    gamlss.dist,
     knitr,
     mgcv,
     R.utils,
     rmarkdown,
     testthat (>= 3.0.0),
     vegan,
-    emmeans,
-    readr
+    emmeans
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
 Config/testthat/edition: 3

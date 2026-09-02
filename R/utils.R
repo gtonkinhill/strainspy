@@ -132,7 +132,7 @@ offset_ANI = function(x, eps = 1e-2){
 #' Resolve and construct priors for model fitting
 #'
 #' Ensures `MAP_prior` is interpreted correctly and returns a valid
-#' `strainspy_priors` object or NULL (for MLE).
+#' `strainspy_priors` object or NULL (for unpenalised ML fits).
 #'
 #' @param MAP_prior One of: NULL, a character string ("preset_weak", "preset_strong"),
 #'                  a prior `data.frame`, or a `strainspy_priors` object.
@@ -142,7 +142,7 @@ offset_ANI = function(x, eps = 1e-2){
 #' @return A `strainspy_priors` object or NULL.
 resolve_priors <- function(MAP_prior, se, design) {
   if (is.null(MAP_prior)) {
-    return(NULL)  # MLE case
+    return(NULL)  # unpenalised ML fit
   }
   
   if (inherits(MAP_prior, "strainspy_priors")) {
@@ -151,10 +151,15 @@ resolve_priors <- function(MAP_prior, se, design) {
   
   # We can construct it if it matches
   if (is.character(MAP_prior)) {
+    if (length(MAP_prior) != 1L || is.na(MAP_prior)) {
+      stop("`MAP_prior` must be a single character string when given as text; ",
+           "got length ", length(MAP_prior), ".", call. = FALSE)
+    }
     if (MAP_prior %in% c("preset_weak", "preset_strong")) {
       return(define_priors(se, design, method = MAP_prior))
     } else {
-      stop("Character MAP_prior must be one of: 'preset_weak', 'preset_strong'.")
+      stop("Character MAP_prior must be one of: 'preset_weak', 'preset_strong'.",
+           call. = FALSE)
     }
   }
   
@@ -162,7 +167,14 @@ resolve_priors <- function(MAP_prior, se, design) {
     return(define_priors(se = se, design = design, method = "manual", priors_df = MAP_prior))
   }
   
-  return(NULL) # worst case scenario - we don't know what to return, fit it REML
+  # Anything else is a mistake, not a request for an unpenalised fit. Returning
+  # NULL here would silently drop the priors and fit by maximum likelihood, so a
+  # typo or a factor/list slipping through would quietly change the model. Only
+  # an explicit MAP_prior = NULL selects the unpenalised fit.
+  stop("`MAP_prior` must be NULL (for an unpenalised maximum-likelihood fit), ",
+       "one of 'preset_weak' / 'preset_strong', a prior `data.frame`, or a ",
+       "`strainspy_priors` object; got an object of class ",
+       paste(sQuote(class(MAP_prior)), collapse = "/"), ".", call. = FALSE)
 }
 
 build_tax_tree = function(tax_mhp){
@@ -263,4 +275,104 @@ add_tax2tophits <- function(top_hits, taxonomy, columns = c("Species")) {
   }
   
   return(top_hits)
+}
+
+#' Identify per-feature model fits that failed
+#'
+#' The fitting backends signal failure in two different ways. `glmObFit()`,
+#' `glmQBFit()` and `abundanceFit()` return `NULL` for a feature that could not
+#' be fitted, so the failure shows up as a zero-length entry. Both `glmZiBFit()`
+#' backends instead return a fully-populated list whose coefficient matrices are
+#' `NA` and whose `log_likelihood` is `NA`, so the zero-length test never fires
+#' there and the `NA` log-likelihood is the only signal.
+#'
+#' Detecting only one of the two leaves failed fits in the results, and applying
+#' the `log_likelihood` test blindly is worse: `glmQBFit()` does not report a
+#' log-likelihood at all, so every successful fit would look like a failure.
+#' This helper handles both protocols by treating a log-likelihood that is
+#' absent from *every* result as "not reported" rather than "all failed".
+#'
+#' It deliberately uses `vapply()` rather than `unlist()`. `unlist()` silently
+#' drops the `NULL` log-likelihood of a zero-length entry, which shortens the
+#' vector and shifts every later index, so the returned positions would no
+#' longer line up with `results` or with `rowData()`.
+#'
+#' @param results A list of per-feature fit results, one element per feature,
+#'   in the same order as `rowData(se)`.
+#'
+#' @return An increasing integer vector of positions in `results` that should be
+#'   dropped, or `integer(0)` if every fit succeeded.
+failed_fit_index <- function(results) {
+  n <- length(results)
+  if (n == 0L) return(integer(0))
+
+  # Protocol A: the backend returned NULL for this feature.
+  failed <- vapply(results, length, integer(1)) == 0L
+
+  # Protocol B: the backend returned a populated result carrying NA log_likelihood.
+  # `reports_ll` asks whether the field is present at all, which is what
+  # separates "this backend does not report a log-likelihood" (glmQBFit, where
+  # no result has the field) from "this fit failed" (the field is there but NA
+  # or malformed).
+  reports_ll <- vapply(results, function(x) !is.null(x$log_likelihood), logical(1))
+  if (any(reports_ll)) {
+    ll <- rep(NA_real_, n)
+    ll[reports_ll] <- vapply(results[reports_ll], function(x) {
+      v <- x$log_likelihood
+      if (length(v) != 1L) NA_real_ else as.numeric(v)
+    }, numeric(1))
+    failed <- failed | (reports_ll & is.na(ll))
+  }
+
+  sort(which(failed))
+}
+
+#' Stop if sample or feature names are not unique
+#'
+#' `read_sylph()`, `read_metaphlan()` and `read_sourmash()` all reduce
+#' `Sample_file` to a bare basename when `clean_names = TRUE`. Two input paths
+#' that differ only by directory (`runA/S1.fastq.gz` and `runB/S1.fastq.gz`)
+#' therefore collapse to the same name. Duplicated names are not rejected by
+#' `SummarizedExperiment`, and every downstream `match()` on sample or feature
+#' names would then silently attach the wrong metadata to the wrong column, so
+#' fail here instead.
+#'
+#' @param x Character vector of names to check.
+#' @param what Character. What the names identify, used in the error message
+#'   (for example `"sample"` or `"feature"`).
+#' @param clean_names Logical. Whether the caller applied basename cleaning; used
+#'   only to tailor the suggested remedy.
+#'
+#' @return `x`, invisibly, if every name is unique.
+check_unique_names <- function(x, what, clean_names = FALSE) {
+  dup <- unique(x[duplicated(x)])
+  if (length(dup) > 0L) {
+    hint <- if (isTRUE(clean_names)) {
+      paste0("\nThese became identical after `clean_names = TRUE` stripped the ",
+             "directory and extension. Re-run with `clean_names = FALSE` to keep ",
+             "the full paths, or rename the inputs so the basenames are unique.")
+    } else {
+      "\nRename the inputs so that each name appears only once."
+    }
+    stop("Duplicated ", what, " name(s) found: ",
+         paste(utils::head(dup, 10), collapse = ", "),
+         if (length(dup) > 10L) paste0(" (and ", length(dup) - 10L, " more)") else "",
+         ".", hint, call. = FALSE)
+  }
+  invisible(x)
+}
+
+#' Validate a `progress` argument
+#'
+#' Internal helper used by the fitting functions to check that `progress` is a
+#' single, non-missing logical value.
+#'
+#' @param progress The value supplied to a `progress` argument.
+#'
+#' @return `progress`, invisibly.
+check_progress <- function(progress) {
+  if (!is.logical(progress) || length(progress) != 1L || is.na(progress)) {
+    stop("`progress` must be a single logical value (TRUE or FALSE).", call. = FALSE)
+  }
+  invisible(progress)
 }

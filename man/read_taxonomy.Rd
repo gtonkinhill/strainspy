@@ -16,9 +16,7 @@ A data.table containing parsed taxonomy information.
 This function reads a taxonomy file in Sylph format.
 }
 \examples{
-\donttest{
 tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
 package = "strainspy"))
 head(tax)
-}
 }

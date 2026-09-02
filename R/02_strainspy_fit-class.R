@@ -26,7 +26,6 @@ setClassUnion("ListOrNULL", c("List", "NULL"))
 #' @slot residuals A `DataFrame` containing residuals from the model.
 #' @slot convergence A logical indicating whether model fitting converged.
 #' @slot design A matrix representing the design matrix of the model.
-#' @slot assay A matrix containing the assay data used for fitting the model.
 #' @slot call The matched call of the model.
 #' @slot family The family of the fit. 
 #'
@@ -47,11 +46,42 @@ methods::setClass("strainspy_fit",
                     residuals = "DataFrameOrNULL",
                     convergence = "logical",
                     design = "formula",
-                    assay = "matrix",
                     call = "call",
                     family = "ANY" # We should make this mandatory
                   )
 )
+
+# Every per-feature slot is indexed positionally against `row_data`, so a length
+# mismatch silently attributes a strain's name to another strain's statistics.
+# Fail loudly instead.
+methods::setValidity("strainspy_fit", function(object) {
+  n <- nrow(object@row_data)
+  per_feature <- list(
+    coefficients = object@coefficients,
+    std_errors = object@std_errors,
+    p_values = object@p_values,
+    zi_coefficients = object@zi_coefficients,
+    zi_std_errors = object@zi_std_errors,
+    zi_p_values = object@zi_p_values,
+    vcov = object@vcov,
+    zi_vcov = object@zi_vcov
+  )
+  bad <- vapply(per_feature, function(x) {
+    if (is.null(x)) return(FALSE)
+    len <- if (is(x, "DataFrame")) nrow(x) else length(x)
+    len != n
+  }, logical(1))
+  if (length(object@convergence) && length(object@convergence) != n) {
+    bad <- c(bad, convergence = TRUE)
+  }
+  if (any(bad)) {
+    return(paste0(
+      "slot(s) ", paste(names(bad)[bad], collapse = ", "),
+      " are not aligned with row_data (", n, " features)."
+    ))
+  }
+  TRUE
+})
 
 #' Show Method for strainspy_fit
 #'

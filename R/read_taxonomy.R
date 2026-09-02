@@ -8,11 +8,9 @@
 #' @param file_path Path to the taxonomy file.
 #' @return A data.table containing parsed taxonomy information.
 #' @examples
-#' \donttest{
 #' tax <- read_taxonomy(system.file("extdata", "example_taxonomy.tsv.gz", 
 #' package = "strainspy"))
 #' head(tax)
-#' }
 #' @export
 read_taxonomy <- function(file_path) {
   # Read the taxonomy file

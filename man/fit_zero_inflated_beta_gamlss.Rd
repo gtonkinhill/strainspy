@@ -9,7 +9,8 @@ fit_zero_inflated_beta_gamlss(
   col_data,
   combined_formula,
   design,
-  fixed_priors
+  fixed_priors,
+  progress = TRUE
 )
 }
 \arguments{
@@ -22,6 +23,8 @@ fit_zero_inflated_beta_gamlss(
 \item{design}{The formula for the zero-inflation model.}
 
 \item{fixed_priors}{Optional priors for the model.}
+
+\item{progress}{Logical. If \code{TRUE} (default), a progress message is printed.}
 }
 \value{
 A list with model coefficients, zero-inflation coefficients, residuals,

@@ -20,10 +20,9 @@
 #' @return A ggplot2 object if plot = TRUE, otherwise a dataframe containing the relevant statistics.
 #'
 #' @examples
-#' \donttest{
 #' example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #' package = "strainspy")
-#' example_meta <- readr::read_csv(example_meta_path)
+#' example_meta <- read.csv(example_meta_path)
 #' example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #' package = "strainspy")
 #' se <- read_sylph(example_path, example_meta)
@@ -31,7 +30,6 @@
 #' design <- as.formula(" ~ Case_status + Sex")
 #' fit <- glmZiBFit(se[1:10,], design, nthreads=2)
 #' plot_volcano(fit, coef = 2, label = TRUE)
-#' }
 #'
 #' @export
 plot_volcano <- function(object, coef = 2, alpha = 0.05, method = "holm",

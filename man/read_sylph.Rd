@@ -13,7 +13,10 @@ read_sylph(
 )
 }
 \arguments{
-\item{file_path}{Character. Path to the Sylph query or profile output file (tab-separated format).}
+\item{file_path}{Character. Path to the Sylph query or profile output file(s) in \code{tsv} format.
+A single merged sylph output file processed with \code{merge_sylph_files()}, or a character vector of paths
+to individual sylph output files can be provided. If multiple files are provided, they will be merged internally and saved to a temporary file.
+If the internal merging fails, use \code{merge_sylph_files()} to merge the files externally and provide the merged file path.}
 
 \item{meta_data}{data.frame. An optional tibble or data frame containing sample metadata. See Details}
 
@@ -43,10 +46,8 @@ call \code{modify_metadata()}.
 }
 \examples{
 
-\donttest{
   # Read a Sylph file 
   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
   package = "strainspy")
   sy <- read_sylph(example_path)
-}
 }

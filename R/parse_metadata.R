@@ -18,16 +18,14 @@
 #' @return Updated SummarizedExperiment object.
 #' 
 #' @examples
-#' \donttest{
 #'   # Add or modify metadata subsequently
 #'   example_meta_path <- system.file("extdata", "example_metadata.csv.gz", 
 #'   package = "strainspy")
-#'   example_meta <- readr::read_csv(example_meta_path)
+#'   example_meta <- read.csv(example_meta_path)
 #'   example_path <- system.file("extdata", "example_sylph_profile.tsv.gz", 
 #'   package = "strainspy")
 #'   se <- read_sylph(example_path)
 #'   se <- modify_metadata(se, example_meta)
-#' }
 #' 
 #' @export
 modify_metadata <- function(se, meta_data, replace = FALSE, convert = TRUE) {
