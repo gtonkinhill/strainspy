@@ -1,5 +1,49 @@
 # strainspy news
 
+## strainspy 0.99.1
+
+### Bug fixes
+
+- `R.utils` moved from `Suggests` to `Imports`. `data.table::fread()` stops with
+  an error when asked to read a `gz` or `bz2` file and `R.utils` is not
+  installed, so `read_sylph()`, `read_sourmash()`, `read_metaphlan()` and
+  `read_taxonomy()` all failed on compressed input for anyone who installed
+  without the suggested packages. Every example file shipped in `inst/extdata`
+  is `gz` compressed, so this affected the whole documented workflow. A minimum
+  version of 2.13.0 is required because `fread()` refuses older versions of
+  `R.utils` on R 4.5 and above.
+- `1:n` replaced with `seq_len()` and `seq_along()` throughout. On an empty
+  input `1:0` counts backwards and yields two indices rather than none, so
+  zero-row data produced an error or a spurious extra iteration instead of an
+  empty result.
+
+### Dependencies
+
+- The dependency on R has been relaxed from 4.6.0 to 4.1.0. The native pipe is
+  the only version-dependent feature the package uses. The previous constraint
+  prevented installation on the R release before current, which R-universe
+  builds and checks, and made the package impossible to install alongside the
+  Bioconductor packages distributed by bioconda, which are built against an
+  earlier version of R.
+
+### Other changes
+
+- Added `inst/CITATION`, so `citation("strainspy")` now returns the StrainSpy
+  preprint (doi:10.64898/2026.08.30.748153).
+- The redundant `print()` method for `strainspy_priors` has been removed. A
+  `show()` method was already defined and is more informative, and `print()` on
+  an S4 object dispatches to it, so `print(priors)` now reports more than it
+  did before.
+- Error conditions no longer wrap their message in `paste()`, and the names of
+  missing contigs are now included in the condition itself rather than printed
+  separately to standard output, where they could become detached from the
+  error.
+- Continuous integration now runs the R-universe workflow that Bioconductor
+  uses to build and check submissions, replacing a narrower `R CMD check`
+  matrix and a separate `BiocCheck` job.
+- The README documents installation from R-universe as an alternative to
+  installing from GitHub.
+
 ## strainspy 0.99.0
 
 Version set to 0.99.0 in preparation for Bioconductor submission; Bioconductor

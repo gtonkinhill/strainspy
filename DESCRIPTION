@@ -1,8 +1,8 @@
 Package: strainspy
 Type: Package
 Title: Strain Level Microbiome Wide Association Studies
-Version: 0.99.0
-Depends: R (>= 4.6.0)
+Version: 0.99.1
+Depends: R (>= 4.1.0)
 Authors@R: c(
     person(given = "Gerry", family = "Tonkin-Hill",
         role = "aut", email = "g.tonkinhill@gmail.com"),
@@ -42,6 +42,7 @@ Imports:
     methods,
     patchwork,
     purrr,
+    R.utils (>= 2.13.0),
     S4Vectors,
     stats,
     stringr,
@@ -62,7 +63,6 @@ Suggests:
     gamlss.dist,
     knitr,
     mgcv,
-    R.utils,
     rmarkdown,
     testthat (>= 3.0.0),
     vegan,

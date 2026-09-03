@@ -1,167 +1,32 @@
-# R CMD check + BiocCheck, sized for a Bioconductor submission.
-#
-# Bioconductor builds every package on Linux, macOS and Windows, so all three
-# are checked here rather than Linux + macOS only. The `bioc-devel` job runs in
-# Bioconductor's own container, which is the reliable way to test against the
-# devel branch without hand-wiring repositories.
-#
-# Derived from https://github.com/r-lib/actions/tree/v2/examples
-# Debugging help: https://github.com/r-lib/actions#where-to-find-help
+# The real build and check pipeline lives in r-universe.yml, which runs the
+# same workflow Bioconductor uses for submissions: source + vignette build,
+# R CMD check on Linux (devel, release), macOS (release, oldrel), Windows
+# (devel, release, oldrel) and wasm, plus BiocCheck. 
+
+name: Repo integrity
+
 on:
   push:
-    branches: [main, master, dev2]
   pull_request:
-    branches: [main, master, dev2]
-  schedule:
-    - cron: '1 1 1 * *'
-
-name: R-CMD-check
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Guard against the packaging mistake that is invisible locally: the vignette
-  # and .Rbuildignore live on disk but were once excluded from the repository by
-  # .gitignore, so a tarball built from a clone had no vignette at all while
-  # `devtools::check()` on the working directory stayed clean. Build from a
-  # git-faithful export so the artifact that r-universe, bioconda and
-  # Bioconductor actually consume is the one being tested.
-  # ---------------------------------------------------------------------------
-  build-from-git:
+  tracked-files:
     runs-on: ubuntu-latest
-    name: build from git export
+    name: build-critical files are tracked
     steps:
       - uses: actions/checkout@v4
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: 'release'
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-
-      - name: Export HEAD to a clean directory
-        run: |
-          mkdir -p "$RUNNER_TEMP/export"
-          git archive HEAD | tar -x -C "$RUNNER_TEMP/export"
 
       - name: Fail if build-critical files are missing from the repository
         run: |
-          cd "$RUNNER_TEMP/export"
           missing=0
-          for f in .Rbuildignore vignettes DESCRIPTION NAMESPACE; do
-            if [ ! -e "$f" ]; then echo "::error::$f is not tracked in git"; missing=1; fi
+          for f in .Rbuildignore DESCRIPTION NAMESPACE vignettes; do
+            if ! git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
+              echo "::error::$f is not tracked in git"
+              missing=1
+            fi
           done
-          if [ "$(find vignettes -name '*.Rmd' 2>/dev/null | wc -l)" -eq 0 ]; then
-            echo "::error::no vignette source found in vignettes/"
+          if [ "$(git ls-files 'vignettes/*.Rmd' | wc -l)" -eq 0 ]; then
+            echo "::error::no vignette source (vignettes/*.Rmd) is tracked in git"
             missing=1
           fi
           exit $missing
-
-      - name: R CMD build
-        run: R CMD build "$RUNNER_TEMP/export"
-
-      - name: Fail if the built tarball has no rendered vignette
-        run: |
-          tarball=$(ls -1 strainspy_*.tar.gz)
-          echo "Built $tarball ($(du -h "$tarball" | cut -f1))"
-          if ! tar tzf "$tarball" | grep -q 'inst/doc/.*\.html$'; then
-            echo "::error::$tarball contains no rendered vignette in inst/doc/"
-            exit 1
-          fi
-          tar tzf "$tarball" | grep -E 'vignettes/|inst/doc/'
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: source-tarball
-          path: strainspy_*.tar.gz
-
-  # ---------------------------------------------------------------------------
-  # R CMD check on the three platforms Bioconductor builds on.
-  # ---------------------------------------------------------------------------
-  R-CMD-check:
-    runs-on: ${{ matrix.config.os }}
-    name: ${{ matrix.config.os }} (R ${{ matrix.config.r }})
-
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - {os: ubuntu-latest,  r: 'release'}
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
-
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      R_KEEP_PKG_SOURCE: yes
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: ${{ matrix.config.r }}
-          use-public-rspm: true
-
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-
-      # Bioconductor requires a check with no warnings, so error-on is
-      # "warning" rather than "error". --as-cran is deliberately omitted: it
-      # applies CRAN policy this package is not being submitted under.
-      - uses: r-lib/actions/check-r-package@v2
-        with:
-          args: 'c("--no-manual")'
-          error-on: '"warning"'
-          upload-snapshots: true
-
-  # ---------------------------------------------------------------------------
-  # Bioconductor devel, in Bioconductor's own image.
-  # ---------------------------------------------------------------------------
-  bioc-devel:
-    runs-on: ubuntu-latest
-    name: bioc-devel (container)
-    container: bioconductor/bioconductor_docker:devel
-
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          BiocManager::install(ask = FALSE, update = TRUE)
-          install.packages(c("remotes", "rcmdcheck"), repos = BiocManager::repositories())
-          remotes::install_deps(dependencies = TRUE, repos = BiocManager::repositories())
-          BiocManager::install("BiocCheck", ask = FALSE)
-        shell: Rscript {0}
-
-      - name: R CMD check
-        run: |
-          rcmdcheck::rcmdcheck(
-            args = "--no-manual",
-            error_on = "warning",
-            check_dir = "check"
-          )
-        shell: Rscript {0}
-
-      # BiocCheck currently reports administrative ERRORs that cannot be cleared
-      # from CI: the version must be 0.99.z at submission, the source tarball
-      # must be under 10 MB, and the maintainer must be registered on the
-      # Bioconductor support site. Report them without failing the build, and
-      # drop `continue-on-error` once those gates are met so regressions are
-      # caught.
-      - name: BiocCheck
-        continue-on-error: true
-        run: |
-          BiocCheck::BiocCheck(".", `new-package` = TRUE)
-        shell: Rscript {0}

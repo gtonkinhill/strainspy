@@ -3,7 +3,15 @@
 
 <!-- badges: start -->
 
-[![R-CMD-check](https://github.com/gtonkinhill/strainspy/workflows/R-CMD-check-hard/badge.svg)](https://github.com/gtonkinhill/strainspy/actions)
+[![R-universe
+version](https://sudaraka88.r-universe.dev/strainspy/badges/version)](https://sudaraka88.r-universe.dev/strainspy)
+[![R-universe
+checks](https://sudaraka88.r-universe.dev/strainspy/badges/checks)](https://sudaraka88.r-universe.dev/strainspy#checktable)
+<!-- Download counts are not available from R-universe. Uncomment these once
+     the package is published on bioconda and accepted into Bioconductor:
+[![bioconda downloads](https://img.shields.io/conda/dn/bioconda/r-strainspy.svg)](https://anaconda.org/bioconda/r-strainspy)
+[![Bioconductor downloads](https://bioconductor.org/shields/downloads/release/strainspy.svg)](https://bioconductor.org/packages/strainspy)
+-->
 [![Databases](https://zenodo.org/badge/DOI/10.5281/zenodo.21796878.svg)](https://zenodo.org/records/21796878)
 <!-- badges: end -->
 
@@ -24,6 +32,18 @@ If you would like to also build the vignette with your installation run:
 ``` r
 remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 ```
+
+### Alternative: install from R-universe
+
+`StrainSpy` is also published on
+[R-universe](https://sudaraka88.r-universe.dev/strainspy)
+
+``` r
+install.packages("BiocManager")
+install.packages("strainspy", repos = c("https://sudaraka88.r-universe.dev", BiocManager::repositories()))
+```
+
+## Analysing data with StrainSpy
 
 A full set of examples and analyses performed using `StrainSpy` are
 available [here](https://sudaraka88.github.io/strainspy-manuscript/).
@@ -66,7 +86,6 @@ se <- read_sylph(example_sylph_path, meta_data = meta_data)
 # Filter by presence. This will remove any strains that are not present in at
 # least 30 samples
 se <- filter_by_presence(se, min_nonzero = 30)
-#> Retained 472 rows after filtering
 
 # Read in taxonomy
 taxonomy <- read_taxonomy(example_taxonomy_path)
@@ -80,7 +99,6 @@ design <- as.formula(" ~ Case_status + Age_at_collection")
 
 # Fit a Zero-inflated beta model using the default preset_weak MAP prior
 fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
-#> Fitting model... 
 #>   |                                                                              |                                                                      |   0%  |                                                                              |==============                                                        |  20%  |                                                                              |============================                                          |  40%  |                                                                              |==========================================                            |  60%  |                                                                              |========================================================              |  80%  |                                                                              |======================================================================| 100%
 ```
 
@@ -89,14 +107,12 @@ fit <- glmZiBFit(se, design, nthreads = parallel::detectCores())
 ``` r
 # Get top hits
 th = top_hits(fit, coef = 2)
-#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 
 # Create Volcano plot
 plot_volcano(fit, label = T)
-#> Found 472 tophits for Case_statusPD at alpha = 1 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-7-1.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-8-1.png" alt="" width="100%" />
 
 ``` r
 
@@ -134,18 +150,16 @@ appears different between groups.
 
 ``` r
 plot_ani_dist(se, "Case_status", top_hits(fit)$Contig_name)
-#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-9-1.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-10-1.png" alt="" width="100%" />
 
 ``` r
 plot_histogram(se, "Case_status", top_hits(fit)$Contig_name[2], drop_zeros = TRUE,
     fit_spline = T, bins = 54, separate_facets = T)
-#> Found 2 tophits for Case_statusPD at alpha = 0.05 using holm
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-9-2.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-10-2.png" alt="" width="100%" />
 
 ## Incorporate taxonomy
 
@@ -155,7 +169,7 @@ plot_histogram(se, "Case_status", top_hits(fit)$Contig_name[2], drop_zeros = TRU
 plot_manhattan(fit, taxonomy = taxonomy)
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-10-1.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-11-1.png" alt="" width="100%" />
 
 ### Create a traditional Manhattan plot coloured by taxonomy with unadjusted p-values and Bonferroni significance thresholds
 
@@ -163,7 +177,7 @@ plot_manhattan(fit, taxonomy = taxonomy)
 plot_manhattan(fit, taxonomy = taxonomy, aggregate_by_taxa = F)
 ```
 
-![](inst/vignette-supp/unnamed-chunk-11-1.png)<!-- -->
+![](inst/vignette-supp/unnamed-chunk-12-1.png)<!-- -->
 
 ## Estimate sample richness
 
@@ -178,7 +192,7 @@ ggplot(df_rch, aes(Case_status, value, fill = Case_status)) + geom_boxplot(outli
     geom_jitter(width = 0.15, alpha = 0.4) + theme_classic() + ylab("Number of Species")
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-12-1.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-13-1.png" alt="" width="100%" />
 
 ## Estimate between sample diversity
 
@@ -188,7 +202,7 @@ divs = strainspy::estimate_beta_diversity(se, phenotype = "Case_status", return_
 divs$plots$NMDS
 ```
 
-<img src="inst/vignette-supp/unnamed-chunk-13-1.png" alt="" width="100%" />
+<img src="inst/vignette-supp/unnamed-chunk-14-1.png" alt="" width="100%" />
 
 ## Working with other inputs
 
@@ -287,3 +301,9 @@ files provided with the package for guidance, available at
 ## Citation
 
 To cite strainspy please use
+
+> Mallawaarachchi S, Tandon K, Rajan N, Marcelino VR, Sandhu S, Bedoui
+> S, Ingle DJ, Gunjur A, Tonkin-Hill G (2026). Accurate detection of
+> metagenomic strain-level associations using average nucleotide
+> identity with StrainSpy. *bioRxiv*. doi:
+> [10.64898/2026.08.30.748153](https://doi.org/10.64898/2026.08.30.748153)

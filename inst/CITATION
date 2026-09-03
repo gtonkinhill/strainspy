@@ -1,0 +1,22 @@
+citHeader("To cite strainspy in publications, please use:")
+
+bibentry(
+  bibtype = "Article",
+  title = paste("Accurate detection of metagenomic strain-level associations",
+                "using average nucleotide identity with StrainSpy"),
+  author = c(
+    person(given = "Sudaraka", family = "Mallawaarachchi"),
+    person(given = "Kshitij", family = "Tandon"),
+    person(given = "Nikhil", family = "Rajan"),
+    person(given = "Vannessa Rossetto", family = "Marcelino"),
+    person(given = "Shahneen", family = "Sandhu"),
+    person(given = "Sammy", family = "Bedoui"),
+    person(given = "Danielle J.", family = "Ingle"),
+    person(given = "Ashray", family = "Gunjur"),
+    person(given = "Gerry", family = "Tonkin-Hill")
+  ),
+  journal = "bioRxiv",
+  year = 2026,
+  doi = "10.64898/2026.08.30.748153",
+  url = "https://www.biorxiv.org/content/10.64898/2026.08.30.748153v1"
+)

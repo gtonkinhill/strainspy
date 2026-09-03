@@ -20,7 +20,13 @@ knitr::opts_chunk$set(
 ```
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/gtonkinhill/strainspy/workflows/R-CMD-check-hard/badge.svg)](https://github.com/gtonkinhill/strainspy/actions)
+[![R-universe version](https://sudaraka88.r-universe.dev/strainspy/badges/version)](https://sudaraka88.r-universe.dev/strainspy)
+[![R-universe checks](https://sudaraka88.r-universe.dev/strainspy/badges/checks)](https://sudaraka88.r-universe.dev/strainspy#checktable)
+<!-- Download counts are not available from R-universe. Uncomment these once
+     the package is published on bioconda and accepted into Bioconductor:
+[![bioconda downloads](https://img.shields.io/conda/dn/bioconda/r-strainspy.svg)](https://anaconda.org/bioconda/r-strainspy)
+[![Bioconductor downloads](https://bioconductor.org/shields/downloads/release/strainspy.svg)](https://bioconductor.org/packages/strainspy)
+-->
 [![Databases](https://zenodo.org/badge/DOI/10.5281/zenodo.21796878.svg)](https://zenodo.org/records/21796878)
 <!-- badges: end -->
 
@@ -41,6 +47,20 @@ If you would like to also build the vignette with your installation run:
 ```{r, eval=FALSE}
 remotes::install_github("gtonkinhill/strainspy", build_vignettes = TRUE)
 ```
+
+### Alternative: install from R-universe
+
+`StrainSpy` is also published on
+[R-universe](https://sudaraka88.r-universe.dev/strainspy)
+
+```{r, eval = FALSE}
+install.packages("BiocManager")
+install.packages("strainspy",
+                 repos = c("https://sudaraka88.r-universe.dev",
+                           BiocManager::repositories()))
+```
+
+## Analysing data with StrainSpy
 
 A full set of examples and analyses performed using `StrainSpy` are available [here](https://sudaraka88.github.io/strainspy-manuscript/). Raw R scripts used in the analysis are available at: https://github.com/Sudaraka88/strainspy-manuscript.
 
@@ -228,3 +248,9 @@ A metadata `tsv` file (optionally `gz` compressed) needs to be prepared for each
 ## Citation
 
 To cite strainspy please use
+
+> Mallawaarachchi S, Tandon K, Rajan N, Marcelino VR, Sandhu S, Bedoui S,
+> Ingle DJ, Gunjur A, Tonkin-Hill G (2026). Accurate detection of metagenomic
+> strain-level associations using average nucleotide identity with StrainSpy.
+> *bioRxiv*. doi:
+> [10.64898/2026.08.30.748153](https://doi.org/10.64898/2026.08.30.748153)
