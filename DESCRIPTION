@@ -2,12 +2,13 @@ Package: strainspy
 Type: Package
 Title: Strain Level Microbiome Wide Association Studies
 Version: 0.99.0
-Depends: R (>= 4.1.0)
+Depends: R (>= 4.6.0)
 Authors@R: c(
     person(given = "Gerry", family = "Tonkin-Hill",
         role = "aut", email = "g.tonkinhill@gmail.com"),
     person(given = "Sudaraka", family = "Mallawarachchi",
-        role = c("aut", "cre"), email = "smallawaarachchi@gmail.com")
+        role = c("aut", "cre"), email = "smallawaarachchi@gmail.com",
+        comment = c(ORCID = "0000-0001-8899-3323"))
     )
 Description: Fits statistical models to detect microbial strains 
     associated with a phenotype. For small sample sizes, models can be fitted 
@@ -16,10 +17,11 @@ Description: Fits statistical models to detect microbial strains
     measures.
 License: MIT + file LICENSE
 Encoding: UTF-8
-URL: https://github.com/gtonkinhill/strainspy
+URL: https://github.com/gtonkinhill/strainspy,
+    https://sudaraka88.r-universe.dev/strainspy
 BugReports: https://github.com/gtonkinhill/strainspy/issues
-biocViews: Software, Microbiome, Metagenomics, DifferentialExpression,
-    Sequencing
+biocViews: Software, Microbiome, Metagenomics, MicrobialStrain,
+    DifferentialExpression, Regression, ExperimentalDesign, Sequencing
 Imports:
     ape,
     BiocParallel,

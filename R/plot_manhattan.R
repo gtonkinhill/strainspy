@@ -126,7 +126,7 @@ plot_manhattan <- function(object, coef=2, taxonomy=NULL, aggregate_by_taxa = NU
     colnames(plot_data)[[2]] <- "Name"
     plot_data <- plot_data |> tibble::add_column(Level="Sequence", .before=1)
     
-    plot_data$index <- 1:nrow(plot_data)
+    plot_data$index <- seq_len(nrow(plot_data))
   }
   
   plot_data$log_p_adjust <- -log10(plot_data$p_adjust)

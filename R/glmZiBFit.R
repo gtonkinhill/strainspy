@@ -138,7 +138,7 @@ glmZiBFit <- function(se, design, nthreads=1, scale_continuous=TRUE,
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
-  if (progress) cat("Fitting model... \n")
+  if (progress) message("Fitting model...")
   
   if (method == 'glmmTMB') {
     results <- BiocParallel::bplapply(
@@ -312,7 +312,7 @@ fit_zero_inflated_beta <- function(se_subset, col_data, combined_formula, design
 #' @importFrom stats residuals
 fit_zero_inflated_beta_gamlss <- function(se_subset, col_data, combined_formula, design, fixed_priors,
                                           progress = TRUE) {
-  if (progress) cat("Fitting model... \n")
+  if (progress) message("Fitting model...")
   chunk_results <- lapply(seq_len(nrow(se_subset)), function(row_index){
     # Extract the values for the current feature
     col_data$Value <- offset_ANI(as.vector(se_subset[row_index, ])/100)

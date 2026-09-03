@@ -57,7 +57,7 @@ plot_pca_biplot <- function(se, phenotype, plot = TRUE) {
 
   #Format PC data
   if(is.null(rownames(PC$x))){
-    rownames(PC$x)<-1:nrow(PC$x)
+    rownames(PC$x)<-seq_len(nrow(PC$x))
   }
   dat <- tibble::as_tibble(PC$x)
 

@@ -21,10 +21,10 @@ read_taxonomy <- function(file_path) {
   tax[, c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species") := data.table::tstrsplit(Taxonomy, ";", fill = TRUE)]
 
   # Add index and arrange
-  tax$index <- 1:nrow(tax)
+  tax$index <- seq_len(nrow(tax))
   tax <- tax |>
     dplyr::arrange(Domain, Phylum, Class, Order, Family, Genus, Species, index)
-  tax$index <- 1:nrow(tax)
+  tax$index <- seq_len(nrow(tax))
 
   return(tax)
 }

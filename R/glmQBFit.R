@@ -119,7 +119,7 @@ glmQBFit <- function(se, design, nthreads=1L, scale_continous=TRUE, BPPARAM=NULL
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
-  if (progress) cat("Fitting model... \n")
+  if (progress) message("Fitting model...")
   
   results <- BiocParallel::bplapply(
     row_chunks,

@@ -198,22 +198,23 @@ estimate_beta_diversity <- function(
   }
   
   if(show_plots){
-    cat("Press [Enter] to start visualising plots...")
     # NMDS
-    invisible(readline())
+    invisible(readline("Press [Enter] to start visualising plots..."))
     print(plots[[1]])
     
-    cat("\nDisplaying plot: NMDS\nPress [Enter] to continue...")
-    invisible(readline())
+    invisible(readline(
+      "\nDisplaying plot: NMDS\nPress [Enter] to continue..."
+    ))
     
     # Beta-dispersion ordination
     print(plots[[2]])
-    cat("\nDisplaying plot: Beta-dispersion ordination\nPress [Enter] to continue...")
-    invisible(readline())
+    invisible(readline(
+      "\nDisplaying plot: Beta-dispersion ordination\nPress [Enter] to continue..."
+    ))
     
     # Beta-dispersion boxplot
     plot(disp, main = "Beta-dispersion (distance to group centroid)")
-    cat("\nDisplaying plot: Beta-dispersion boxplot\nPress [Enter] to continue...")
+    message("\nDisplaying plot: Beta-dispersion boxplot\nPress [Enter] to continue...")
   }
   
   if(!return_plots) plots = NULL # no one would do this?

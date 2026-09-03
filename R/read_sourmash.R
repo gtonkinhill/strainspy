@@ -44,7 +44,7 @@ read_sourmash <- function(file_path, meta_data=NULL, variable="match_containment
   }
   
   if (!file.exists(file_path)) {
-    stop(paste0("The file '", file_path, "' does not exist. Please provide a valid file path."))
+    stop("The file '", file_path, "' does not exist. Please provide a valid file path.")
   }
   
   # Load a small portion of the file to inspect column names
@@ -268,21 +268,21 @@ merge_sourmash_files <- function(sourmash_files, manifest_file = NULL, output, s
     # md5s 
     drp_tmp = grep("md5", colnames(merged_data))
     if(length(drp_tmp) > 0) {
-      cat("Stripping", length(drp_tmp), "md5 columns:", paste(colnames(merged_data)[drp_tmp], collapse = ', '), "\n")
+      message("Stripping ", length(drp_tmp), " md5 columns: ", paste(colnames(merged_data)[drp_tmp], collapse = ', '))
       drp = c(drp_tmp)
     }
     
     # NAs
     drp_tmp <- which(sapply(merged_data, function(x) all(is.na(x))))
     if(length(drp_tmp) > 0) {
-      cat("Stripping", length(drp_tmp), "all NA columns:", paste(colnames(merged_data)[drp_tmp], collapse = ', '), "\n")
+      message("Stripping ", length(drp_tmp), " all NA columns: ", paste(colnames(merged_data)[drp_tmp], collapse = ', '))
       drp = c(drp, drp_tmp)
     }
     
     # Invariant columns
     drp_tmp <- which(sapply(merged_data, function(x) length(na.omit(unique(x))) == 1))
     if(length(drp_tmp) > 0) {
-      cat("Stripping", length(drp_tmp), "invariant columns:", paste(colnames(merged_data)[drp_tmp], collapse = ', '), "\n")
+      message("Stripping ", length(drp_tmp), " invariant columns: ", paste(colnames(merged_data)[drp_tmp], collapse = ', '))
       drp = c(drp, drp_tmp)
     }
     

@@ -61,23 +61,6 @@ methods::setValidity("strainspy_priors", function(object) {
 
 
 
-#' Print method for strainspy_priors objects
-#'
-#' @param x An object of class \code{strainspy_priors}
-#' @param ... Additional arguments (unused)
-#' @return Prints a concise summary of the object
-#' @export
-methods::setMethod("print", "strainspy_priors", function(x, ...) {
-  cat("strainspy_priors object\n")
-  cat("Method used: ", x@method, "\n")
-  if (nrow(x@priors_df) > 0) {
-    cat("Number of prior entries: ", nrow(x@priors_df), "\n")
-  } else {
-    cat("No priors specified.\n")
-  }
-  invisible(x)
-})
-
 #' Show method for strainspy_priors objects
 #'
 #' @param object An object of class \code{strainspy_priors}
@@ -186,7 +169,7 @@ methods::setMethod("plot_prior_bootstrap", signature(object = "strainspy_priors"
                        }
                      }
                      
-                     if (length(plots) == 0) stop(paste("Coefficient", prior, "not found in bootstrap matrices."))
+                     if (length(plots) == 0) stop("Coefficient ", prior, " not found in bootstrap matrices.")
                      
                      # Combine using patchwork
                      combined <- patchwork::wrap_plots(plots) + patchwork::plot_layout(guides = "collect")

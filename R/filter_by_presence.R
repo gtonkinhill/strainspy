@@ -32,7 +32,7 @@ filter_by_presence <- function(se, min_nonzero = 10) {
   }
 
   if(min_nonzero > dim(se)[2]){
-    stop(paste("Ensure `min_nonzero` <= number of samples in `se`:", dim(se)[2]))
+    stop("Ensure `min_nonzero` <= number of samples in `se`: ", dim(se)[2])
   }
   # Count the number of non-zero entries in each row of the assay
   nonzero_counts <- Matrix::rowSums(SummarizedExperiment::assays(se)[[1]] != 0)
@@ -130,7 +130,7 @@ filter_by_presence_and_rescale <- function(se, min_nonzero = 10, rescale_abundan
   rows_to_keep <- nonzero_counts >= min_nonzero
   
   # Filter the assays, rowData, and colData in the SummarizedExperiment
-  cat("Retained", sum(rows_to_keep), "rows after filtering\n")
+  message("Retained ", sum(rows_to_keep), " rows after filtering")
   
   # diagnostic plot
   ord = order(nonzero_counts)

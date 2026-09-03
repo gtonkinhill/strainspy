@@ -46,8 +46,11 @@ extract_strainspy <- function(se, variables=NULL, contigs=NULL, taxonomy=NULL, d
   # check contigs
   chk_contigs = contigs %in% rownames(se)
   if( ! all(chk_contigs)  ){
-    cat(paste(contigs[!chk_contigs], '\n', sep = ""))
-    stop("Above contigs are missing from rownames(se)")
+    # Name the offending contigs in the condition itself. Printing them to
+    # stdout put them on a different stream from the error on stderr, so a
+    # caller could see "Above contigs" with nothing above it.
+    stop("Contigs missing from rownames(se): ",
+         paste(contigs[!chk_contigs], collapse = ", "))
   }
   
   tmp <- tibble::rownames_to_column(

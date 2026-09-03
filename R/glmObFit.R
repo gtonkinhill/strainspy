@@ -64,7 +64,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
                      family=glmmTMB::ordbeta(), BPPARAM=NULL, progress=TRUE) {
   check_progress(progress)
   # add message
-  if (progress) cat("Fitting model... \n")
+  if (progress) message("Fitting model...")
   # Check if glmmTMB is installed
   if (!requireNamespace("glmmTMB", quietly = TRUE)) {
     stop("The 'glmmTMB' package is required but is not installed. Please install it with install.packages('glmmTMB').")
@@ -137,7 +137,7 @@ glmObFit <- function(se, design, nthreads=1L, scale_continuous=TRUE, MAP_prior =
     ceiling(seq_len(nrow(se)) / 100)  # 50 rows per chunk
   )
   
-  if (progress) cat("Fitting model... \n")
+  if (progress) message("Fitting model...")
   
   results <- BiocParallel::bplapply(
     row_chunks,

@@ -86,7 +86,7 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
   ## ZI priors
   ## --------------------
   
-  if (progress) cat("Computing fixef_zi priors...\n")
+  if (progress) message("Computing fixef_zi priors...")
   
   rx_ZI <- BiocParallel::bplapply(chunk_list,
                                   glmBin_chunk,
@@ -107,7 +107,7 @@ compute_eb_priors <- function(se, design, nthreads = 1L, BPPARAM = NULL,
   ## Beta priors
   ## --------------------
   
-  if (progress) cat("Computing fixef priors...\n")
+  if (progress) message("Computing fixef priors...")
   
   rx_beta <- BiocParallel::bplapply(chunk_list,
                                     beta_chunk,

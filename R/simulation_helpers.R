@@ -93,19 +93,19 @@ update_fit <- function(fit, update_idx,
   
   switch(fit_type,
          "glmZiBFit" = {
-           if (progress) cat("Updating", length(update_idx), "values by calling glmZiBFit\n")
+           if (progress) message("Updating ", length(update_idx), " values by calling glmZiBFit")
            fit_u <- glmZiBFit(se_subset, design = design, nthreads = nthreads, 
                               scale_continuous = scale_continuous, BPPARAM = BPPARAM,
                               progress = progress)
          },
          "glmObFit" = {
-           if (progress) cat("Updating", length(update_idx), "values by calling glmObFit\n")
+           if (progress) message("Updating ", length(update_idx), " values by calling glmObFit")
            fit_u <- glmObFit(se_subset, design = design, nthreads = nthreads, 
                              scale_continuous = scale_continuous, BPPARAM = BPPARAM, 
                              family = family, progress = progress)
          },
          "caseControlFit" = {
-           if (progress) cat("Updating", length(update_idx), "values by calling caseControlFit\n")
+           if (progress) message("Updating ", length(update_idx), " values by calling caseControlFit")
            fit_u <- caseControlFit(se = se_subset, min_identity = min_identity, 
                                    design = design, nthreads = nthreads, 
                                    scale_continuous = scale_continuous, BPPARAM = BPPARAM,
@@ -238,7 +238,7 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
     colnames(plot_data)[[2]] <- "Name"
     plot_data <- plot_data |> tibble::add_column(Level="Sequence", .before=1)
     
-    plot_data$index <- 1:nrow(plot_data)
+    plot_data$index <- seq_len(nrow(plot_data))
   }
   
   plot_data$log_p_adjust <- -log10(plot_data$p_adjust)
@@ -273,7 +273,7 @@ plot_manhattan_gt <- function(object, coef=2, taxonomy=NULL, method = "HMP",
     custom_colors <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#b15928',
                        '#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5')
     
-    custom_colors <- custom_colors[1:length(unique(plot_data$Phylum))]
+    custom_colors <- custom_colors[seq_along(unique(plot_data$Phylum))]
     
     gg <- ggplot2::ggplot(plot_data, aes(x = Name, y = log_p_adjust, colour=Phylum)) +
       ggplot2::geom_segment(aes(y = log_p_adjust, x = index_min - 0.5, xend = index_max + 0.5), size=5) +

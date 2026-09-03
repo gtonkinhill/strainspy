@@ -72,7 +72,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   
   # Check which column in row_data is corresponds to the taxonomic data
   tax_col <- NULL
-  for (i in 1:ncol(slot(object, 'row_data'))) {
+  for (i in seq_len(ncol(slot(object, 'row_data')))) {
     if (all(slot(object, 'row_data')[,i] %in% tax$Genome)) {
       tax_col <- i
       break
@@ -86,7 +86,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
   hierarchy_df <- beta_res |>
     dplyr::left_join(tax, by = setNames("Genome", names(slot(object, 'row_data'))[tax_col])) |>
     dplyr::arrange(Domain, Phylum, Class, Order, Family, Genus, Species, index) |>
-    dplyr::mutate(index=1:nrow(beta_res))
+    dplyr::mutate(index=seq_len(nrow(beta_res)))
   
   if (!is.null(slot(object, 'zi_coefficients'))){
     hierarchy_df <- rbind(
@@ -94,7 +94,7 @@ hadjust <- function(object, coef=2, method = "HMP", taxonomy=NULL, index_range=F
       zi_res |>
         dplyr::left_join(tax, by = setNames("Genome", names(slot(object, 'row_data'))[tax_col]))  |>
         dplyr::arrange(Domain, Phylum, Class, Order, Family, Genus, Species, index) |>
-        dplyr::mutate(index=1:nrow(zi_res))
+        dplyr::mutate(index=seq_len(nrow(zi_res)))
     )
   }
   

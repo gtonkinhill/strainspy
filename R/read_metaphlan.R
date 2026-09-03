@@ -43,7 +43,7 @@ read_metaphlan <- function(file_path, meta_data=NULL, variable="relative_abundan
   }
   
   if (!file.exists(file_path)) {
-    stop(paste0("The file '", file_path, "' does not exist. Please provide a valid file path."))
+    stop("The file '", file_path, "' does not exist. Please provide a valid file path.")
   }
   
   # Load a small portion of the file to inspect column names
